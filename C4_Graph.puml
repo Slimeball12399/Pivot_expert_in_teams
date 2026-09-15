@@ -1,0 +1,27 @@
+@startuml Boundary Diagram
+!include <C4/C4_Container>
+
+Person(student, "Student", "Recieves feedback and learns public speaking through the platform")
+Person(admin, "Trainer", "Analises the stability results, manages users, and provides in person feedback")
+
+
+System_Boundary(pivot, "PIVOT Software") { 
+    Container(frontend, "Fronted application", "TBD", "Show visualization, user profiles and data")
+    Container(backend, "Server application", "TBD", "Data processing business logic")
+    ContainerDb(db, "Database", "TBD", "Store user data, session results")
+}
+
+System_Ext(voice, "Voice analysis")
+System_Ext(platform, "Pivot board", "Embbeded software")
+
+Rel(student, frontend, "Uses")
+Rel(admin, frontend, "Uses")
+
+Rel(frontend, backend, "Requests data & Actions", "HTTPS")
+Rel(backend, db, "Reads and writes", "HTTP")
+
+Rel(backend, voice, "Sends raw data for voice analysis", "HTTPS")
+Rel(platform, backend, "Sends data to the server", "WIFI?")
+
+SHOW_LEGEND()
+@enduml
