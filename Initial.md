@@ -18,7 +18,7 @@ TOTAL | 100% | |
 - https://blog.pacificcert.com/iso-25010-software-product-quality-model/
 
 ## Backend server
-Criterion | Weight | Django | Laravel | FastAPI | .ASP.NET Core 
+Criterion | Weight | Django | Laravel | FastAPI | Node.js | .ASP.NET Core 
 --- | --- | --- | --- | --- |--- 
 Maintainability | 5% | | |
 Team Familiarity | 10% | | |
