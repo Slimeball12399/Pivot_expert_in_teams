@@ -1,35 +1,49 @@
 # Enginnering Decisions
 ### Scoring
+Score | Meaning
+--- | ---
+1 | Poor
+2 | Below average
+3 | Average
+4 | Above average
+5 | Excelent
 
 ## Platform
 Criterion | Weight | Mobile | Desktop | Web 
 --- | --- | --- | --- |--- 
-Cross-Platform Accessibility | 20% |  | 
-Cost Efficiency | 10% | | 
-Functional suitability | 10% | | 
-Maintanace & Reliability | 15% | | 
-Interaction capability | 20% | |
-Compatibility | 15% | | 
-Performance efficiency | 5% | | 
-Security | 5% | | 
-TOTAL | 100% | | 
+Cross-Platform Accessibility | 20% | 3 | 2 | 5
+Cost Efficiency | 10% | 4 | 1 | 5
+Functional suitability | 10% | 4 | 1 | 4 
+Maintanace & Reliability | 15% | 3 | 1 | 5
+Interaction capability | 20% | 4 | 4 | 3
+Compatibility | 15% | 5 | 4 | 2
+Performance efficiency | 5% | 3 | 5 | 1
+Security | 5% | 3 | 2 | 5
+TOTAL | 100% | 3.7 | 2.5 | 3.85
+
+Cost efficientcy the mobile is needed to configure the board and functially can allow for more integration but its higher cost to develop and you cannot look at it while practicing
+
+- Ok so no booking system is really needed it might be obsolete -> 
+- Mobile app with user profile, their results, and configing the device from admin account -> user account control -> Possibly mathching based on voice
+- Web is for running the training etc 
+
 ### Refs
 - https://www.3appes.com/web-vs-mobile-vs-desktop/
 - https://blog.pacificcert.com/iso-25010-software-product-quality-model/
 
 ## Backend server
 Criterion | Weight | Django | Laravel | FastAPI | Node.js | .ASP.NET Core 
---- | --- | --- | --- | --- |--- 
-Maintainability | 5% | | |
-Team Familiarity | 10% | | |
-Function set | 10% | | |
-Security | 5% | | |
-Flexibility | 10% | | |
-Integration | 20% | | | 
-Data Processing Capabilities | 15% | | | |
-Visualization | 15% | | | |
-Performance | 10% | | | |
-TOTAL | 100% | | 
+--- | --- | --- | --- | --- |--- | --
+Maintainability | 5% | 5 | 5 | 2 | 3 | 3
+Team Familiarity | 10% | 5 | 4 | 3 | 3 | 2
+Function set | 10% | 5 | 5 | 2 | 3 | 4
+Security | 5% | 5 | 5 | 1 | 1 | 4
+Flexibility | 10% | 2 | 2 | 5 | 5 | 3 
+Integration | 20% | 3 | 2 | 3 | 5 | 4
+Data Processing Capabilities | 15% | 5 | 1 | 5 | 2 | 3
+Visualization | 15% | 5 | 2 | 5 | 5 | 3
+Performance | 10% |  2 | 3 | 3 | 4 | 5 
+TOTAL | 100% | 4 | 2.75 | 3.55 | 3.75 | 3.45
 
 ### Refs
 - https://blog.pacificcert.com/iso-25010-software-product-quality-model/
@@ -51,6 +65,8 @@ Performance | Slow for sensory | Slow for multiple sources but fast retrival on 
 Scalability | Standard | Analysis requires the files to be held in memory | Best for analysis
 Data protection | Easy | Ok | Difficult because of consistency 
 Fun | Nah | Meh | Yes
+
+Tripple setup
 ****
 **Structured data**  
 Well its not much different between what tech we choose experience determines decion between DBs
@@ -75,15 +91,15 @@ What standard do we wanna use for communication
 
 | Criterion | Weight | 1. Process on board | 2. Server processes | 3. Mobile processes | 4. Stream to both | 5. Mobile as gateway |
 |---|---|---|---|---|---|---|
-| Performance | 10% | | | | | |
-| Latency | 20% | | | | | |
-| Ease of implementation | 10% | | | | | |
-| User experience | 10% | | | | | |
-| Reliability (network dependence) | 15%  | | | | | |
-| Hardware requirements (board) | 15% | | | | | |
-| Power / battery usage | 20% | | | | | |
+| Performance | 10% | 1 | 5 | 2 | 5 | 3 |
+| Latency | 20% | 5 | 3 | 4 | 4 | 2
+| Ease of implementation | 10% | 1 | 5 | 2 | 2 | 4
+| User experience | 10% | 1 | 3 | 1 | 4 | 3 | 2
+| Reliability (network dependence) | 15%  | 5 | 3 | 3 | 4 | 1 |
+| Hardware requirements (board) | 15% | 1 | 5 | 5 | 3 | 5 |
+| Power / battery usage | 20% | 3 | 5 | 1 | 3 | 3 |
 | Number of to mobile | 1 | 1 | 2 | 1 | 1-2 | 3
-| **Total** | **100%** | | | | | |
+| **Total** | **100%** | 2.8 | 4.1 | 2.7 | 3.55 | 2.9 |
 
 ## AI
 - Desing comparison - Used to higlight missed points, identify additional pros const for certain decisions such as frameworks, architectures
