@@ -7,8 +7,10 @@ Person(admin, "Trainer", "Analises the stability results, manages users, and pro
 
 System_Boundary(pivot, "PIVOT Software") { 
     Container(frontend, "Fronted application", "TBD", "Show visualization, user profiles and data")
-    Container(backend, "Server application", "TBD", "Data processing business logic")
-    ContainerDb(db, "Database", "TBD", "Store user data, session results")
+    Container(backend, "Server application", "Django", "Data processing business logic")
+    ContainerDb(db, "Relational DB", "PostgresSQL", "Store user data, session results")
+    ContainerDb(obj, "Object Storage", "MiniIO", "Store raw files")
+    ContainerDb(tims, "Time Series DB", "TBD", "Store the analyis and sensory data over time")
 }
 
 System_Ext(voice, "Voice analysis")
@@ -19,6 +21,9 @@ Rel(admin, frontend, "Uses")
 
 Rel(frontend, backend, "Requests data & Actions", "HTTPS")
 Rel(backend, db, "Reads and writes", "HTTP")
+Rel(backend, obj, "Reads and writes", "HTTP")
+Rel(backend, tims, "Reads and writes", "HTTP")
+
 
 Rel(backend, voice, "Sends raw data for voice analysis", "HTTPS")
 Rel(platform, backend, "Sends data to the server", "WIFI?")
