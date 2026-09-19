@@ -81,7 +81,7 @@ If we do files analysis of multiple files are difficult since multiple files nee
 - https://www.influxdata.com/time-series-database/
 
 
-## Comuncation with the board
+## Processing delegation
 What standard do we wanna use for communication
 1. **Process on board** - The board sens the data that needs to be visualized out to server or device not much processing outside
 2. **Server processes** - Data is sent to the server from the board than sent back to display after analysis
@@ -100,6 +100,44 @@ What standard do we wanna use for communication
 | Power / battery usage | 20% | 3 | 5 | 1 | 3 | 3 |
 | Number of to mobile | 1 | 1 | 2 | 1 | 1-2 | 3
 | **Total** | **100%** | 2.8 | 4.1 | 2.7 | 3.55 | 2.9 |
+
+## Communication with the board
+| Criterion | Weight | 1. BLE | 2. WIFI |
+|---|---|---|---|
+| Latency |20% |3|4|
+| Throughput |20%|1|5|
+| Time to connect |10%|4|2|
+| Connection stability |20%|3|4|
+| Range |5%|2|3|
+| Data integrity |15% |4|4|
+| Power usage |5%|5|2|
+| Protocol complexity|5%|4|3|
+| **Total**|**100%**|2.95|3.85|
+
+BLE ideally suited for initial configuration and WIFI for server communication
+
+## Wifi data streaming approaches
+
+-UDP - Acceptable loss at transit for better latency (live dashboard monitoring)
+
+-TCP - Data completeness over latency for analysis
+
+| Criterion | Weight | 1. UDP live + TCP at session end | 2. UDP live + TCP at intervals | 3. Single Websocket channel | 4. UDP live + continuous TCP upload | 5. MQTT | 6. gRPC bidirectional stream | 7. Preprocessing on Chip (paired with any before) |
+|---|---|---|---|---|---|---|---|---|
+| Real-time displaying |20% | 5 | 5 | 3 | 5 | 4 | 4 | - |
+| Near Real-time analysis |10% | 1 | 3 | 3 | 5 | 4 | 5 | +1 |
+| On-device complexity | 10% | 2 | 3 | 2 | 4 | 3 | 4 | -2 |
+| Server complexity |10%| 2 | 3 | 2 | 3 | 4 | 3 | +1 |
+| Jitter / possible delay |15% | 4 | 3 | 2 | 5 | 4 | 5 | +1 |
+| Data completeness |20% | 5 | 4 | 5 | 5 | 4 | 5 | -1 |
+| Power consumption |5% | 4 | 3 | 3 | 1 | 3 | 1 | -1 |
+| Local (on-device) storage | 5% | 1 | 2 | 3 | 5 | 3 | 4 | +1 |
+| Security |5% | 3 | 3 | 4 | 3 | 5 | 5 | 0 |
+| **Total**|**100%**|3.5|3.55|3.10|4.4|3.85|4.25|-0.05|
+
+Worth checking -> are we actually able to implement real-time analysis even if we have the data?
+
+
 
 ## AI
 - Desing comparison - Used to higlight missed points, identify additional pros const for certain decisions such as frameworks, architectures
