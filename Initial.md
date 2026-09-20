@@ -110,6 +110,10 @@ Well its not much different between what tech we choose experience determines de
 Wav is probably only storable as file in raw format while sensory data can be bot raw file or time seriesed. As mentioned above the separation depends on that decision in case we do time seriesed we can probably either do a module on the relational db that would probably reduce complexity or do a separate time seriesed database  
 If we do files analysis of multiple files are difficult since multiple files needs to be read and constant reading is required 
 
+### Why
+
+**Decision:** We're going with the triple setup (Relational + S3 + Time series). Technically it already wins on the criteria that reflect what the data actually needs. It fits data, query Flexibility, Performance, and Scalability so it's not purely a "fun" pick. Relational-only and relational+S3 don't teach us anything we haven't already practiced, while a time series database is something none of us have hands-on experience with. We're accepting the worst Setup complexity and worst Data protection/consistency difficulty of the three options in exchange for that, both because the data genuinely fits better, and because we want the added challenge and the experience of working with a time series database this semester.
+
 ### Refs 
 - https://www.youtube.com/watch?v=69Tzh_0lHJ8
 - https://www.influxdata.com/time-series-database/
