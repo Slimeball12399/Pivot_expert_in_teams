@@ -21,11 +21,45 @@ Performance efficiency | 5% | 3 | 5 | 1
 Security | 5% | 3 | 2 | 5
 TOTAL | 100% | 3.7 | 2.5 | 3.85
 
-Cost efficientcy the mobile is needed to configure the board and functially can allow for more integration but its higher cost to develop and you cannot look at it while practicing
+### Why
+
+**Cross-Platform Accessibility** 
+Web just needs a link/browser, no install, so a trainer can pull it up on any TV/laptop and a user on any phone. 
+Mobile needs an OS-specific install (iOS/Android split), which is still fine but a step behind. Desktop is worst here since it needs a per-OS install.
+
+**Cost Efficiency** 
+Cost efficientcy the mobile is needed to configure the board and functially can allow for more integration but its higher cost to develop and you cannot look at it while practicing.
+Web is the cheapest, and fastest. Desktop is worst, separate installers/builds per OS for a feature set.
+
+**Functional suitability** 
+Mobile and Web tie because both cover what we actually need: Mobile for device-level integration (talking to the board),
+Web for running/displaying training sessions. 
+Desktop scores poorly because we think it'ss just not actually suitable
+
+**Maintenance & Reliability**
+Web wins because it's one deployable that updates instantly for every user, easy to maintain as a team. 
+Mobile is behind because OS updates and user needs to update manually to get the latest update. 
+Desktop is worst, three separate OS builds (Windows/Mac/Linux) to keep working and we still need user to manually update if the desktop has new version.
+
+**Interaction capability**
+Mobile and Desktop tie: Both are good for live feedback during calibration. Web is behind because browsers restrict access to some native device features, so the in-session interaction is less rich than either native option.
+
+**Compatibility**
+Mobile wins because phones ship with the Bluetooth/WiFi radios needed to pair with the board directly. Desktop is close since most laptops also have that hardware. Web is not very good, because browser support for device pairing are generally inconsistent across browsers, so it's the least reliable option for actually talking to the board.
+
+**Performance efficiency**
+Desktop wins with dedicated hardware and no browser overhead, best for real-time processing/visualization. Mobile is capable but constrained by battery/thermal limits. Web is worst because it doesnt deliver the native experience.
+
+**Security** 
+Web wins because auth/data stays server-side over HTTPS with nothing sensitive stored on the device. Mobile is behind since tokens/data cached locally are exposed if the device is lost. Desktop is worst, sessions run on shared/practice-room computers are more likely to stay logged in or expose data to the next person using the machine.
+
+**Decision:** Web is prioritized as the platform for MVP - it wins the criteria we weighted highest (Accessibility, Maintenance, Cost, Security) and those map directly to what an MVP needs: something cheap to build and easy to keep running for a small 3 student team. Desktop is dropped entirely, it doesn't lead on anything except the lowest-weighted criterion (Performance) and costs the most to maintain. Mobile stays in scope alongside Web (not deferred) because it's the only option that scores well on Compatibility and covers device configuration, if stakeholder feedback later asks for a fuller mobile experience, Compatibility and Interaction capability are exactly where the data already says Mobile is strongest.
 
 - Ok so no booking system is really needed it might be obsolete -> 
 - Mobile app with user profile, their results, and configing the device from admin account -> user account control -> Possibly mathching based on voice
 - Web is for running the training etc 
+
+
 
 ### Refs
 - https://www.3appes.com/web-vs-mobile-vs-desktop/
