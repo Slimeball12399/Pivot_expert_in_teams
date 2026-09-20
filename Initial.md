@@ -151,6 +151,24 @@ What standard do we wanna use for communication
 | Number of to mobile | 1 | 1 | 2 | 1 | 1-2 | 3
 | **Total** | **100%** | 2.8 | 4.1 | 2.7 | 3.55 | 2.9 |
 
+### Why
+
+**Performance** ties Server processes and Stream to both at the top, since both hand the heavy analysis to the server, which has far more compute available than the board or a phone. 
+
+**Latency** favours Process on board, since results appear without a network round trip, the data is processed quickly. Mobile as gateway scores lowest, raw data has to reach the phone and then be forwarded again to the server before any result comes back, two hops instead of one.
+
+**Ease of implementation** favours Server processes, a single server-side analysis pipeline is the standard client-server pattern the team already has experience with. Process on board scores lowest, real-time processing on embedded hardware is a more specialised low level coding skills that the team prefer to avoid.
+
+**User experience** favours Stream to both, the mobile side can show something immediately from the raw stream while the server works on the deeper analysis in parallel, rather than the user waiting on one path for everything.
+
+**Reliability (network dependence)** favours Process on board, since it keeps working without a network connection, nothing is sent out to fail on the way. Mobile as gateway scores lowest, it depends on two connections holding, phone to board and phone to server, so there are more points where it can break.
+
+**Hardware requirements (board)** favours every option that keeps the analysis off the board (Server processes, Mobile processes, Mobile as gateway), since the board itself only has to move data rather than run the compute-heavy processing. Process on board scores lowest for the same reason, it demands the most capable and expensive board hardware, at a stage where the hardware isn't yet built to spec.
+
+**Power / battery usage** favours Server processes, offloading the heavy analysis to a mains-powered server is more power-efficient than making a battery-constrained device do it. Mobile processes scores lowest, running sustained analysis on the phone drains its battery fastest of any option.
+
+**Decision:** Server processes wins overall not by dominating every criterion, but by winning or tying the top score on the two highest-weighted ones it's actually built for, Power / battery usage and (tied) Performance, while also being the easiest to implement given the team's existing server-side experience. It gives up Latency and Reliability to Process on board, but Process on board is ruled out anyway by its Hardware requirements score, the board isn't at a stage where it can realistically carry that processing load. Stream to both is the closest competitor and wins User experience, but its added complexity, two simultaneous data paths to coordinate, is exactly what costs it on Ease of implementation, and it doesn't lead on the highest-weighted criteria the way Server processes does.
+
 ## Communication with the board
 | Criterion | Weight | 1. BLE | 2. WIFI |
 |---|---|---|---|
