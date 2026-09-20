@@ -87,9 +87,9 @@ TOTAL | 100% | 4 | 2.75 | 3.55 | 3.75 | 3.45
 
 **Performance.** .ASP.NET Core wins, running on .NET's JIT-compiled runtime gives it an edge over the interpreted runtimes the other options run on, with Node.js close behind thanks to async I/O. FastAPI and Laravel are average, and Django is worst: the "batteries included" overhead that helps Maintainability and Function set costs it here.
 
-**Decision:** Django wins overall not because it dominates any single criterion but because it scores at or near the top on the most criteria: Maintainability, Team Familiarity, Function set, Security, Data Processing Capabilities, and Visualization all favour it, and the last two matter directly since voice and movement analysis is the core of what this product does. Node.js is the closest competitor almost entirely because it wins Integration, which happens to be the single highest-weighted criterion, real-time board data handling is a genuine strength of Node.js, and it's worth naming as the main thing Django gives up. 
+**Decision:** Django wins overall not because it dominates any single criterion but because it scores at or near the top on the most criteria: Maintainability, Team Familiarity, Function set, Security, Data Processing Capabilities, and Visualization all favour it, and the last two matter directly since voice and movement analysis is the core of what this product does. Node.js is the closest competitor almost entirely because it wins Integration, which happens to be the single highest-weighted criterion, real-time board data handling is a genuine strength of Node.js, and it is worth naming as the main thing Django gives up. Django's advantage on Data Processing Capabilities and Visualization directly serves the analysis side of the product, and combined with the team's existing familiarity with it and its stronger default security, it is the safer overall choice than trading that breadth for a single integration-focused win. Laravel is ruled out for the same reason it loses on Integration and Data Processing, a PHP framework does not fit a data-analysis-heavy backend. FastAPI and .ASP.NET Core both land in between without leading anywhere important enough to change the outcome.
 
-DISCLAIMER: Most of us doesn't know well about ASP.NET, therefore grading were based on our discussion and quick overview, not because we are very familar with it.
+**Note:** the team has limited hands-on experience with .ASP.NET Core, so its scores are based on team discussion and a brief review rather than direct familiarity, unlike the other four options.
 
 ### Refs
 - https://blog.pacificcert.com/iso-25010-software-product-quality-model/
@@ -157,7 +157,7 @@ What standard do we wanna use for communication
 
 **Latency** favours Process on board, since results appear without a network round trip, the data is processed quickly. Mobile as gateway scores lowest, raw data has to reach the phone and then be forwarded again to the server before any result comes back, two hops instead of one.
 
-**Ease of implementation** favours Server processes, a single server-side analysis pipeline is the standard client-server pattern the team already has experience with. Process on board scores lowest, real-time processing on embedded hardware is a more specialised low level coding skills that the team prefer to avoid.
+**Ease of implementation** favours Server processes, a single server-side analysis pipeline is the standard client-server pattern the team already has experience with. Process on board scores lowest, real-time processing on embedded hardware requires specialised low-level coding skills the team does not currently have.
 
 **User experience** favours Stream to both, the mobile side can show something immediately from the raw stream while the server works on the deeper analysis in parallel, rather than the user waiting on one path for everything.
 
