@@ -35,7 +35,14 @@ python manage.py makemigrations   # after changing models
 python manage.py migrate
 python manage.py test
 ```
-
+## Docker
+```bash
+docker compose up --build                              # build 
+docker compose exec server python manage.py migrate    # apply database migrations
+docker compose exec server python manage.py createsuperuser
+docker compose down -v     # deletes the volumes, so all DB data is lost
+```
+Check it works: open http://localhost:8000/api/health/ 
 ## Notes
 
 - The database is SQLite (`db.sqlite3`) for development.

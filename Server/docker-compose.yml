@@ -1,0 +1,64 @@
+services:
+  server:
+    build: .
+    env_file: .env
+    environment:
+      POSTGRES_HOST: db
+    ports:
+      - "8000:8000"         # HTTP / API
+      - "9000:9000/udp"     # live board telemetry (SCRUM-178)
+      - "9001:9001"         # TCP batch ingestion (SCRUM-183)
+    depends_on:
+      db:
+        condition: service_healthy
+      timeseries:
+        condition: service_healthy
+      minio:
+        condition: service_started
+
+  db:
+    image: postgres:17
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB}
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"         # only so you can connect with DBeaver/psql from your laptop
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
+      interval: 5s
+      retries: 10
+
+  timeseries:
+    image: timescale/timescaledb:latest-pg17
+    environment:
+      POSTGRES_DB: telemetry
+      POSTGRES_USER: ${TS_USER}
+      POSTGRES_PASSWORD: ${TS_PASSWORD}
+    volumes:
+      - tsdata:/var/lib/postgresql/data
+    ports:
+      - "5433:5432"         # different host port so it doesn't clash with db
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${TS_USER} -d telemetry"]
+      interval: 5s
+      retries: 10
+
+  minio:                    # S3-compatible object store for talk audio
+    image: cgr.dev/chainguard/minio:latest
+    command: server /data --console-address ":9091"
+    environment:
+      MINIO_ROOT_USER: ${MINIO_USER}
+      MINIO_ROOT_PASSWORD: ${MINIO_PASSWORD}
+    volumes:
+      - miniodata:/data
+    ports:
+      - "9090:9000"         # S3 API
+      - "9091:9091"         # web console
+
+volumes:
+  pgdata:
+  tsdata:
+  miniodata:
