@@ -2,6 +2,7 @@ from django.shortcuts import render
 
 # Create your views here.
 from django.db import connection
+from django.http import HttpResponse
 from rest_framework.decorators import api_view
 from rest_framework.response import Response
 
@@ -13,3 +14,10 @@ def health(request):
     except Exception:
         db = "down"
     return Response({"status": "ok", "database": db})
+
+def hello(request):
+    return HttpResponse(
+        "<!doctype html>"
+        "<html><head><title>Pivot</title></head>"
+        "<body><h1>Hello world</h1></body></html>"
+    )

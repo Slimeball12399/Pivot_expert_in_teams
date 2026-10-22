@@ -6,3 +6,9 @@ class HealthTests(TestCase):
         response = self.client.get("/health/")
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response.json(), {"status": "ok", "database": "ok"})
+
+
+class HelloTests(TestCase):
+    def test_hello(self):
+        response = self.client.get("/")
+        self.assertContains(response, "Hello world")
