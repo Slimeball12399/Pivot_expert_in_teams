@@ -1,8 +1,15 @@
-from django.db import models
 from django.contrib.auth.models import AbstractUser
+from django.core.validators import MaxValueValidator, MinValueValidator
+from django.db import models
+from phonenumber_field.modelfields import PhoneNumberField
 
-# Create your models here.
 from .manager import UserManager
+from .validators import (
+    MAX_HEIGHT_CM,
+    MIN_HEIGHT_CM,
+    validate_danish_phone_number,
+    validate_min_age,
+)
 
 
 class User(AbstractUser):
@@ -14,7 +21,10 @@ class User(AbstractUser):
     email = models.EmailField(unique=True)
     first_name = models.CharField(max_length=150)
     last_name = models.CharField(max_length=150)
-    phone_number = models.CharField(max_length=20, blank=True)
+    # Optional on the model so createsuperuser doesn't ask for it;
+    # register_speaker() requires it for speakers.
+    phone_number = PhoneNumberField(
+        region="DK", blank=True, validators=[validate_danish_phone_number])
     role = models.CharField(
         max_length=20, choices=Role.choices, default=Role.SPEAKER)
 
@@ -42,8 +52,13 @@ class SpeakerProfile(models.Model):
         blank=True,
         related_name="speakers",
     )
-    birth_date = models.DateField()
-    height_cm = models.PositiveSmallIntegerField()
+    birth_date = models.DateField(validators=[validate_min_age])
+    height_cm = models.PositiveSmallIntegerField(
+        validators=[
+            MinValueValidator(MIN_HEIGHT_CM),
+            MaxValueValidator(MAX_HEIGHT_CM),
+        ]
+    )
     improvement_goals = models.TextField(blank=True)
 
 # Invite model as a next step later

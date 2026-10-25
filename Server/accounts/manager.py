@@ -1,16 +1,39 @@
 from django.contrib.auth.models import BaseUserManager
+from django.contrib.auth.password_validation import validate_password
+from django.core.exceptions import ValidationError
 from django.db import transaction
 
 
 class UserManager(BaseUserManager):
     use_in_migrations = True
 
+    def build_user(self, email, password=None, **extra_fields):
+        """Return a validated, unsaved user.
+
+        Runs the AUTH_PASSWORD_VALIDATORS and every model field validator
+        (full_clean), and raises one ValidationError with all errors found.
+        """
+        user = self.model(email=self.normalize_email(email), **extra_fields)
+
+        errors = {}
+        if password is not None:
+            try:
+                validate_password(password, user)
+            except ValidationError as e:
+                errors["password"] = e.messages
+        user.set_password(password)  # None gives an unusable password
+
+        try:
+            user.full_clean()
+        except ValidationError as e:
+            e.update_error_dict(errors)
+
+        if errors:
+            raise ValidationError(errors)
+        return user
+
     def create_user(self, email, password=None, **extra_fields):
-        if not email:
-            raise ValueError("Email is required")
-        email = self.normalize_email(email)
-        user = self.model(email=email, **extra_fields)
-        user.set_password(password)
+        user = self.build_user(email, password, **extra_fields)
         user.save(using=self._db)
         return user
 
