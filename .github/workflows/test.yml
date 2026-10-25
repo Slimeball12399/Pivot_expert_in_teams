@@ -1,0 +1,28 @@
+name: test
+
+# Runs the Django tests on every pull request. Never deploys.
+on:
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: Server
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Create a throwaway .env for CI
+        run: cp .env.example .env
+
+      - name: Build the server image
+        run: docker compose build server
+
+      - name: Run Django tests
+        run: docker compose run --rm server python manage.py test
+
+      - name: Clean up containers
+        if: always()
+        run: docker compose down -v
