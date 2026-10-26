@@ -19,35 +19,51 @@ classDiagram
   class User {
     +username = None
     +email unique
-    +role: admin | learner
+    +first_name required
+    +last_name required
+    +phone_number: Danish, optional
+    +role: admin | speaker
     +USERNAME_FIELD = "email"
     +REQUIRED_FIELDS = [first_name, last_name]
     +objects: UserManager
   }
   class UserManager {
-    +create_user(email, password)
-    +create_superuser(email, password)
+    +build_user(email, password, **extra_fields)
+    +create_user(email, password, **extra_fields)
+    +create_superuser(email, password, **extra_fields)
   }
   class AdminProfile {
     +user: OneToOne User
-    +admin-only fields
   }
   class SpeakerProfile {
     +user: OneToOne User
-    +admin: FK AdminProfile
-    +learner-only fields
+    +admin: FK AdminProfile, nullable
+    +birth_date: min age 16
+    +height_cm: 100-250
+    +improvement_goals: optional
+  }
+  class Consent {
+    +user: FK User
+    +purpose: privacy_notice | audio_storage | research
+    +notice_version
+    +granted_at
+    +withdrawn_at: nullable
   }
   AbstractUser <|-- User : inherits
   User ..> UserManager : objects
   User "1" -- "0..1" AdminProfile : admin_profile
-  User "1" -- "0..1" SpeakerProfile : learner_profile
-  AdminProfile "1" -- "0..*" SpeakerProfile : learners
+  User "1" -- "0..1" SpeakerProfile : speaker_profile
+  AdminProfile "1" -- "0..*" SpeakerProfile : speakers
+  User "1" -- "0..*" Consent : consents
 ```
 
 https://docs.djangoproject.com/en/dev/topics/auth/customizing/#extending-django-s-default-user 
 
 ## User & User Manager
 To remove the username for our application we need to define a new user manager as the default one only supports registering with username. The rest is kept becuase they are relevant to our application
+
+## Concent
+In order to be GDPR compliant we need to ensure that the user has a chance to accept or withdraw concents and for that we need a table storing this to avoid polluting the user model
 
 ### Profiles
 To keep our app simple and isolate the login and basic user functionality we are using profiles for both admin and speaker this allows the application to handle users the same way but allows for the role based customization

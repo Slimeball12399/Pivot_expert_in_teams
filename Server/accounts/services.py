@@ -1,18 +1,25 @@
 from django.core.exceptions import ValidationError
 from django.db import transaction
 
-from .models import SpeakerProfile, User
+from .models import Consent, SpeakerProfile, User
 
 
 @transaction.atomic
 def register_speaker(*, email, password, first_name, last_name, phone_number,
-                     birth_date, height_cm, improvement_goals=""):
-    """Create a speaker: the User and its SpeakerProfile together, or nothing.
+                     birth_date, height_cm, consents, improvement_goals=""):
 
-    Validates both models first and raises one ValidationError with every
-    error from both.
-    """
     errors = {}
+
+    consents = set(consents)
+    unknown = consents - set(Consent.Purpose.values)
+    missing = Consent.REQUIRED_FOR_SPEAKERS - consents
+    if unknown:
+        errors.setdefault("consents", []).append(
+            f"Unknown consent: {', '.join(sorted(unknown))}.")
+    if missing:
+        labels = ", ".join(sorted(Consent.Purpose(p).label for p in missing))
+        errors.setdefault("consents", []).append(
+            f"You must accept: {labels}.")
 
     user = None
     try:
@@ -48,4 +55,9 @@ def register_speaker(*, email, password, first_name, last_name, phone_number,
     user.save()
     profile.user = user
     profile.save()
+    Consent.objects.bulk_create([
+        Consent(user=user, purpose=purpose,
+                notice_version=Consent.current_version(purpose))
+        for purpose in sorted(consents)
+    ])
     return user

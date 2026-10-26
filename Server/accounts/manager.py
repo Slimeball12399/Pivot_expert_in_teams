@@ -38,6 +38,11 @@ class UserManager(BaseUserManager):
         return user
 
     def create_superuser(self, email, password=None, **extra_fields):
+        """Create an admin with an AdminProfile and every consent.
+
+        Admins must accept all consents. The createsuperuser command asks for
+        that before calling this, so only call it after the person agreed.
+        """
         extra_fields.setdefault("role", "admin")
         extra_fields.setdefault("is_staff", True)
         extra_fields.setdefault("is_superuser", True)
@@ -50,10 +55,15 @@ class UserManager(BaseUserManager):
             raise ValueError("Superuser must have is_superuser=True.")
 
         # Imported here because models.py imports this file (avoids a circular import).
-        from .models import AdminProfile
+        from .models import AdminProfile, Consent
 
-        # Create the user and its admin profile together, or neither.
+        # Create the user, its admin profile and its consents together, or nothing.
         with transaction.atomic(using=self._db):
             user = self.create_user(email, password, **extra_fields)
             AdminProfile.objects.using(self._db).create(user=user)
+            Consent.objects.using(self._db).bulk_create([
+                Consent(user=user, purpose=purpose,
+                        notice_version=Consent.current_version(purpose))
+                for purpose in Consent.Purpose.values
+            ])
         return user

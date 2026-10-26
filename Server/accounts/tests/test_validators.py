@@ -37,43 +37,43 @@ class ValidateMinAgeTests(SimpleTestCase):
         patcher.start()
         self.addCleanup(patcher.stop)
 
-    def test_accepts_old_enough(self):
-        for birth_date in [
-            date(TODAY.year - MIN_AGE, TODAY.month, TODAY.day),  # turns MIN_AGE today
-            date(TODAY.year - 40, 1, 1),
-        ]:
-            with self.subTest(birth_date=birth_date):
+    def test_validate_min_age(self):
+        with self.subTest("accepts old enough"):
+            for birth_date in [
+                date(TODAY.year - MIN_AGE, TODAY.month, TODAY.day),  # turns MIN_AGE today
+                date(TODAY.year - 40, 1, 1),
+            ]:
                 validate_min_age(birth_date)  # must not raise
 
-    def test_rejects_too_young(self):
-        birth_date = date(TODAY.year - MIN_AGE, TODAY.month, TODAY.day + 1)  # turns MIN_AGE tomorrow
-        with self.assertRaises(ValidationError) as ctx:
-            validate_min_age(birth_date)
-        self.assertEqual(ctx.exception.code, "too_young")
+        with self.subTest("rejects too young"):
+            birth_date = date(TODAY.year - MIN_AGE, TODAY.month, TODAY.day + 1)  # turns MIN_AGE tomorrow
+            with self.assertRaises(ValidationError) as ctx:
+                validate_min_age(birth_date)
+            self.assertEqual(ctx.exception.code, "too_young")
 
-    def test_rejects_future_birth_date(self):
-        with self.assertRaises(ValidationError) as ctx:
-            validate_min_age(TODAY + timedelta(days=1))
-        self.assertEqual(ctx.exception.code, "future_birth_date")
+        with self.subTest("rejects a birth date in the future"):
+            with self.assertRaises(ValidationError) as ctx:
+                validate_min_age(TODAY + timedelta(days=1))
+            self.assertEqual(ctx.exception.code, "future_birth_date")
 
-    def test_uses_utc_date(self):
-        # 23:30 UTC on 14 June is already 15 June in Copenhagen,
-        # but in UTC the 15 June birthday hasn't happened yet.
-        with frozen_now(datetime(2026, 6, 14, 23, 30, tzinfo=timezone.utc)):
-            with self.assertRaises(ValidationError):
-                validate_min_age(date(2026 - MIN_AGE, 6, 15))
+        with self.subTest("uses the UTC date"):
+            # 23:30 UTC on 14 June is already 15 June in Copenhagen,
+            # but in UTC the 15 June birthday hasn't happened yet.
+            with frozen_now(datetime(2026, 6, 14, 23, 30, tzinfo=timezone.utc)):
+                with self.assertRaises(ValidationError):
+                    validate_min_age(date(2026 - MIN_AGE, 6, 15))
 
 
 class ValidateDanishPhoneNumberTests(SimpleTestCase):
-    def test_accepts_danish_number(self):
-        validate_danish_phone_number(PhoneNumber.from_string("+4520123456"))
+    def test_validate_danish_phone_number(self):
+        with self.subTest("accepts a Danish number"):
+            validate_danish_phone_number(PhoneNumber.from_string("+4520123456"))
 
-    def test_ignores_empty_value(self):
-        # Blank is handled by the field itself (blank=True), not this validator.
-        validate_danish_phone_number("")
+        with self.subTest("ignores an empty value"):
+            # Blank is handled by the field itself (blank=True), not this validator.
+            validate_danish_phone_number("")
 
-    def test_rejects_foreign_numbers(self):
         for number in ["+36201234567", "+46701234567", "+299321000"]:
-            with self.subTest(number=number):
+            with self.subTest("rejects a foreign number", number=number):
                 with self.assertRaises(ValidationError):
                     validate_danish_phone_number(PhoneNumber.from_string(number))

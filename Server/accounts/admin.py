@@ -38,7 +38,8 @@ class UserAdmin(BaseUserAdmin):
     form = UserEditForm
     add_form = UserCreationForm
 
-    list_display = ["email", "first_name", "last_name", "role", "is_active", "is_superuser"]
+    list_display = ["email", "first_name", "last_name",
+                    "role", "is_active", "is_superuser"]
     list_filter = ["role", "is_active", "is_superuser"]
     search_fields = ["email", "first_name", "last_name"]
     ordering = ["email"]
@@ -46,8 +47,10 @@ class UserAdmin(BaseUserAdmin):
     # Edit page. groups and user_permissions are left out on purpose (we use `role`).
     fieldsets = [
         (None, {"fields": ["email", "password"]}),
-        ("Personal info", {"fields": ["first_name", "last_name", "phone_number"]}),
-        ("Role and access", {"fields": ["role", "is_active", "is_staff", "is_superuser"]}),
+        ("Personal info", {"fields": [
+         "first_name", "last_name", "phone_number"]}),
+        ("Role and access", {"fields": [
+         "role", "is_active", "is_staff", "is_superuser"]}),
         ("Dates", {"fields": ["last_login", "date_joined"]}),
     ]
     # Create page.

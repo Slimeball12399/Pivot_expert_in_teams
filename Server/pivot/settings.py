@@ -38,6 +38,9 @@ AUTH_USER_MODEL = "accounts.User"
 # Application definition
 
 INSTALLED_APPS = [
+    # First, so its createsuperuser command overrides Django's own.
+    'accounts',
+
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
@@ -49,7 +52,6 @@ INSTALLED_APPS = [
     'phonenumber_field',
 
     'core',
-    'accounts',
     'web',
     'api'
 ]
@@ -143,4 +145,16 @@ MAILERS = {
     'default': {
         'BACKEND': 'django.core.mail.backends.console.EmailBackend',
     },
+}
+
+
+# Consents
+# Current version of the text behind each consent purpose (keys match
+# accounts.models.Consent.Purpose). Bump a version when that text changes;
+# users must then accept the new version. Stored on each Consent row.
+
+CONSENT_VERSIONS = {
+    "privacy_notice": "1",
+    "audio_storage": "1",
+    "research": "1",
 }
