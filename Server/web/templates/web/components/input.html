@@ -1,0 +1,34 @@
+{% comment %}
+Input: a labelled text input. Styles in web/css/input.css.
+
+  {% include "web/components/input.html" with id="email" label="Email" type="email" autocomplete="email" required=True %}
+
+  id            input id, also the name unless `name` is given (required)
+  label         visible label (required)
+  type          "text" (default), "email", "tel", "password", ...
+  name, value, placeholder, autocomplete, required
+  hint          help text under the field
+  error         error text under the field; also marks the field invalid
+  action_text, action_url   a text button on the right of the label row (e.g. "Forgot password?")
+  reveal        adds a show/hide button for passwords (needs web/js/password-toggle.js)
+{% endcomment %}
+<div class="input-field{% if error %} input-field-error{% endif %}">
+    <div class="input-label-row">
+        <label class="input-label" for="{{ id }}">{{ label }}</label>
+        {% if action_url %}{% include "web/components/button.html" with text=action_text href=action_url variant="text" %}{% endif %}
+    </div>
+    <div class="input-control">
+        <input class="input" id="{{ id }}" name="{{ name|default:id }}" type="{{ type|default:'text' }}"{% if value %} value="{{ value }}"{% endif %}{% if placeholder %} placeholder="{{ placeholder }}"{% endif %}{% if autocomplete %} autocomplete="{{ autocomplete }}"{% endif %}{% if required %} required{% endif %}{% if error %} aria-invalid="true"{% endif %}{% if error or hint %} aria-describedby="{{ id }}-message"{% endif %}>
+        {% if reveal %}
+        <button type="button" class="input-reveal" data-password-toggle="{{ id }}" aria-label="Show password" aria-pressed="false">
+            <span class="input-reveal-show">{% heroicon_outline "eye" size=20 aria_hidden="true" %}</span>
+            <span class="input-reveal-hide">{% heroicon_outline "eye-slash" size=20 aria_hidden="true" %}</span>
+        </button>
+        {% endif %}
+    </div>
+    {% if error %}
+    <p class="input-message input-message-error" id="{{ id }}-message">{{ error }}</p>
+    {% elif hint %}
+    <p class="input-message" id="{{ id }}-message">{{ hint }}</p>
+    {% endif %}
+</div>

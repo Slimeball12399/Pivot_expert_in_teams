@@ -1,0 +1,52 @@
+/* Pivot colours, from the design system. */
+
+:root {
+    /* Primary */
+    --navy: #123048;
+    --rose: #e3b7cb;
+    --paper: #f0f0f0;
+
+    /* Secondary: feedback only */
+    --green: #5cbf8d;   /* success */
+    --yellow: #c09b27;  /* warning */
+    --red: #f03f41;     /* error, recording */
+    --blue: #183b89;    /* info */
+    --violet: #824299;  /* not assigned yet */
+
+    /* Light theme */
+    --background: var(--paper);
+    --text: var(--navy);
+    color-scheme: light;
+}
+
+/* Dark theme, set by theme.js as data-theme="dark" on <html>. */
+[data-theme="dark"] {
+    --background: var(--navy);
+    --text: var(--paper);
+    color-scheme: dark;
+}
+
+/* Fonts from Google Fonts (see base.html): Jost stands in for Futura, Outfit for Garet. */
+body {
+    margin: 0;
+    background: var(--background);
+    color: var(--text);
+    font-family: "Outfit", sans-serif;
+}
+
+/* Links take the surrounding text colour instead of the browser's blue/purple. */
+a {
+    color: inherit;
+}
+
+h1, h2, h3, h4, h5, h6 {
+    font-family: "Jost", sans-serif;
+    /* Browser defaults are 0.67em-2.33em above and below, which leaves big gaps. */
+    margin: 0 0 8px;
+    line-height: 1.15;
+}
+
+/* One logo per theme. */
+.logo-dark { display: none; }
+[data-theme="dark"] .logo-light { display: none; }
+[data-theme="dark"] .logo-dark { display: inline; }

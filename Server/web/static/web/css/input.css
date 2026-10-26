@@ -1,0 +1,106 @@
+/* Input component (web/components/input.html and password_input.html). */
+
+.input-field {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.input-label-row {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 16px;
+}
+
+.input-label {
+    font-size: 14px;
+    font-weight: 500;
+}
+
+.input-control {
+    position: relative;
+    display: flex;
+    align-items: center;
+}
+
+.input {
+    box-sizing: border-box;
+    width: 100%;
+    height: 44px;
+    padding: 0 16px;
+    border: 1px solid color-mix(in srgb, var(--text) 55%, transparent);
+    border-radius: 8px;
+    background: transparent;
+    color: var(--text);
+    font: inherit;
+    font-size: 16px;
+}
+
+.input::placeholder {
+    color: color-mix(in srgb, var(--text) 55%, transparent);
+}
+
+.input:focus-visible {
+    outline: 3px solid var(--text);
+    outline-offset: 1px;
+}
+
+.input-field-error .input {
+    border: 2px solid var(--red);
+}
+
+.input-message {
+    margin: 0;
+    font-size: 14px;
+}
+
+/* Red is for borders and icons only (too low contrast as text), so the error text stays in the text colour. */
+.input-message-error::before {
+    content: "";
+    display: inline-block;
+    width: 8px;
+    height: 8px;
+    margin-right: 8px;
+    border-radius: 50%;
+    background: var(--red);
+}
+
+/* Show/hide password button, inside the right end of the input. */
+.input-control:has(.input-reveal) .input {
+    padding-right: 48px;
+}
+
+.input-reveal {
+    position: absolute;
+    right: 4px;
+    display: inline-grid;
+    place-items: center;
+    width: 36px;
+    height: 36px;
+    padding: 0;
+    border: 0;
+    border-radius: 6px;
+    background: transparent;
+    color: var(--text);
+    cursor: pointer;
+}
+
+.input-reveal:focus-visible {
+    outline: 3px solid var(--text);
+}
+
+.input-reveal svg {
+    display: block;
+    width: 20px;
+    height: 20px;
+}
+
+.input-reveal-hide,
+.input-reveal[aria-pressed="true"] .input-reveal-show {
+    display: none;
+}
+
+.input-reveal[aria-pressed="true"] .input-reveal-hide {
+    display: block;
+}

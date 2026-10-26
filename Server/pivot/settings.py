@@ -52,6 +52,7 @@ INSTALLED_APPS = [
     'phonenumber_field',
     'drf_spectacular',
     'drf_spectacular_sidecar',  # serves the Swagger UI JS and CSS ourselves, no CDN
+    'heroicons',
 
     'core',
     'web',
@@ -64,6 +65,7 @@ MIDDLEWARE = [
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
+    "django.contrib.auth.middleware.LoginRequiredMiddleware",
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
 ]
@@ -81,11 +83,15 @@ TEMPLATES = [
                 'django.contrib.auth.context_processors.auth',
                 'django.contrib.messages.context_processors.messages',
             ],
+            # Heroicons tags ({% heroicon_outline "sun" %}) in every template,
+            # including included partials, without {% load heroicons %}.
+            'builtins': ['heroicons.templatetags.heroicons'],
         },
     },
 ]
 
 WSGI_APPLICATION = 'pivot.wsgi.application'
+LOGIN_URL = "web:login"
 
 
 # Database

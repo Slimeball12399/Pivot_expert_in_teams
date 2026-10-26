@@ -1,0 +1,47 @@
+{% extends "web/base.html" %}
+{% load static %}
+
+{% block title %}Log in | Pivot{% endblock %}
+
+{% block head %}
+<link rel="stylesheet" href="{% static 'web/css/login.css' %}">
+{% endblock %}
+
+{# No site header on the login page. #}
+{% block header %}{% endblock %}
+
+{% block content %}
+<div class="theme-toggle-corner">
+    {% include "web/components/theme_toggle.html" %}
+</div>
+<div class="login">
+{# data-theme="dark" keeps this side dark whatever the toggle says (navy background, light text, light logo). Only the example image follows the theme. #}
+<section class="login-intro" data-theme="dark">
+    <div>
+        <div class="logo">
+            <img class="logo-light" src="{% static 'web/img/pivot-logo.svg' %}" alt="Pivot" height="40">
+            <img class="logo-dark" src="{% static 'web/img/pivot-logo-on-dark.svg' %}" alt="Pivot" height="40">
+        </div>
+        <h1>Steady stance.</h1>
+        <h1 class="login-intro-accent">Stronger voice.</h1>
+        <p>Live voice and balance feedback for speakers and their trainers, measured while you talk on the board.</p>
+        <img class="login-image login-image-light" src="{% static 'web/img/live-feedback-example.svg' %}" alt="Example of live feedback: pitch over the last 40 seconds, mostly inside the target range, and a speech score of 82">
+        <img class="login-image login-image-dark" src="{% static 'web/img/live-feedback-example-dark.svg' %}" alt="Example of live feedback: pitch over the last 40 seconds, mostly inside the target range, and a speech score of 82">
+    </div>
+    <div class="login-intro-footer"><span>Expert in teams project</span><span>Built with all the good speakers</span><span>&copy; 2026 SDU</span></div>
+</section>
+<section class="login-side">
+    <div>
+    <h2>Login</h2>
+    <form method="post" action="{% url 'web:login' %}">
+        {% csrf_token %}
+        {% include "web/components/input.html" with id="email" label="Email" type="email" autocomplete="email" required=True %}
+        {% include "web/components/password_input.html" with forgot_url="#" %}
+        {% include "web/components/checkbox.html" with id="remember_me" label="Keep me logged in on this device" %}
+        {% include "web/components/button.html" with text="Log in" type="submit" full_width=True %}
+    </form>
+    <p><small>We use your voice and balance data only to give you feedback. Read how we handle it in our <a href="#">privacy notice</a>.</small></p>
+    </div>
+</section>
+</div>
+{% endblock %}

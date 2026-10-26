@@ -1,0 +1,49 @@
+/* Theme toggle: one button, showing the icon of the current choice. */
+
+.theme-toggle {
+    display: inline-grid;
+    place-items: center;
+    width: 36px;
+    height: 36px;
+    padding: 0;
+    border: 1px solid transparent;
+    border-radius: 8px;
+    background: transparent;
+    color: var(--text);
+    cursor: pointer;
+}
+
+.theme-toggle:hover {
+    background: var(--rose);
+    color: var(--navy);
+}
+
+.theme-toggle:focus-visible {
+    outline: 2px solid var(--text);
+    outline-offset: 2px;
+}
+
+/* theme.js sets data-theme-choice on <html> before the page is drawn,
+   so the right icon shows straight away. */
+.theme-toggle-icon {
+    display: none;
+}
+
+.theme-toggle-icon svg {
+    display: block;
+    width: 20px;
+    height: 20px;
+}
+
+[data-theme-choice="system"] .theme-toggle-icon[data-icon-for="system"],
+[data-theme-choice="light"] .theme-toggle-icon[data-icon-for="light"],
+[data-theme-choice="dark"] .theme-toggle-icon[data-icon-for="dark"] {
+    display: block;
+}
+
+/* Toggle pinned to the top right corner of the screen (used on pages without the header). */
+.theme-toggle-corner {
+    position: absolute;
+    top: 16px;
+    right: 16px;
+}

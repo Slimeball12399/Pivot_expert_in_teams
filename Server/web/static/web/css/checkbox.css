@@ -1,0 +1,57 @@
+/* Checkbox component (web/components/checkbox.html). */
+
+.checkbox {
+    display: inline-flex;
+    align-items: center;
+    gap: 12px;
+    font-size: 14px;
+    cursor: pointer;
+}
+
+/* The real checkbox stays in the page for keyboard and screen readers, just invisible. */
+.checkbox-input {
+    position: absolute;
+    opacity: 0;
+    width: 1px;
+    height: 1px;
+}
+
+.checkbox-box {
+    display: inline-grid;
+    place-items: center;
+    flex: none;
+    width: 22px;
+    height: 22px;
+    box-sizing: border-box;
+    border: 1px solid color-mix(in srgb, var(--text) 55%, transparent);
+    border-radius: 4px;
+    color: var(--paper);
+}
+
+.checkbox-box svg {
+    display: block;
+    width: 16px;
+    height: 16px;
+    visibility: hidden;
+}
+
+/* Checked: navy with a paper tick in light mode, rose with a navy tick in dark mode. */
+.checkbox-input:checked + .checkbox-box {
+    border-color: var(--navy);
+    background: var(--navy);
+}
+
+[data-theme="dark"] .checkbox-input:checked + .checkbox-box {
+    border-color: var(--rose);
+    background: var(--rose);
+    color: var(--navy);
+}
+
+.checkbox-input:checked + .checkbox-box svg {
+    visibility: visible;
+}
+
+.checkbox-input:focus-visible + .checkbox-box {
+    outline: 3px solid var(--text);
+    outline-offset: 2px;
+}

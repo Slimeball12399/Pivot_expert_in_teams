@@ -1,0 +1,67 @@
+/* Button component (web/components/button.html). */
+
+.button {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    box-sizing: border-box;
+    height: 44px;
+    padding: 0 24px;
+    border: 2px solid transparent;
+    border-radius: 8px;
+    font-family: "Jost", sans-serif;
+    font-size: 16px;
+    font-weight: 500;
+    line-height: 1;
+    text-decoration: none;
+    white-space: nowrap;
+    cursor: pointer;
+}
+
+.button:focus-visible {
+    outline: 3px solid var(--text);
+    outline-offset: 2px;
+}
+
+.button:disabled {
+    opacity: 0.45;
+    cursor: not-allowed;
+}
+
+.button-full {
+    width: 100%;
+}
+
+/* Primary: navy with paper text in light mode, rose with navy text in dark mode. */
+.button-primary {
+    background: var(--navy);
+    color: var(--paper);
+}
+
+[data-theme="dark"] .button-primary {
+    background: var(--rose);
+    color: var(--navy);
+}
+
+.button-primary:hover:not(:disabled) {
+    filter: brightness(1.15);
+}
+
+/* Text button: looks like a link, same height as other buttons only when padded. */
+.button-text {
+    height: auto;
+    padding: 0;
+    border: 0;
+    background: transparent;
+    color: var(--text);
+    font-family: "Outfit", sans-serif;
+    font-size: 14px;
+    font-weight: 500;
+    text-decoration: underline;
+    text-underline-offset: 3px;
+}
+
+.button-text:hover {
+    text-decoration-thickness: 2px;
+}
