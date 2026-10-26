@@ -50,6 +50,8 @@ INSTALLED_APPS = [
 
     'rest_framework',
     'phonenumber_field',
+    'drf_spectacular',
+    'drf_spectacular_sidecar',  # serves the Swagger UI JS and CSS ourselves, no CDN
 
     'core',
     'web',
@@ -157,4 +159,37 @@ CONSENT_VERSIONS = {
     "privacy_notice": "1",
     "audio_storage": "1",
     "research": "1",
+}
+
+
+# Django REST Framework
+# https://www.django-rest-framework.org/api-guide/settings/
+
+REST_FRAMEWORK = {
+    # Every endpoint requires a logged-in user unless the view allows more,
+    # e.g. permission_classes = [AllowAny] on registration.
+    "DEFAULT_PERMISSION_CLASSES": [
+        "rest_framework.permissions.IsAuthenticated",
+    ],
+    # Lets drf-spectacular build the OpenAPI schema from views and serializers.
+    "DEFAULT_SCHEMA_CLASS": "drf_spectacular.openapi.AutoSchema",
+}
+
+
+# API docs (drf-spectacular)
+# https://drf-spectacular.readthedocs.io/en/latest/settings.html
+
+SPECTACULAR_SETTINGS = {
+    "TITLE": "Pivot API",
+    "DESCRIPTION": "REST API for the Pivot mobile app.",
+    "VERSION": "0.1.0",
+    # Don't list the schema endpoint itself in the docs.
+    "SERVE_INCLUDE_SCHEMA": False,
+    # Separate request and response schemas, so write-only fields like the
+    # password only appear in the request.
+    "COMPONENT_SPLIT_REQUEST": True,
+    # Load Swagger UI from drf_spectacular_sidecar (our own static files)
+    # instead of a public CDN.
+    "SWAGGER_UI_DIST": "SIDECAR",
+    "SWAGGER_UI_FAVICON_HREF": "SIDECAR",
 }

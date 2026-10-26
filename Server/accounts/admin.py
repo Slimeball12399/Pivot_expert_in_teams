@@ -4,7 +4,7 @@ from django.contrib.auth.admin import UserAdmin as BaseUserAdmin
 from django.contrib.auth.forms import AdminUserCreationForm, UserChangeForm
 from django.contrib.auth.models import Group
 
-from .models import AdminProfile, SpeakerProfile, User
+from .models import AdminProfile, Consent, SpeakerProfile, User
 
 
 # The default user forms are built around `username`, so point them at our model.
@@ -79,6 +79,42 @@ class UserAdmin(BaseUserAdmin):
         # Admins created or edited here get their profile automatically, like createsuperuser.
         if obj.role == User.Role.ADMIN:
             AdminProfile.objects.get_or_create(user=obj)
+
+
+@admin.register(SpeakerProfile)
+class SpeakerProfileAdmin(admin.ModelAdmin):
+    list_display = ["user", "birth_date", "height_cm", "admin"]
+    list_filter = ["admin"]
+    search_fields = ["user__email", "user__first_name", "user__last_name"]
+    list_select_related = ["user", "admin__user"]
+    raw_id_fields = ["user"]
+
+
+@admin.register(AdminProfile)
+class AdminProfileAdmin(admin.ModelAdmin):
+    list_display = ["user"]
+    search_fields = ["user__email", "user__first_name", "user__last_name"]
+    list_select_related = ["user"]
+    raw_id_fields = ["user"]
+
+
+@admin.register(Consent)
+class ConsentAdmin(admin.ModelAdmin):
+    """Read-only: consents are proof of what a user agreed to, so they are
+    never added or edited by hand. Delete stays allowed, because Django's admin
+    needs it to delete a user (their consents are removed with them)."""
+
+    list_display = ["user", "purpose", "notice_version", "granted_at", "withdrawn_at"]
+    list_filter = ["purpose", "notice_version", "withdrawn_at"]
+    search_fields = ["user__email"]
+    list_select_related = ["user"]
+    date_hierarchy = "granted_at"
+
+    def has_add_permission(self, request):
+        return False
+
+    def has_change_permission(self, request, obj=None):
+        return False
 
 
 admin.site.unregister(Group)

@@ -6,6 +6,8 @@ from django.db import models
 from django.utils import timezone
 from phonenumber_field.modelfields import PhoneNumberField
 
+from core.models import UUIDModel
+
 from .manager import UserManager
 from .validators import (
     MAX_HEIGHT_CM,
@@ -15,7 +17,8 @@ from .validators import (
 )
 
 
-class User(AbstractUser):
+# AbstractUser first, so its Meta (verbose names) is the one inherited.
+class User(AbstractUser, UUIDModel):
     class Role(models.TextChoices):
         ADMIN = "admin", "Admin"
         SPEAKER = "speaker", "Speaker"
@@ -40,12 +43,12 @@ class User(AbstractUser):
         return f"{self.email} {self.role}"
 
 
-class AdminProfile(models.Model):
+class AdminProfile(UUIDModel):
     user = models.OneToOneField(
         User, on_delete=models.CASCADE, related_name="admin_profile")
 
 
-class SpeakerProfile(models.Model):
+class SpeakerProfile(UUIDModel):
     user = models.OneToOneField(
         User, on_delete=models.CASCADE, related_name="speaker_profile")
     admin = models.ForeignKey(
@@ -65,7 +68,7 @@ class SpeakerProfile(models.Model):
     improvement_goals = models.TextField(blank=True)
 
 
-class Consent(models.Model):
+class Consent(UUIDModel):
     """One row each time a user gives a consent, so there is proof of what was
     agreed to and when (GDPR art. 7(1)). Withdrawing sets withdrawn_at instead
     of deleting the row."""
