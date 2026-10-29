@@ -17,6 +17,9 @@ Including another URLconf
 from django.contrib import admin
 from django.urls import include, path
 
+# Pivot's own 404 page (only used when DEBUG is off; with DEBUG on Django shows its debug page).
+handler404 = "web.views.page_not_found"
+
 urlpatterns = [
     path('admin/', admin.site.urls),
     path('api/', include('api.urls')),

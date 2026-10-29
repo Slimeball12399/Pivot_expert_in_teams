@@ -1,0 +1,26 @@
+/* 404 page (web/404.html): huge light 404, one line, a button, all centred. */
+
+.not-found {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 1.5rem;
+    min-height: calc(100vh - 72px); /* full screen minus the header */
+    padding: 2rem;
+    text-align: center;
+}
+
+.not-found-code {
+    margin: 0;
+    font-family: "Jost", sans-serif;
+    font-size: clamp(8rem, 26vw, 26rem);
+    font-weight: 300;
+    line-height: 0.85;
+    letter-spacing: -0.02em;
+}
+
+.not-found-message {
+    margin: 0;
+    font-size: 1.25rem;
+}

@@ -35,8 +35,9 @@
     <h2>Login</h2>
     <form method="post" action="{% url 'web:login' %}">
         {% csrf_token %}
-        {% include "web/components/input.html" with id="email" label="Email" type="email" autocomplete="email" required=True %}
-        {% include "web/components/password_input.html" with forgot_url="#" %}
+        {% if next %}<input type="hidden" name="next" value="{{ next }}">{% endif %}
+        {% include "web/components/input.html" with id="email" label="Email" type="email" autocomplete="email" required=True value=email error="" %}
+        {% include "web/components/password_input.html" with forgot_url="#" error=error %}
         {% include "web/components/checkbox.html" with id="remember_me" label="Keep me logged in on this device" %}
         {% include "web/components/button.html" with text="Log in" type="submit" full_width=True %}
     </form>

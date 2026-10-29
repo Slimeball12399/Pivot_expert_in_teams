@@ -92,6 +92,8 @@ TEMPLATES = [
 
 WSGI_APPLICATION = 'pivot.wsgi.application'
 LOGIN_URL = "web:login"
+# Where a successful login goes when there is no ?next= (the home page).
+LOGIN_REDIRECT_URL = "/"
 
 
 # Database

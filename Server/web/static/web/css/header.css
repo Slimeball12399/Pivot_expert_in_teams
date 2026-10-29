@@ -1,0 +1,23 @@
+/* Site header: logo on the left, nav items next to it, theme toggle pushed right. */
+
+.site-header {
+    display: flex;
+    align-items: center;
+    gap: 2rem;
+    padding: 1rem 2rem;
+}
+
+.site-header-logo {
+    display: inline-flex;
+}
+
+.site-nav {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+}
+
+/* Pushes the theme toggle (and anything after the nav) to the right edge. */
+.site-header > .theme-toggle {
+    margin-left: auto;
+}

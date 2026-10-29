@@ -12,9 +12,10 @@
     {# Fonts: Jost (Futura stand-in) and Outfit (Garet stand-in) from Google Fonts. #}
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Jost:wght@400;500;600;700&family=Outfit:wght@400;500&display=swap">
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Jost:wght@300;400;500;600;700&family=Outfit:wght@400;500&display=swap">
 
     <link rel="stylesheet" href="{% static 'web/css/base.css' %}">
+    <link rel="stylesheet" href="{% static 'web/css/header.css' %}">
     <link rel="stylesheet" href="{% static 'web/css/theme-toggle.css' %}">
     <link rel="stylesheet" href="{% static 'web/css/button.css' %}">
     <link rel="stylesheet" href="{% static 'web/css/input.css' %}">
@@ -24,13 +25,13 @@
 </head>
 <body>
     {% block header %}
-    <header>
-        <a href="/">
+    <header class="site-header">
+        <a class="site-header-logo" href="{% url 'web:home' %}">
             {# The design system shows one logo per theme. #}
             <img class="logo-light" src="{% static 'web/img/pivot-logo.svg' %}" alt="Pivot" height="40">
             <img class="logo-dark" src="{% static 'web/img/pivot-logo-on-dark.svg' %}" alt="Pivot" height="40">
         </a>
-        <nav aria-label="Main">{% block nav %}{% endblock %}</nav>
+        <nav class="site-nav" aria-label="Main">{% block nav %}{% endblock %}</nav>
         {% include "web/components/theme_toggle.html" %}
     </header>
     {% endblock %}

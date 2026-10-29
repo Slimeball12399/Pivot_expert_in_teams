@@ -1,5 +1,8 @@
+from django.contrib.auth import authenticate
 from django.core.exceptions import ValidationError
 from django.db import transaction
+from django.contrib.auth.models import AbstractUser
+from django.views.decorators.debug import sensitive_variables
 
 from .models import Consent, SpeakerProfile, User
 
@@ -60,4 +63,15 @@ def register_speaker(*, email, password, first_name, last_name, phone_number,
                 notice_version=Consent.current_version(purpose))
         for purpose in sorted(consents)
     ])
+    return user
+
+
+@sensitive_variables("password")
+def login_user(request, email, password, role=None) -> AbstractUser:
+    if not email or not password:
+        raise ValidationError("Enter your email and password.", code="missing")
+
+    user = authenticate(request, email=email, password=password)
+    if user is None or (role is not None and user.role != role):
+        raise ValidationError("Wrong email or password.", code="invalid_login")
     return user
