@@ -11,6 +11,7 @@ https://docs.djangoproject.com/en/6.1/ref/settings/
 """
 
 import os
+from datetime import timedelta
 from pathlib import Path
 
 from dotenv import load_dotenv
@@ -49,6 +50,9 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
 
     'rest_framework',
+    # Records issued refresh tokens and blacklists used/logged-out ones.
+    # Needs `python manage.py migrate`; without it rotation and logout silently do nothing.
+    'rest_framework_simplejwt.token_blacklist',
     'phonenumber_field',
     'drf_spectacular',
     'drf_spectacular_sidecar',  # serves the Swagger UI JS and CSS ourselves, no CDN
@@ -179,8 +183,39 @@ REST_FRAMEWORK = {
     "DEFAULT_PERMISSION_CLASSES": [
         "rest_framework.permissions.IsAuthenticated",
     ],
+    # The API is for the mobile app, so it only accepts JWTs
+    # (Authorization: Bearer <access token>). The web app uses session
+    # cookies through its own Django views, not through the API.
+    "DEFAULT_AUTHENTICATION_CLASSES": [
+        "rest_framework_simplejwt.authentication.JWTAuthentication",
+    ],
     # Lets drf-spectacular build the OpenAPI schema from views and serializers.
     "DEFAULT_SCHEMA_CLASS": "drf_spectacular.openapi.AutoSchema",
+}
+
+
+# JWT auth for the mobile app (djangorestframework-simplejwt)
+# https://django-rest-framework-simplejwt.readthedocs.io/en/latest/settings.html
+
+SIMPLE_JWT = {
+    # Short-lived: sent on every request and can't be revoked, so a stolen
+    # one is only useful for a few minutes.
+    "ACCESS_TOKEN_LIFETIME": timedelta(minutes=15),
+    # How long the app stays logged in without being used. Each refresh
+    # renews it, so an active user stays logged in.
+    "REFRESH_TOKEN_LIFETIME": timedelta(days=30),
+    # Every refresh returns a new refresh token and blacklists the old one,
+    # so a copied refresh token works at most once.
+    "ROTATE_REFRESH_TOKENS": True,
+    "BLACKLIST_AFTER_ROTATION": True,
+    "UPDATE_LAST_LOGIN": True,
+    # Off: tokens don't carry a password hash. On password change/reset,
+    # blacklist the user's outstanding refresh tokens instead; their access
+    # tokens then die within ACCESS_TOKEN_LIFETIME.
+    "CHECK_REVOKE_TOKEN": False,
+    # Own key so it can be rotated without touching Django's SECRET_KEY.
+    # Falls back to SECRET_KEY when JWT_SIGNING_KEY isn't set.
+    "SIGNING_KEY": os.environ.get("JWT_SIGNING_KEY") or SECRET_KEY,
 }
 
 

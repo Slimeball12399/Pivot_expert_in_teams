@@ -75,3 +75,68 @@ def login_user(request, email, password, role=None) -> AbstractUser:
     if user is None or (role is not None and user.role != role):
         raise ValidationError("Wrong email or password.", code="invalid_login")
     return user
+
+
+# Fields a user may change about themselves (PATCH /api/me/). Email and role
+# are left out on purpose: email needs re-verification, role is admin-only.
+EDITABLE_USER_FIELDS = frozenset({"first_name", "last_name", "phone_number"})
+EDITABLE_SPEAKER_FIELDS = frozenset(
+    {"birth_date", "height_cm", "improvement_goals"})
+
+
+@transaction.atomic
+def update_profile(user, *, profile=None, **fields):
+    """Change the given fields of `user` and, for speakers, of their
+    SpeakerProfile (`profile`, a dict). Only the fields passed are touched.
+
+    Runs the same model validators as registration and raises one
+    ValidationError with every error found; nothing is saved then.
+    """
+    profile = profile or {}
+    unknown = (set(fields) - EDITABLE_USER_FIELDS) | (set(profile) -
+                                                      EDITABLE_SPEAKER_FIELDS)
+    if unknown:
+        raise ValueError(f"Not editable: {', '.join(sorted(unknown))}")
+
+    errors = {}
+
+    for name, value in fields.items():
+        setattr(user, name, value)
+
+    if "phone_number" in fields and not fields["phone_number"] and user.role == User.Role.SPEAKER:
+        errors.setdefault("phone_number", []).append(
+            "Phone number is required.")
+    try:
+        user.full_clean(exclude=["password"])
+    except ValidationError as e:
+        e.update_error_dict(errors)
+
+    speaker_profile = None
+    if profile:
+        if user.role != User.Role.SPEAKER:
+            errors.setdefault("profile", []).append(
+                "Only speakers have profile details to change.")
+        else:
+            try:
+                speaker_profile = user.speaker_profile
+            except SpeakerProfile.DoesNotExist:
+                errors.setdefault("profile", []).append(
+                    "This account has no speaker profile.")
+            else:
+                for name, value in profile.items():
+                    setattr(speaker_profile, name, value)
+                try:
+                    speaker_profile.full_clean(exclude=["user", "admin"])
+                except ValidationError as e:
+                    e.update_error_dict(errors)
+
+    if errors:
+        # Undo the in-memory changes so the caller's objects stay as saved.
+        user.refresh_from_db()
+        raise ValidationError(errors)
+
+    if fields:
+        user.save(update_fields=list(fields))
+    if speaker_profile is not None:
+        speaker_profile.save(update_fields=list(profile))
+    return user
