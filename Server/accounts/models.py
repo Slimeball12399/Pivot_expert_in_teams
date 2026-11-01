@@ -34,6 +34,8 @@ class User(AbstractUser, UUIDModel):
     role = models.CharField(
         max_length=20, choices=Role.choices, default=Role.SPEAKER)
 
+    email_verified_at = models.DateTimeField(null=True, blank=True)
+
     USERNAME_FIELD = "email"
     REQUIRED_FIELDS = ["first_name", "last_name"]
 
@@ -112,3 +114,42 @@ class Consent(UUIDModel):
                 f"settings.CONSENT_VERSIONS has no version for '{purpose}'.")
 
 # Invite model as a next step later
+
+class EmailCode(UUIDModel):
+    """A one-time code emailed to a user (email verification, password reset).
+
+    Only a hash of the code is stored. Whether a code still works is worked
+    out from the timestamps (see is_usable), never stored as a flag that
+    could go stale.
+    """
+
+    class Purpose(models.TextChoices):
+        VERIFY_EMAIL = "verify_email", "Verify email"
+        RESET_PASSWORD = "reset_password", "Reset password"
+
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name="email_codes")
+    purpose = models.CharField(max_length=20, choices=Purpose.choices)
+    code_hash = models.CharField(max_length=128)
+    expires_at = models.DateTimeField()
+    attempts = models.PositiveSmallIntegerField(default=0)
+    # Entered correctly.
+    used_at = models.DateTimeField(null=True, blank=True)
+    # Replaced by a newer code, or cancelled.
+    invalidated_at = models.DateTimeField(null=True, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        indexes = [models.Index(fields=["user", "purpose"])]
+
+    def __str__(self):
+        return f"{self.get_purpose_display()} code for {self.user.email}"
+
+    @property
+    def is_usable(self):
+        """Not used, not replaced, not expired, and not out of attempts."""
+        return (
+            self.used_at is None
+            and self.invalidated_at is None
+            and self.expires_at > timezone.now()
+            and self.attempts < settings.EMAIL_CODE_MAX_ATTEMPTS
+        )

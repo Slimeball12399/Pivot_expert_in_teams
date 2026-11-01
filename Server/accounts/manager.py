@@ -2,6 +2,7 @@ from django.contrib.auth.models import BaseUserManager
 from django.contrib.auth.password_validation import validate_password
 from django.core.exceptions import ValidationError
 from django.db import transaction
+from django.utils import timezone
 
 
 class UserManager(BaseUserManager):
@@ -46,6 +47,8 @@ class UserManager(BaseUserManager):
         extra_fields.setdefault("role", "admin")
         extra_fields.setdefault("is_staff", True)
         extra_fields.setdefault("is_superuser", True)
+
+        extra_fields.setdefault("email_verified_at", timezone.now())
 
         if extra_fields.get("role") != "admin":
             raise ValueError("Superuser must have role='admin'.")

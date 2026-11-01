@@ -3,6 +3,7 @@ from django.contrib import admin
 from django.contrib.auth.admin import UserAdmin as BaseUserAdmin
 from django.contrib.auth.forms import AdminUserCreationForm, UserChangeForm
 from django.contrib.auth.models import Group
+from django.utils import timezone
 
 from .models import AdminProfile, Consent, SpeakerProfile, User
 
@@ -39,8 +40,9 @@ class UserAdmin(BaseUserAdmin):
     add_form = UserCreationForm
 
     list_display = ["email", "first_name", "last_name",
-                    "role", "is_active", "is_superuser"]
-    list_filter = ["role", "is_active", "is_superuser"]
+                    "role", "email_verified", "is_active", "is_superuser"]
+    list_filter = ["role", ("email_verified_at", admin.EmptyFieldListFilter),
+                   "is_active", "is_superuser"]
     search_fields = ["email", "first_name", "last_name"]
     ordering = ["email"]
 
@@ -51,7 +53,8 @@ class UserAdmin(BaseUserAdmin):
          "first_name", "last_name", "phone_number"]}),
         ("Role and access", {"fields": [
          "role", "is_active", "is_staff", "is_superuser"]}),
-        ("Dates", {"fields": ["last_login", "date_joined"]}),
+        # email_verified_at stays editable, so support can verify someone by hand.
+        ("Dates", {"fields": ["email_verified_at", "last_login", "date_joined"]}),
     ]
     # Create page.
     add_fieldsets = [
@@ -66,6 +69,10 @@ class UserAdmin(BaseUserAdmin):
     readonly_fields = ["last_login", "date_joined"]
     filter_horizontal = []
 
+    @admin.display(boolean=True, description="Email verified", ordering="email_verified_at")
+    def email_verified(self, obj):
+        return obj.email_verified_at is not None
+
     def get_inlines(self, request, obj):
         # Only show the profile that matches the user's role, and none on the create page.
         if obj is None:
@@ -75,6 +82,9 @@ class UserAdmin(BaseUserAdmin):
         return [SpeakerProfileInline]
 
     def save_model(self, request, obj, form, change):
+        # Admins added here are created by us, so their email counts as verified.
+        if obj.role == User.Role.ADMIN and obj.email_verified_at is None:
+            obj.email_verified_at = timezone.now()
         super().save_model(request, obj, form, change)
         # Admins created or edited here get their profile automatically, like createsuperuser.
         if obj.role == User.Role.ADMIN:

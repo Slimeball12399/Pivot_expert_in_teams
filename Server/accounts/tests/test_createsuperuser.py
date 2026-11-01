@@ -46,6 +46,7 @@ class CreateSuperuserCommandTests(TestCase):
         self.assertTrue(user.is_superuser)
         self.assertTrue(user.is_active)
         self.assertTrue(user.check_password(PASSWORD))
+        self.assertIsNotNone(user.email_verified_at)  # admins start verified
         self.assertTrue(AdminProfile.objects.filter(user=user).exists())
 
         # Admins accept every consent, each at its current version.

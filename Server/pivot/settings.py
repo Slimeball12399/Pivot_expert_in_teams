@@ -14,6 +14,7 @@ import os
 from datetime import timedelta
 from pathlib import Path
 
+from django.core.exceptions import ImproperlyConfigured
 from dotenv import load_dotenv
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
@@ -134,6 +135,16 @@ AUTH_PASSWORD_VALIDATORS = [
 ]
 
 
+# Security
+# One-time codes sent by email, for email verification and password reset.
+# How long a code works; the emails say this too ("expires in 15 minutes").
+EMAIL_CODE_LIFETIME = timedelta(minutes=15)
+# Digits per code; the emails show them in groups of four ("1234 5678").
+EMAIL_CODE_LENGTH = 8
+# Wrong guesses allowed per code; after that the code stops working.
+EMAIL_CODE_MAX_ATTEMPTS = 5
+
+
 # Internationalization
 # https://docs.djangoproject.com/en/6.1/topics/i18n/
 
@@ -154,12 +165,47 @@ STATIC_URL = 'static/'
 
 # Email
 # https://docs.djangoproject.com/en/6.1/topics/email/#topic-email-configuration
+# SEND_EMAILS in .env:
+#   True: really sent, through Resend's SMTP server. Needs RESEND_API_KEY, and
+#         DEFAULT_FROM_EMAIL must be on a domain verified in Resend.
+#   False (default): only logged to the terminal running the server.
+#   Anything other than "true" counts as False.
+# Tests always use Django's in-memory backend instead (django.core.mail.outbox).
 
-MAILERS = {
-    'default': {
-        'BACKEND': 'django.core.mail.backends.console.EmailBackend',
-    },
-}
+SEND_EMAILS = os.environ.get("SEND_EMAILS", "False").strip().lower() == "true"
+
+if SEND_EMAILS:
+    if not os.environ.get("RESEND_API_KEY", "").strip():
+        raise ImproperlyConfigured(
+            "SEND_EMAILS=True needs RESEND_API_KEY in .env "
+            "(create one at resend.com/api-keys), or set SEND_EMAILS=False.")
+    MAILERS = {
+        "default": {
+            "BACKEND": "django.core.mail.backends.smtp.EmailBackend",
+            "OPTIONS": {
+                "host": "smtp.resend.com",
+                "port": 587,
+                "username": "resend",
+                "password": os.environ["RESEND_API_KEY"].strip(),
+                "use_tls": True,
+                "timeout": 10,  # seconds, so a slow mail server can't hang a request
+            },
+        },
+    }
+else:
+    MAILERS = {
+        "default": {
+            "BACKEND": "django.core.mail.backends.console.EmailBackend",
+        },
+    }
+
+DEFAULT_FROM_EMAIL = os.environ.get("DEFAULT_FROM_EMAIL", "Pivot <no-reply@localhost>")
+
+# Logos in emails (PNGs in web/static/web/img; Gmail and Outlook don't show SVG).
+# Empty (default): they are attached to each email, which works without a
+# public server. Set to the public https address of the static files, e.g.
+# https://yourdomain.com/static/, to load them from there instead.
+EMAIL_STATIC_URL = os.environ.get("EMAIL_STATIC_URL", "").strip()
 
 
 # Consents

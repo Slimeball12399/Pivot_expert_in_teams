@@ -1,0 +1,7 @@
+{% extends "code_email_base.html" %}
+
+{% block title %}Your Pivot verification code{% endblock %}
+{% block preheader %}Your Pivot verification code is {{ code_display }}.{% endblock %}
+{% block heading %}Confirm your email{% endblock %}
+{% block intro %}Hi {{ first_name }}, enter this code in the Pivot app within {{ minutes }} minutes to finish setting up your account.{% endblock %}
+{% block warning %}Didn't create a Pivot account? Don't use this code, and you can ignore this email.{% endblock %}

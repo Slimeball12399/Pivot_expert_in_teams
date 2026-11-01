@@ -1,0 +1,84 @@
+<!doctype html>
+<html lang="en" xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="x-apple-disable-message-reformatting">
+<meta name="color-scheme" content="light">
+<meta name="supported-color-schemes" content="light">
+<title>{% block title %}Pivot{% endblock %}</title>
+<link href="https://fonts.googleapis.com/css2?family=Jost:wght@500;600&family=Outfit:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  @media (max-width: 620px) {
+    .pv-card { width: 100% !important; border-radius: 0 !important; }
+    .pv-pad { padding-left: 24px !important; padding-right: 24px !important; }
+    .pv-code { font-size: 34px !important; letter-spacing: 4px !important; }
+    .pv-outer { padding: 0 0 16px 0 !important; }
+  }
+</style>
+</head>
+<body style="margin:0; padding:0; background-color:#F0F0F0;">
+  <div style="display:none; max-height:0; overflow:hidden; mso-hide:all;">{% block preheader %}{% endblock %}&#8199;&#65279;&#847;&#8199;&#65279;&#847;&#8199;&#65279;&#847;&#8199;&#65279;&#847;</div>
+
+  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background-color:#F0F0F0;">
+    <tr>
+      <td class="pv-outer" align="center" style="padding:0 12px 32px 12px;">
+
+        <table role="presentation" class="pv-card" width="560" cellpadding="0" cellspacing="0" border="0" style="width:560px; max-width:560px; background-color:#FFFFFF; border-radius:0 0 16px 16px; overflow:hidden;">
+
+          <tr>
+            <td align="center" bgcolor="#123048" style="background-color:#123048; padding:32px 24px;">
+              <img src="{{ logo_on_dark_src }}" width="160" height="49" alt="Pivot" style="display:block; width:160px; height:49px; border:0; outline:none; text-decoration:none; color:#F0F0F0; font-family:Jost, Futura, 'Century Gothic', 'Avenir Next', Arial, sans-serif; font-size:28px; font-weight:600;">
+            </td>
+          </tr>
+
+          <tr>
+            <td class="pv-pad" style="padding:40px 40px 0 40px; font-family:Outfit, Garet, 'Century Gothic', 'Avenir Next', Arial, sans-serif; color:#123048;">
+              <h1 style="margin:0 0 16px 0; font-family:Jost, Futura, 'Century Gothic', 'Avenir Next', Arial, sans-serif; font-size:28px; line-height:1.2; font-weight:600; color:#123048;">{% block heading %}{% endblock %}</h1>
+              <p style="margin:0; font-size:16px; line-height:1.5; color:#123048;">{% block intro %}{% endblock %}</p>
+            </td>
+          </tr>
+
+          <tr>
+            <td class="pv-pad" align="center" style="padding:40px 40px 32px 40px;">
+              <span class="pv-code" style="display:inline-block; padding-bottom:8px; border-bottom:4px solid #E3B7CB; font-family:Jost, Futura, 'Century Gothic', 'Avenir Next', Arial, sans-serif; font-size:40px; line-height:1; font-weight:600; letter-spacing:6px; color:#123048; white-space:nowrap;">{{ code_display }}</span>
+            </td>
+          </tr>
+
+          <tr>
+            <td class="pv-pad" style="padding:0 40px 40px 40px; font-family:Outfit, Garet, 'Century Gothic', 'Avenir Next', Arial, sans-serif;">
+              <p style="margin:0; font-size:14px; line-height:1.5; color:#546A7B; text-align:center;">{% block warning %}{% endblock %}</p>
+            </td>
+          </tr>
+
+        </table>
+
+        <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
+          <tr><td height="24" style="height:24px; line-height:24px; font-size:0;">&nbsp;</td></tr>
+        </table>
+
+        <table role="presentation" class="pv-card" width="560" cellpadding="0" cellspacing="0" border="0" style="width:560px; max-width:560px; background-color:#FFFFFF; border-radius:16px; overflow:hidden;">
+          <tr>
+            <td class="pv-pad" align="left" style="padding:32px 40px; font-family:Outfit, Garet, 'Century Gothic', 'Avenir Next', Arial, sans-serif;">
+              <img src="{{ logo_src }}" width="112" height="35" alt="Pivot" style="display:block; width:112px; height:35px; margin:0 0 20px 0; border:0; outline:none; text-decoration:none; color:#123048; font-family:Jost, Futura, 'Century Gothic', 'Avenir Next', Arial, sans-serif; font-size:22px; font-weight:600;">
+              <p style="margin:0 0 8px 0; font-family:Jost, Futura, 'Century Gothic', 'Avenir Next', Arial, sans-serif; font-size:23px; line-height:1.3; font-weight:500; color:#123048;">Steady stance. Stronger voice.</p>
+              <p style="margin:0; font-size:16px; line-height:1.5; color:#123048;">Live voice and balance feedback for speakers and their trainers, measured while you talk on the board.</p>
+            </td>
+          </tr>
+        </table>
+
+        <table role="presentation" class="pv-card" width="560" cellpadding="0" cellspacing="0" border="0" style="width:560px; max-width:560px;">
+          <tr>
+            <td align="center" style="padding:24px 24px 0 24px; font-family:Outfit, Garet, 'Century Gothic', 'Avenir Next', Arial, sans-serif; font-size:12px; line-height:1.6; color:#546A7B;">
+              This email was sent by Pivot to {{ to_email }}.<br>
+              It's sent automatically, so please don't reply.<br><br>
+              Expert in teams project &middot; Built with all the good speakers &middot; &copy;&nbsp;2026&nbsp;SDU<span style="display:none; font-size:0; line-height:0; max-height:0; overflow:hidden; mso-hide:all;">{{ email_id }}</span>
+            </td>
+          </tr>
+        </table>
+
+      </td>
+    </tr>
+  </table>
+</body>
+</html>

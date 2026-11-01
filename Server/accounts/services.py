@@ -140,3 +140,4 @@ def update_profile(user, *, profile=None, **fields):
     if speaker_profile is not None:
         speaker_profile.save(update_fields=list(profile))
     return user
+
