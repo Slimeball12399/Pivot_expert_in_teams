@@ -30,12 +30,17 @@ SECRET_KEY = os.environ['DJANGO_SECRET_KEY']
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = os.environ.get('DJANGO_DEBUG', 'False').lower() == 'true'
 
-ALLOWED_HOSTS = [h for h in os.environ.get('DJANGO_ALLOWED_HOSTS', '').split(',') if h]
+ALLOWED_HOSTS = [h for h in os.environ.get(
+    'DJANGO_ALLOWED_HOSTS', '').split(',') if h]
 
+AUTH_USER_MODEL = "accounts.User"
 
 # Application definition
 
 INSTALLED_APPS = [
+    # First, so its createsuperuser command overrides Django's own.
+    'accounts',
+
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
@@ -44,9 +49,13 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
 
     'rest_framework',
+    'phonenumber_field',
+    'drf_spectacular',
+    'drf_spectacular_sidecar',  # serves the Swagger UI JS and CSS ourselves, no CDN
 
     'core',
-    
+    'web',
+    'api'
 ]
 
 MIDDLEWARE = [
@@ -138,4 +147,49 @@ MAILERS = {
     'default': {
         'BACKEND': 'django.core.mail.backends.console.EmailBackend',
     },
+}
+
+
+# Consents
+# Current version of the text behind each consent purpose (keys match
+# accounts.models.Consent.Purpose). Bump a version when that text changes;
+# users must then accept the new version. Stored on each Consent row.
+
+CONSENT_VERSIONS = {
+    "privacy_notice": "1",
+    "audio_storage": "1",
+    "research": "1",
+}
+
+
+# Django REST Framework
+# https://www.django-rest-framework.org/api-guide/settings/
+
+REST_FRAMEWORK = {
+    # Every endpoint requires a logged-in user unless the view allows more,
+    # e.g. permission_classes = [AllowAny] on registration.
+    "DEFAULT_PERMISSION_CLASSES": [
+        "rest_framework.permissions.IsAuthenticated",
+    ],
+    # Lets drf-spectacular build the OpenAPI schema from views and serializers.
+    "DEFAULT_SCHEMA_CLASS": "drf_spectacular.openapi.AutoSchema",
+}
+
+
+# API docs (drf-spectacular)
+# https://drf-spectacular.readthedocs.io/en/latest/settings.html
+
+SPECTACULAR_SETTINGS = {
+    "TITLE": "Pivot API",
+    "DESCRIPTION": "REST API for the Pivot mobile app.",
+    "VERSION": "0.1.0",
+    # Don't list the schema endpoint itself in the docs.
+    "SERVE_INCLUDE_SCHEMA": False,
+    # Separate request and response schemas, so write-only fields like the
+    # password only appear in the request.
+    "COMPONENT_SPLIT_REQUEST": True,
+    # Load Swagger UI from drf_spectacular_sidecar (our own static files)
+    # instead of a public CDN.
+    "SWAGGER_UI_DIST": "SIDECAR",
+    "SWAGGER_UI_FAVICON_HREF": "SIDECAR",
 }
