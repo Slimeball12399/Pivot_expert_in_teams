@@ -3,6 +3,7 @@ from io import StringIO
 from unittest import mock
 
 from django.contrib.auth import get_user_model
+from django.core import mail
 from django.core.management import CommandError, call_command
 from django.test import TestCase
 
@@ -36,7 +37,8 @@ def run_createsuperuser(accept_consents=True, **fields):
 
 class CreateSuperuserCommandTests(TestCase):
     def test_creates_superuser_with_admin_profile(self):
-        run_createsuperuser(**{**ALL_FIELDS, "email": "Trainer@EXAMPLE.com"})
+        with self.captureOnCommitCallbacks(execute=True):
+            run_createsuperuser(**{**ALL_FIELDS, "email": "Trainer@EXAMPLE.com"})
 
         user = User.objects.get()
         self.assertEqual(user.email, "Trainer@example.com")  # domain normalized
@@ -46,7 +48,11 @@ class CreateSuperuserCommandTests(TestCase):
         self.assertTrue(user.is_superuser)
         self.assertTrue(user.is_active)
         self.assertTrue(user.check_password(PASSWORD))
-        self.assertIsNotNone(user.email_verified_at)  # admins start verified
+        # Admins start unverified, like everyone, and get a code by email.
+        self.assertIsNone(user.email_verified_at)
+        self.assertEqual(len(mail.outbox), 1)
+        self.assertEqual(mail.outbox[0].to, ["Trainer@example.com"])
+        self.assertEqual(mail.outbox[0].subject, "Your Pivot verification code")
         self.assertTrue(AdminProfile.objects.filter(user=user).exists())
 
         # Admins accept every consent, each at its current version.

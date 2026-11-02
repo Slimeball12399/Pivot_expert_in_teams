@@ -7,16 +7,20 @@
     border: 0;
 }
 
+/* Label, boxes and error message are all centered in the form. */
 .code-field .input-label {
     display: block;
+    width: 100%;  /* a legend is only as wide as its text unless told otherwise */
     margin-bottom: 8px;
     padding: 0;
+    text-align: center;
 }
 
 /* The boxes share the width and shrink on narrow screens, up to 48px each. */
 .code-boxes {
     display: flex;
     align-items: center;
+    justify-content: center;
     gap: 8px;
 }
 
@@ -50,6 +54,7 @@
 
 .code-field .input-message {
     margin-top: 8px;
+    text-align: center;
 }
 
 /* Short dash between the groups of four. */

@@ -69,11 +69,13 @@
     align-items: center;
 }
 
+/* Space above and below only, so the inputs line up with the heading and the
+   text outside the form. */
 .auth-side form {
     display: flex;
     flex-direction: column;
     gap: 1rem;
-    padding: 1rem;
+    padding: 1rem 0;
 }
 
 /* Narrow screens: the two sections stack, intro on top, form below. */
@@ -91,4 +93,20 @@
 /* Every auth page's form fills the right side, so all pages match the login page's width. */
 .auth-form {
     width: 100%;
+}
+
+/* Notes from the previous step above the form (django.contrib.messages). Colour
+   only on the border, like the inputs: the text stays in the text colour. */
+.auth-message {
+    margin: 0 0 1rem;
+    padding: 0.5rem 0.75rem;
+    border-left: 4px solid var(--blue);
+}
+
+.auth-message-success {
+    border-left-color: var(--green);
+}
+
+.auth-message-error {
+    border-left-color: var(--red);
 }

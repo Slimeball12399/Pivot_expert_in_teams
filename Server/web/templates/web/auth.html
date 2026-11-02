@@ -40,6 +40,10 @@ Extra CSS or JS for one page: {% block head %}{{ block.super }}<link ...>{% endb
 </section>
 <section class="auth-side">
     <div class="auth-form">
+    {# Notes from the previous step, e.g. "Your password is changed." #}
+    {% for message in messages %}
+    <p class="auth-message auth-message-{{ message.level_tag }}" role="status"><small>{{ message }}</small></p>
+    {% endfor %}
     {% block auth_form %}{% endblock %}
     </div>
 </section>

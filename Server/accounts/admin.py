@@ -1,11 +1,14 @@
+from functools import partial
+
 from django import forms
 from django.contrib import admin
 from django.contrib.auth.admin import UserAdmin as BaseUserAdmin
 from django.contrib.auth.forms import AdminUserCreationForm, UserChangeForm
 from django.contrib.auth.models import Group
-from django.utils import timezone
+from django.db import transaction
 
 from .models import AdminProfile, Consent, SpeakerProfile, User
+from .services import send_verification_code
 
 
 # The default user forms are built around `username`, so point them at our model.
@@ -82,13 +85,14 @@ class UserAdmin(BaseUserAdmin):
         return [SpeakerProfileInline]
 
     def save_model(self, request, obj, form, change):
-        # Admins added here are created by us, so their email counts as verified.
-        if obj.role == User.Role.ADMIN and obj.email_verified_at is None:
-            obj.email_verified_at = timezone.now()
         super().save_model(request, obj, form, change)
         # Admins created or edited here get their profile automatically, like createsuperuser.
         if obj.role == User.Role.ADMIN:
             AdminProfile.objects.get_or_create(user=obj)
+        # New users start unverified and get a code by email. To verify someone
+        # by hand, set email_verified_at on the edit page.
+        if not change and obj.email_verified_at is None:
+            transaction.on_commit(partial(send_verification_code, obj), robust=True)
 
 
 @admin.register(SpeakerProfile)

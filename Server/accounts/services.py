@@ -1,10 +1,28 @@
+from functools import partial
+
 from django.contrib.auth import authenticate
+from django.contrib.auth.models import AbstractUser
+from django.contrib.auth.password_validation import validate_password
+from django.contrib.auth.tokens import default_token_generator
 from django.core.exceptions import ValidationError
 from django.db import transaction
-from django.contrib.auth.models import AbstractUser
+from django.utils import timezone
+from django.utils.encoding import force_bytes, force_str
+from django.utils.http import urlsafe_base64_decode, urlsafe_base64_encode
 from django.views.decorators.debug import sensitive_variables
 
-from .models import Consent, SpeakerProfile, User
+from . import emails, verification
+from .models import Consent, EmailCode, SpeakerProfile, User
+
+# Error codes (ValidationError.code) the web views and the API react to.
+INVALID_LOGIN = "invalid_login"
+EMAIL_NOT_VERIFIED = "email_not_verified"
+INVALID_CODE = "invalid_code"
+INVALID_RESET_TOKEN = "invalid_token"
+
+EMAIL_NOT_VERIFIED_MESSAGE = "Verify your email to log in. We sent you a code."
+INVALID_CODE_MESSAGE = "That code is wrong or has expired. Check the email or ask for a new code."
+INVALID_RESET_TOKEN_MESSAGE = "This password reset has expired. Start again to get a new code."
 
 
 @transaction.atomic
@@ -63,17 +81,28 @@ def register_speaker(*, email, password, first_name, last_name, phone_number,
                 notice_version=Consent.current_version(purpose))
         for purpose in sorted(consents)
     ])
+    # After the commit, so a failed registration sends nothing. robust: a
+    # failed email doesn't undo the account; logging in sends a new code.
+    transaction.on_commit(partial(send_verification_code, user), robust=True)
     return user
 
 
 @sensitive_variables("password")
 def login_user(request, email, password, role=None) -> AbstractUser:
-    if not email or not password:
-        raise ValidationError("Enter your email and password.", code="missing")
+    """The login rules, for the web (sessions) and the API (tokens).
 
+    Raises ValidationError with code INVALID_LOGIN (wrong email or password,
+    inactive account, or not `role`), or EMAIL_NOT_VERIFIED after emailing a
+    new code. The caller logs the returned user in its own way.
+    """
     user = authenticate(request, email=email, password=password)
     if user is None or (role is not None and user.role != role):
-        raise ValidationError("Wrong email or password.", code="invalid_login")
+        raise ValidationError("Wrong email or password.", code=INVALID_LOGIN)
+    # Only after the password check, so "not verified" never tells a
+    # stranger that an email has an account.
+    if user.email_verified_at is None:
+        send_verification_code(user)
+        raise ValidationError(EMAIL_NOT_VERIFIED_MESSAGE, code=EMAIL_NOT_VERIFIED)
     return user
 
 
@@ -141,3 +170,107 @@ def update_profile(user, *, profile=None, **fields):
         speaker_profile.save(update_fields=list(profile))
     return user
 
+
+
+# Email verification
+# A new account can't log in until its email is verified with a code. The
+# code goes out on registering (speakers) or on creation (admins), and again
+# whenever an unverified user logs in with the right password.
+
+
+def send_verification_code(user) -> bool:
+    """Email `user` a new verification code. False when nothing was sent:
+    already verified, or the last code is still inside the resend cooldown."""
+    if user.email_verified_at is not None:
+        return False
+    code = verification.create_code(user, EmailCode.Purpose.VERIFY_EMAIL)
+    if code is None:  # resend cooldown
+        return False
+    emails.send_verification_code_email(user, code)
+    return True
+
+
+def resend_verification_code(email) -> None:
+    """The "send a new code" button. Does the same whether or not the email
+    has an account, so it can't be used to find out which emails do."""
+    user = User.objects.filter(email=email, is_active=True).first()
+    if user is not None:
+        send_verification_code(user)
+
+
+def verify_email(email, code) -> AbstractUser:
+    """Mark the email verified if `code` is right and return the user, so the
+    caller can log them in. Raises ValidationError(code=INVALID_CODE) for
+    any wrong, expired or used code, and for unknown or verified emails."""
+    user = User.objects.filter(email=email, is_active=True).first()
+    if (user is None or user.email_verified_at is not None
+            or not verification.validate_code(user, EmailCode.Purpose.VERIFY_EMAIL, code)):
+        raise ValidationError(INVALID_CODE_MESSAGE, code=INVALID_CODE)
+    user.email_verified_at = timezone.now()
+    user.save(update_fields=["email_verified_at"])
+    return user
+
+
+# Password reset
+# 1. request_password_reset(email) emails a reset code.
+# 2. verify_password_reset_code(email, code) swaps a right code for a reset
+#    token (Django's PasswordResetTokenGenerator, PASSWORD_RESET_TIMEOUT).
+# 3. reset_password(uid, token, new_password) sets the new password.
+# The token is signed with SECRET_KEY and includes the password hash, so it
+# can't be forged and stops working once the password has changed.
+
+
+def request_password_reset(email) -> None:
+    """Email a reset code. Does the same whether or not the email has an
+    account, so it can't be used to find out which emails do."""
+    user = User.objects.filter(email=email, is_active=True).first()
+    if user is None:
+        return
+    code = verification.create_code(user, EmailCode.Purpose.RESET_PASSWORD)
+    if code is not None:  # None: resend cooldown
+        emails.send_password_reset_code_email(user, code)
+
+
+def verify_password_reset_code(email, code) -> tuple[str, str]:
+    """Swap a right reset code for (uid, token), which reset_password() needs.
+    Raises ValidationError(code=INVALID_CODE) like verify_email()."""
+    user = User.objects.filter(email=email, is_active=True).first()
+    if user is None or not verification.validate_code(
+            user, EmailCode.Purpose.RESET_PASSWORD, code):
+        raise ValidationError(INVALID_CODE_MESSAGE, code=INVALID_CODE)
+    return urlsafe_base64_encode(force_bytes(user.pk)), default_token_generator.make_token(user)
+
+
+@sensitive_variables("new_password")
+@transaction.atomic
+def reset_password(uid, token, new_password) -> AbstractUser:
+    """Set a new password with the token from verify_password_reset_code().
+
+    Raises ValidationError(code=INVALID_RESET_TOKEN) for a wrong or expired
+    token, and ValidationError({"new_password": [...]}) for a password the
+    AUTH_PASSWORD_VALIDATORS reject. A weak password doesn't use up the
+    token, so the user can try another one.
+    """
+    try:
+        user = User.objects.get(pk=force_str(urlsafe_base64_decode(uid)), is_active=True)
+    except (ValueError, ValidationError, User.DoesNotExist):  # bad base64, not a UUID, no user
+        user = None
+    if user is None or not default_token_generator.check_token(user, token):
+        raise ValidationError(INVALID_RESET_TOKEN_MESSAGE, code=INVALID_RESET_TOKEN)
+    try:
+        validate_password(new_password, user)
+    except ValidationError as e:
+        raise ValidationError({"new_password": e.messages})
+
+    user.set_password(new_password)
+    fields = ["password"]
+    # Getting the code proved they own the email.
+    if user.email_verified_at is None:
+        user.email_verified_at = timezone.now()
+        fields.append("email_verified_at")
+    user.save(update_fields=fields)  # also logs the app out everywhere (User.save)
+    # Reset codes asked for in the meantime stop working.
+    user.email_codes.filter(
+        purpose=EmailCode.Purpose.RESET_PASSWORD, used_at__isnull=True, invalidated_at__isnull=True,
+    ).update(invalidated_at=timezone.now())
+    return user

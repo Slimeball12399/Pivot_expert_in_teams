@@ -4,8 +4,9 @@
 Enter the one-time code from the email (password reset or email verification).
 
 Context: digits (one item per box, from the view), minutes (code lifetime),
-email (optional, shown in the text), error (optional).
+heading (optional), email (optional, shown in the text), error (optional).
 Posts the digits as repeated "code" fields: "".join(request.POST.getlist("code")).
+"Send a new code" posts to web:resend_code, which sends a code for the same flow.
 {% endcomment %}
 
 {% block title %}Enter code | Pivot{% endblock %}
@@ -17,13 +18,16 @@ Posts the digits as repeated "code" fields: "".join(request.POST.getlist("code")
 {% endblock %}
 
 {% block auth_form %}
-<h2>Enter your code</h2>
+<h2>{{ heading|default:"Enter your code" }}</h2>
 <p><small>We sent a code to {% if email %}<strong>{{ email }}</strong>{% else %}your email{% endif %}. It expires in {{ minutes }} minutes.</small></p>
 <form method="post" action="{% url 'web:verify_code' %}">
     {% csrf_token %}
     {% include "web/components/code_input.html" with digits=digits label="Code" error=error %}
     {% include "web/components/button.html" with text="Continue" type="submit" full_width=True %}
 </form>
-<p><small>Didn't get it? Check your spam folder or {% include "web/components/button.html" with text="send a new code" variant="text" href="#" %}</small></p>
+<form method="post" action="{% url 'web:resend_code' %}">
+    {% csrf_token %}
+    <p><small>Didn't get it? Check your spam folder or {% include "web/components/button.html" with text="send a new code" variant="text" type="submit" %}</small></p>
+</form>
 <p><small><a href="{% url 'web:login' %}">Back to login</a></small></p>
 {% endblock %}

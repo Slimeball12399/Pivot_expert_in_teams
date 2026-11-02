@@ -11,6 +11,7 @@ https://docs.djangoproject.com/en/6.1/ref/settings/
 """
 
 import os
+import sys
 from datetime import timedelta
 from pathlib import Path
 
@@ -134,6 +135,12 @@ AUTH_PASSWORD_VALIDATORS = [
     },
 ]
 
+# Only for `manage.py test`: a fast password hasher. The real one (PBKDF2) is
+# slow on purpose, and the tests hash passwords hundreds of times
+# (create_user, logins). Real passwords always use the default hashers.
+if sys.argv[1:2] == ["test"]:
+    PASSWORD_HASHERS = ["django.contrib.auth.hashers.MD5PasswordHasher"]
+
 
 # Security
 # One-time codes sent by email, for email verification and password reset.
@@ -143,6 +150,13 @@ EMAIL_CODE_LIFETIME = timedelta(minutes=15)
 EMAIL_CODE_LENGTH = int(os.environ.get("EMAIL_CODE_LENGTH", "8"))
 # Wrong guesses allowed per code; after that the code stops working.
 EMAIL_CODE_MAX_ATTEMPTS = 5
+# Shortest time between two codes for the same user and purpose. Asking
+# again sooner sends nothing (the last code still works), but the answer
+# looks the same, so it doesn't reveal which emails have accounts.
+EMAIL_CODE_RESEND_COOLDOWN = timedelta(seconds=60)
+# Seconds the password reset token works, from entering the right reset code
+# to saving the new password. Used by Django's PasswordResetTokenGenerator.
+PASSWORD_RESET_TIMEOUT = int(timedelta(minutes=10).total_seconds())
 
 
 # Internationalization

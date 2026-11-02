@@ -2,6 +2,7 @@ from django.conf import settings
 from django.contrib.auth import SESSION_KEY
 from django.test import TestCase
 from django.urls import reverse
+from django.utils import timezone
 
 from accounts.models import User
 URL = reverse("web:login")
@@ -14,10 +15,10 @@ class LoginViewTests(TestCase):
     def setUp(self):
         self.admin = User.objects.create_user(
             "admin@example.com", PASSWORD, first_name="Anna", last_name="Hansen",
-            role=User.Role.ADMIN)
+            role=User.Role.ADMIN, email_verified_at=timezone.now())
         User.objects.create_user(
             "speaker@example.com", PASSWORD, first_name="Mikkel", last_name="Jensen",
-            role=User.Role.SPEAKER)
+            role=User.Role.SPEAKER, email_verified_at=timezone.now())
 
     def post(self, **data):
         return self.client.post(URL, {"email": "admin@example.com", "password": PASSWORD, **data})
