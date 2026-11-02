@@ -1,0 +1,89 @@
+/* Login page: intro and form side by side, 6:4. */
+
+.login {
+    display: flex;
+    min-height: 100vh;
+}
+
+/* Always dark (the section has data-theme="dark"). Content at the top, footer at the bottom. */
+.login-intro {
+    flex: 6;
+    padding: 4rem;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    background: var(--background);
+    color: var(--text);
+}
+
+.login-intro .logo {
+    margin-bottom: 1rem;
+}
+
+.login-intro h1 {
+    font-size: 3rem;
+    text-transform: uppercase;
+}
+
+/* 100px narrower than the example image's natural width (698px). */
+.login-intro p {
+    max-width: 598px;
+}
+
+.login-intro-accent {
+    color: var(--rose);
+}
+
+.login-intro-footer {
+    display: flex;
+    gap: 1rem;
+    font-size: 0.75rem;
+}
+
+/* The example image is the one thing on this side that follows the theme toggle,
+   so it looks at <html>'s theme, not at the section's forced dark theme. */
+/* Natural size (698px), shrinking only when the section is narrower. */
+.login-image {
+    max-width: 100%;
+    height: auto;
+}
+
+.login-image-dark {
+    display: none;
+}
+
+:root[data-theme="dark"] .login-image-light {
+    display: none;
+}
+
+:root[data-theme="dark"] .login-image-dark {
+    display: block;
+}
+
+/* The form side centres its content horizontally and vertically. */
+.login-side {
+    flex: 4;
+    padding: 4rem;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.login-side form {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+    padding: 1rem;
+}
+
+/* Narrow screens: the two sections stack, intro on top, form below. */
+@media (max-width: 800px) {
+    .login {
+        flex-direction: column;
+    }
+
+    .login-intro,
+    .login-side {
+        flex: none;
+    }
+}
