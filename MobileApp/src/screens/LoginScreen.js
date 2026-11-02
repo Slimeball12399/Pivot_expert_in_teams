@@ -1,42 +1,18 @@
-import { Link, router } from 'expo-router';
-import { useState } from 'react';
+import { Link } from 'expo-router';
 import { StyleSheet, Text } from 'react-native';
 
 import { FormError } from '../components/FormError';
 import { ScreenContainer } from '../components/ScreenContainer';
-import { useAuth } from '../providers/AuthProvider';
+import { useLoginForm } from '../hooks/useLoginForm';
 import { useTheme } from '../providers/ThemeProvider';
 import { Button } from '../ui/Button';
 import { TextInput } from '../ui/TextInput';
-import { validateEmail, validatePassword } from '../utils/validators';
 
-// SCRUM-52. Logs in, then hands off to index.js's auth redirect.
+//State and submit logic live in useLoginForm().
 export function LoginScreen() {
   const { theme } = useTheme();
-  const { login } = useAuth();
-
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [fieldErrors, setFieldErrors] = useState({});
-  const [formError, setFormError] = useState(null);
-  const [submitting, setSubmitting] = useState(false);
-
-  async function handleSubmit() {
-    const errors = { email: validateEmail(email), password: validatePassword(password) };
-    setFieldErrors(errors);
-    if (errors.email || errors.password) return;
-
-    setFormError(null);
-    setSubmitting(true);
-    try {
-      await login(email.trim(), password);
-      router.replace('/');
-    } catch (error) {
-      setFormError(error.status === 401 ? 'Wrong email or password.' : 'Something went wrong. Try again.');
-    } finally {
-      setSubmitting(false);
-    }
-  }
+  const { email, setEmail, password, setPassword, fieldErrors, formError, submitting, handleSubmit } =
+    useLoginForm();
 
   return (
     <ScreenContainer>

@@ -1,99 +1,19 @@
-import { Link, router } from 'expo-router';
-import { useState } from 'react';
+import { Link } from 'expo-router';
 import { StyleSheet, Text } from 'react-native';
 
-import { Checkbox } from '../ui/Checkbox';
 import { FormError } from '../components/FormError';
 import { ScreenContainer } from '../components/ScreenContainer';
-import { useAuth } from '../providers/AuthProvider';
+import { useRegisterForm } from '../hooks/useRegisterForm';
 import { useTheme } from '../providers/ThemeProvider';
 import { Button } from '../ui/Button';
+import { Checkbox } from '../ui/Checkbox';
 import { TextInput } from '../ui/TextInput';
-import {
-  validateBirthDate,
-  validateEmail,
-  validateHeight,
-  validatePassword,
-  validatePhone,
-} from '../utils/validators';
 
-function firstMessage(value) {
-  if (Array.isArray(value)) return value[0];
-  return typeof value === 'string' ? value : undefined;
-}
-
-// SCRUM-50 + SCRUM-51
+//registration + privacy-notice consent.
 export function RegisterScreen() {
   const { theme } = useTheme();
-  const { register } = useAuth();
-
-  const [fields, setFields] = useState({
-    email: '',
-    password: '',
-    firstName: '',
-    lastName: '',
-    phoneNumber: '',
-    birthDate: '', 
-    heightCm: '',
-    improvementGoals: '',
-  });
-  const [consents, setConsents] = useState({ privacy_notice: false, audio_storage: false, research: false });
-  const [fieldErrors, setFieldErrors] = useState({});
-  const [formError, setFormError] = useState(null);
-  const [submitting, setSubmitting] = useState(false);
-
-  function setField(name, value) {
-    setFields((prev) => ({ ...prev, [name]: value }));
-  }
-
-  async function handleSubmit() {
-    const errors = {
-      email: validateEmail(fields.email),
-      password: validatePassword(fields.password),
-      firstName: fields.firstName.trim() ? null : 'Enter your first name.',
-      lastName: fields.lastName.trim() ? null : 'Enter your last name.',
-      phoneNumber: validatePhone(fields.phoneNumber),
-      birthDate: validateBirthDate(fields.birthDate ? new Date(fields.birthDate) : null),
-      heightCm: validateHeight(fields.heightCm),
-      consents: consents.privacy_notice ? null : 'You must accept the privacy notice.',
-    };
-    setFieldErrors(errors);
-    if (Object.values(errors).some(Boolean)) return;
-
-    setFormError(null);
-    setSubmitting(true);
-    try {
-      await register({
-        ...fields,
-        email: fields.email.trim(),
-        consents: Object.keys(consents).filter((purpose) => consents[purpose]),
-      });
-      router.replace('/');
-    } catch (error) {
-      // Map the backend's field errors 
-      // register_speaker) back onto the matching input instead of only
-      // handling the duplicate-email case.
-      const backendErrors = error.data && typeof error.data === 'object' ? error.data : null;
-      const mapped = backendErrors && {
-        email: firstMessage(backendErrors.email),
-        password: firstMessage(backendErrors.password),
-        firstName: firstMessage(backendErrors.first_name),
-        lastName: firstMessage(backendErrors.last_name),
-        phoneNumber: firstMessage(backendErrors.phone_number),
-        birthDate: firstMessage(backendErrors.birth_date),
-        heightCm: firstMessage(backendErrors.height_cm),
-        consents: firstMessage(backendErrors.consents),
-      };
-
-      if (mapped && Object.values(mapped).some(Boolean)) {
-        setFieldErrors((prev) => ({ ...prev, ...mapped }));
-      } else {
-        setFormError('Something went wrong. Try again.');
-      }
-    } finally {
-      setSubmitting(false);
-    }
-  }
+  const { fields, setField, consents, toggleConsent, fieldErrors, formError, submitting, handleSubmit } =
+    useRegisterForm();
 
   return (
     <ScreenContainer scroll>
@@ -149,7 +69,7 @@ export function RegisterScreen() {
 
       <Checkbox
         checked={consents.privacy_notice}
-        onToggle={(checked) => setConsents((prev) => ({ ...prev, privacy_notice: checked }))}
+        onToggle={(checked) => toggleConsent('privacy_notice', checked)}
         label="I accept the Privacy Notice"
       />
       {fieldErrors.consents && (
@@ -161,12 +81,12 @@ export function RegisterScreen() {
 
       <Checkbox
         checked={consents.audio_storage}
-        onToggle={(checked) => setConsents((prev) => ({ ...prev, audio_storage: checked }))}
+        onToggle={(checked) => toggleConsent('audio_storage', checked)}
         label="Allow storing my raw audio recordings"
       />
       <Checkbox
         checked={consents.research}
-        onToggle={(checked) => setConsents((prev) => ({ ...prev, research: checked }))}
+        onToggle={(checked) => toggleConsent('research', checked)}
         label="Allow using my data for Pivot research"
       />
 
