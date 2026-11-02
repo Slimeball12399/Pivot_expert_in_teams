@@ -37,6 +37,9 @@ class User(AbstractUser, UUIDModel):
         max_length=20, choices=Role.choices, default=Role.SPEAKER)
 
     email_verified_at = models.DateTimeField(null=True, blank=True)
+    # A new email the user asked for (PATCH /api/me/). It replaces `email`
+    # only once the code sent to it is entered, so a typo can't lock anyone out.
+    pending_email = models.EmailField(blank=True, default="")
 
     USERNAME_FIELD = "email"
     REQUIRED_FIELDS = ["first_name", "last_name"]

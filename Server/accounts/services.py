@@ -6,6 +6,7 @@ from django.contrib.auth.password_validation import validate_password
 from django.contrib.auth.tokens import default_token_generator
 from django.core.exceptions import ValidationError
 from django.db import transaction
+from django.db.models import Q
 from django.utils import timezone
 from django.utils.encoding import force_bytes, force_str
 from django.utils.http import urlsafe_base64_decode, urlsafe_base64_encode
@@ -19,6 +20,7 @@ INVALID_LOGIN = "invalid_login"
 EMAIL_NOT_VERIFIED = "email_not_verified"
 INVALID_CODE = "invalid_code"
 INVALID_RESET_TOKEN = "invalid_token"
+EMAIL_TAKEN = "email_taken"
 
 EMAIL_NOT_VERIFIED_MESSAGE = "Verify your email to log in. We sent you a code."
 INVALID_CODE_MESSAGE = "That code is wrong or has expired. Check the email or ask for a new code."
@@ -114,9 +116,14 @@ EDITABLE_SPEAKER_FIELDS = frozenset(
 
 
 @transaction.atomic
-def update_profile(user, *, profile=None, **fields):
+def update_profile(user, *, profile=None, email=None, current_password=None, **fields):
     """Change the given fields of `user` and, for speakers, of their
     SpeakerProfile (`profile`, a dict). Only the fields passed are touched.
+
+    A new `email` needs `current_password` and isn't switched here: it is
+    saved as pending_email and a code is sent to it. verify_email() switches
+    it once that code is entered. Sending the current email cancels a
+    pending change.
 
     Runs the same model validators as registration and raises one
     ValidationError with every error found; nothing is saved then.
@@ -128,6 +135,17 @@ def update_profile(user, *, profile=None, **fields):
         raise ValueError(f"Not editable: {', '.join(sorted(unknown))}")
 
     errors = {}
+
+    if email is not None:
+        email = User.objects.normalize_email(email.strip())
+        if email == user.email:
+            fields["pending_email"] = ""  # cancels a pending change
+        elif not user.check_password(current_password or ""):
+            errors.setdefault("current_password", []).append("Wrong password.")
+        elif User.objects.filter(email__iexact=email).exclude(pk=user.pk).exists():
+            errors.setdefault("email", []).append("An account with this email already exists.")
+        else:
+            fields["pending_email"] = email
 
     for name, value in fields.items():
         setattr(user, name, value)
@@ -166,6 +184,8 @@ def update_profile(user, *, profile=None, **fields):
 
     if fields:
         user.save(update_fields=list(fields))
+    if fields.get("pending_email"):
+        transaction.on_commit(partial(send_verification_code, user), robust=True)
     if speaker_profile is not None:
         speaker_profile.save(update_fields=list(profile))
     return user
@@ -179,35 +199,49 @@ def update_profile(user, *, profile=None, **fields):
 
 
 def send_verification_code(user) -> bool:
-    """Email `user` a new verification code. False when nothing was sent:
-    already verified, or the last code is still inside the resend cooldown."""
-    if user.email_verified_at is not None:
+    """Email a new verification code to the address that still needs one:
+    the pending new email if there is one, else the account's email while
+    unverified. False when nothing was sent: nothing to verify, or the last
+    code is still inside the resend cooldown."""
+    to = user.pending_email or (user.email if user.email_verified_at is None else "")
+    if not to:
         return False
     code = verification.create_code(user, EmailCode.Purpose.VERIFY_EMAIL)
     if code is None:  # resend cooldown
         return False
-    emails.send_verification_code_email(user, code)
+    emails.send_verification_code_email(user, code, to=to)
     return True
 
 
 def resend_verification_code(email) -> None:
-    """The "send a new code" button. Does the same whether or not the email
-    has an account, so it can't be used to find out which emails do."""
-    user = User.objects.filter(email=email, is_active=True).first()
-    if user is not None:
+    """The "send a new code" button, for an unverified account's email or a
+    pending new email. Does the same whether or not the email has an
+    account, so it can't be used to find out which emails do."""
+    user = User.objects.filter(Q(email=email) | Q(pending_email=email), is_active=True).first()
+    if user is not None and (user.pending_email == email or user.email_verified_at is None):
         send_verification_code(user)
 
 
 def verify_email(email, code) -> AbstractUser:
-    """Mark the email verified if `code` is right and return the user, so the
-    caller can log them in. Raises ValidationError(code=INVALID_CODE) for
-    any wrong, expired or used code, and for unknown or verified emails."""
-    user = User.objects.filter(email=email, is_active=True).first()
-    if (user is None or user.email_verified_at is not None
+    """Verify `email` with `code` and return the user. Either an unverified
+    account's own email, or a pending new email, which then replaces the
+    old one (User.save then logs the app out everywhere).
+
+    Raises ValidationError(code=INVALID_CODE) for any wrong, expired or used
+    code, and for unknown or already verified emails; EMAIL_TAKEN if another
+    account took the new email in the meantime.
+    """
+    user = User.objects.filter(Q(email=email) | Q(pending_email=email), is_active=True).first()
+    changing = user is not None and user.pending_email == email
+    if (user is None or (not changing and user.email_verified_at is not None)
             or not verification.validate_code(user, EmailCode.Purpose.VERIFY_EMAIL, code)):
         raise ValidationError(INVALID_CODE_MESSAGE, code=INVALID_CODE)
+    if changing:
+        if User.objects.filter(email__iexact=email).exclude(pk=user.pk).exists():
+            raise ValidationError("An account with this email already exists.", code=EMAIL_TAKEN)
+        user.email, user.pending_email = email, ""
     user.email_verified_at = timezone.now()
-    user.save(update_fields=["email_verified_at"])
+    user.save()
     return user
 
 

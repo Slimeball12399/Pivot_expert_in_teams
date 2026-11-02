@@ -295,4 +295,7 @@ SPECTACULAR_SETTINGS = {
     # instead of a public CDN.
     "SWAGGER_UI_DIST": "SIDECAR",
     "SWAGGER_UI_FAVICON_HREF": "SIDECAR",
+    # Don't show the views' docstrings as endpoint descriptions. They are
+    # notes for developers and stay in the code.
+    "DISABLE_DOCSTRING_DESCRIPTIONS": True if os.environ.get('DJANGO_DEBUG', 'False').lower() == 'true' else False,
 }

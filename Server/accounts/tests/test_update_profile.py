@@ -1,5 +1,6 @@
 from datetime import date
 
+from django.core import mail
 from django.core.exceptions import ValidationError
 from django.test import TestCase
 
@@ -74,7 +75,6 @@ class UpdateProfileTests(TestCase):
 
     def test_only_editable_fields(self):
         cases = [
-            ("email", {"email": "new@example.com"}, {}),
             ("role", {"role": "admin"}, {}),
             ("profile admin link", {}, {"admin": None}),
         ]
@@ -82,3 +82,37 @@ class UpdateProfileTests(TestCase):
             with self.subTest(label):
                 with self.assertRaises(ValueError):
                     update_profile(self.speaker, profile=profile, **fields)
+
+    def test_change_email(self):
+        """A new email needs the password and only becomes pending_email."""
+        def assertFails(field, **fields):
+            with self.assertRaises(ValidationError) as ctx:
+                update_profile(self.speaker, **fields)
+            self.assertIn(field, ctx.exception.message_dict)
+            self.speaker.refresh_from_db()
+            self.assertEqual(self.speaker.pending_email, "")
+
+        with self.subTest("no email sent: no password needed"):
+            update_profile(self.speaker, first_name="Mik")
+            self.speaker.refresh_from_db()
+            self.assertEqual(self.speaker.first_name, "Mik")
+
+        with self.subTest("rejects: wrong password"):
+            assertFails("current_password", email="new@example.com", current_password="wrong")
+        with self.subTest("rejects: no password"):
+            assertFails("current_password", email="new@example.com")
+        with self.subTest("rejects: email taken"):
+            assertFails("email", email="admin@example.com", current_password=PASSWORD)
+
+        with self.subTest("right password: pending, code to the new address, email unchanged"):
+            with self.captureOnCommitCallbacks(execute=True):
+                update_profile(self.speaker, email="new@example.com", current_password=PASSWORD)
+            self.speaker.refresh_from_db()
+            self.assertEqual(self.speaker.email, "speaker@example.com")
+            self.assertEqual(self.speaker.pending_email, "new@example.com")
+            self.assertEqual(mail.outbox[-1].to, ["new@example.com"])
+
+        with self.subTest("the current email cancels it, no password needed"):
+            update_profile(self.speaker, email="speaker@example.com")
+            self.speaker.refresh_from_db()
+            self.assertEqual(self.speaker.pending_email, "")

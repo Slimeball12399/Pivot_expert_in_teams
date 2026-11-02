@@ -125,10 +125,11 @@ def code_email_context(*, first_name, code):
     }
 
 
-def send_verification_code_email(user, code):
-    """The code that confirms a new account's email address."""
+def send_verification_code_email(user, code, to=None):
+    """The code that confirms an email address: the account's own, or `to`
+    (a new email waiting for confirmation)."""
     build_email(
-        to=user.email,
+        to=to or user.email,
         subject=CODE_EMAILS["verification_code"],
         template="verification_code",
         context=code_email_context(first_name=user.first_name, code=code),

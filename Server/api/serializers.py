@@ -90,13 +90,18 @@ class PasswordResetConfirmSerializer(PasswordResetTokenSerializer):
     new_password = serializers.CharField(write_only=True, trim_whitespace=False)
 
 
-class MeUpdateBaseSerializer(UserEditableSerializer):
+class MeUpdateBaseSerializer(UserBaseSerializer):
     """Shared part of the PATCH /api/me/ input: the user's own details.
 
-    Send only the fields to change. Email and role can't be changed here;
+    Send only the fields to change. A new email also needs current_password;
+    it becomes pending_email and is switched only after the code sent to it
+    is entered (PUT /api/auth/verify-email/). Role can't be changed here;
     fields a serializer doesn't declare are ignored. The rules (Danish
-    phone, age, height) run inside update_profile().
+    phone, age, height, password, email taken) run inside update_profile().
     """
+
+    current_password = serializers.CharField(
+        write_only=True, required=False, trim_whitespace=False)
 
     def update(self, user, validated_data):
         try:
@@ -153,13 +158,20 @@ class AdminProfileSerializer(serializers.Serializer):
     id = serializers.UUIDField()
 
 
-class SpeakerMeSerializer(RegisteredUserSerializer):
+class MeBaseSerializer(RegisteredUserSerializer):
+    """Shared part of GET /api/me/: the user, plus a new email waiting for
+    its code ("" when there is none)."""
+
+    pending_email = serializers.CharField()
+
+
+class SpeakerMeSerializer(MeBaseSerializer):
     """GET /api/me/ for a speaker: the user plus their speaker profile."""
 
     profile = SpeakerProfileSerializer(source="speaker_profile", allow_null=True)
 
 
-class AdminMeSerializer(RegisteredUserSerializer):
+class AdminMeSerializer(MeBaseSerializer):
     """GET /api/me/ for an admin: the user plus their admin profile."""
 
     profile = AdminProfileSerializer(source="admin_profile", allow_null=True)
