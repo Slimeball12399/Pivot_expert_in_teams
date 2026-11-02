@@ -6,6 +6,7 @@ from django.shortcuts import redirect, render, resolve_url
 from django.utils.http import url_has_allowed_host_and_scheme
 from django.views.decorators.debug import sensitive_post_parameters
 
+from accounts.emails import code_lifetime_minutes
 from accounts.models import User
 from accounts.services import login_user
 
@@ -54,3 +55,19 @@ def login(request):
     ):
         next_url = resolve_url(settings.LOGIN_REDIRECT_URL)
     return redirect(next_url)
+
+
+@login_not_required
+@sensitive_post_parameters("new_password", "confirm_password")
+def password_reset(request):
+    """Choose a new password. Template only for now; the reset service comes later."""
+    return render(request, "web/password_reset.html")
+
+
+@login_not_required
+def verify_code(request):
+    """Enter the one-time code from the email. Template only for now."""
+    return render(request, "web/verify_code.html", {
+        "digits": range(settings.EMAIL_CODE_LENGTH),
+        "minutes": code_lifetime_minutes(),
+    })

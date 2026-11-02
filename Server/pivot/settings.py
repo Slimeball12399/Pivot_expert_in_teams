@@ -140,7 +140,7 @@ AUTH_PASSWORD_VALIDATORS = [
 # How long a code works; the emails say this too ("expires in 15 minutes").
 EMAIL_CODE_LIFETIME = timedelta(minutes=15)
 # Digits per code; the emails show them in groups of four ("1234 5678").
-EMAIL_CODE_LENGTH = 8
+EMAIL_CODE_LENGTH = int(os.environ.get("EMAIL_CODE_LENGTH", "8"))
 # Wrong guesses allowed per code; after that the code stops working.
 EMAIL_CODE_MAX_ATTEMPTS = 5
 
