@@ -1,10 +1,16 @@
+import { Redirect } from 'expo-router';
 import { StyleSheet, Text, View } from 'react-native';
 
+import { useAuth } from '../providers/AuthProvider';
 import { useTheme } from '../providers/ThemeProvider';
 
-// `index` is the "/" route, so this screen opens automatically on launch.
 export default function HomeScreen() {
+  const { isAuthenticated } = useAuth();
   const { theme } = useTheme();
+
+  if (isAuthenticated === false) {
+    return <Redirect href="/(auth)/login" />;
+  }
 
   return (
     <View style={[styles.container, { backgroundColor: theme.colors.background }]}>
