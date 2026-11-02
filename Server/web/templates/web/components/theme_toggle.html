@@ -1,0 +1,7 @@
+{# Theme toggle: one button that cycles System -> Light -> Dark and shows the current mode's icon. #}
+{# Needs web/js/theme.js and web/css/theme-toggle.css, which base.html loads. #}
+<button type="button" class="theme-toggle" data-theme-toggle aria-label="Theme: System" title="Theme: System">
+    <span class="theme-toggle-icon" data-icon-for="system">{% heroicon_outline "computer-desktop" size=20 aria_hidden="true" %}</span>
+    <span class="theme-toggle-icon" data-icon-for="light">{% heroicon_outline "sun" size=20 aria_hidden="true" %}</span>
+    <span class="theme-toggle-icon" data-icon-for="dark">{% heroicon_outline "moon" size=20 aria_hidden="true" %}</span>
+</button>

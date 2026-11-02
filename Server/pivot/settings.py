@@ -11,6 +11,7 @@ https://docs.djangoproject.com/en/6.1/ref/settings/
 """
 
 import os
+from datetime import timedelta
 from pathlib import Path
 
 from dotenv import load_dotenv
@@ -30,12 +31,17 @@ SECRET_KEY = os.environ['DJANGO_SECRET_KEY']
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = os.environ.get('DJANGO_DEBUG', 'False').lower() == 'true'
 
-ALLOWED_HOSTS = [h for h in os.environ.get('DJANGO_ALLOWED_HOSTS', '').split(',') if h]
+ALLOWED_HOSTS = [h for h in os.environ.get(
+    'DJANGO_ALLOWED_HOSTS', '').split(',') if h]
 
+AUTH_USER_MODEL = "accounts.User"
 
 # Application definition
 
 INSTALLED_APPS = [
+    # First, so its createsuperuser command overrides Django's own.
+    'accounts',
+
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
@@ -44,9 +50,17 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
 
     'rest_framework',
+    # Records issued refresh tokens and blacklists used/logged-out ones.
+    # Needs `python manage.py migrate`; without it rotation and logout silently do nothing.
+    'rest_framework_simplejwt.token_blacklist',
+    'phonenumber_field',
+    'drf_spectacular',
+    'drf_spectacular_sidecar',  # serves the Swagger UI JS and CSS ourselves, no CDN
+    'heroicons',
 
     'core',
-    
+    'web',
+    'api'
 ]
 
 MIDDLEWARE = [
@@ -55,6 +69,7 @@ MIDDLEWARE = [
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
+    "django.contrib.auth.middleware.LoginRequiredMiddleware",
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
 ]
@@ -72,11 +87,17 @@ TEMPLATES = [
                 'django.contrib.auth.context_processors.auth',
                 'django.contrib.messages.context_processors.messages',
             ],
+            # Heroicons tags ({% heroicon_outline "sun" %}) in every template,
+            # including included partials, without {% load heroicons %}.
+            'builtins': ['heroicons.templatetags.heroicons'],
         },
     },
 ]
 
 WSGI_APPLICATION = 'pivot.wsgi.application'
+LOGIN_URL = "web:login"
+# Where a successful login goes when there is no ?next= (the home page).
+LOGIN_REDIRECT_URL = "/"
 
 
 # Database
@@ -138,4 +159,80 @@ MAILERS = {
     'default': {
         'BACKEND': 'django.core.mail.backends.console.EmailBackend',
     },
+}
+
+
+# Consents
+# Current version of the text behind each consent purpose (keys match
+# accounts.models.Consent.Purpose). Bump a version when that text changes;
+# users must then accept the new version. Stored on each Consent row.
+
+CONSENT_VERSIONS = {
+    "privacy_notice": "1",
+    "audio_storage": "1",
+    "research": "1",
+}
+
+
+# Django REST Framework
+# https://www.django-rest-framework.org/api-guide/settings/
+
+REST_FRAMEWORK = {
+    # Every endpoint requires a logged-in user unless the view allows more,
+    # e.g. permission_classes = [AllowAny] on registration.
+    "DEFAULT_PERMISSION_CLASSES": [
+        "rest_framework.permissions.IsAuthenticated",
+    ],
+    # The API is for the mobile app, so it only accepts JWTs
+    # (Authorization: Bearer <access token>). The web app uses session
+    # cookies through its own Django views, not through the API.
+    "DEFAULT_AUTHENTICATION_CLASSES": [
+        "rest_framework_simplejwt.authentication.JWTAuthentication",
+    ],
+    # Lets drf-spectacular build the OpenAPI schema from views and serializers.
+    "DEFAULT_SCHEMA_CLASS": "drf_spectacular.openapi.AutoSchema",
+}
+
+
+# JWT auth for the mobile app (djangorestframework-simplejwt)
+# https://django-rest-framework-simplejwt.readthedocs.io/en/latest/settings.html
+
+SIMPLE_JWT = {
+    # Short-lived: sent on every request and can't be revoked, so a stolen
+    # one is only useful for a few minutes.
+    "ACCESS_TOKEN_LIFETIME": timedelta(minutes=15),
+    # How long the app stays logged in without being used. Each refresh
+    # renews it, so an active user stays logged in.
+    "REFRESH_TOKEN_LIFETIME": timedelta(days=30),
+    # Every refresh returns a new refresh token and blacklists the old one,
+    # so a copied refresh token works at most once.
+    "ROTATE_REFRESH_TOKENS": True,
+    "BLACKLIST_AFTER_ROTATION": True,
+    "UPDATE_LAST_LOGIN": True,
+    # Off: tokens don't carry a password hash. On password change/reset,
+    # blacklist the user's outstanding refresh tokens instead; their access
+    # tokens then die within ACCESS_TOKEN_LIFETIME.
+    "CHECK_REVOKE_TOKEN": False,
+    # Own key so it can be rotated without touching Django's SECRET_KEY.
+    # Falls back to SECRET_KEY when JWT_SIGNING_KEY isn't set.
+    "SIGNING_KEY": os.environ.get("JWT_SIGNING_KEY") or SECRET_KEY,
+}
+
+
+# API docs (drf-spectacular)
+# https://drf-spectacular.readthedocs.io/en/latest/settings.html
+
+SPECTACULAR_SETTINGS = {
+    "TITLE": "Pivot API",
+    "DESCRIPTION": "REST API for the Pivot mobile app.",
+    "VERSION": "0.1.0",
+    # Don't list the schema endpoint itself in the docs.
+    "SERVE_INCLUDE_SCHEMA": False,
+    # Separate request and response schemas, so write-only fields like the
+    # password only appear in the request.
+    "COMPONENT_SPLIT_REQUEST": True,
+    # Load Swagger UI from drf_spectacular_sidecar (our own static files)
+    # instead of a public CDN.
+    "SWAGGER_UI_DIST": "SIDECAR",
+    "SWAGGER_UI_FAVICON_HREF": "SIDECAR",
 }

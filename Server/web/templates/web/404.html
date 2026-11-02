@@ -1,0 +1,16 @@
+{% extends "web/base.html" %}
+{% load static %}
+
+{% block title %}Page not found | Pivot{% endblock %}
+
+{% block head %}
+<link rel="stylesheet" href="{% static 'web/css/not-found.css' %}">
+{% endblock %}
+
+{% block content %}
+<section class="not-found">
+    <h1 class="not-found-code">404</h1>
+    <p class="not-found-message">Sorry, we can't find the page you're looking for.</p>
+    {% include "web/components/button.html" with text="Back to home" href="/" variant="primary" %}
+</section>
+{% endblock %}

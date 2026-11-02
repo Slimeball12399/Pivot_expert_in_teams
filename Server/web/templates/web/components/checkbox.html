@@ -1,0 +1,13 @@
+{% comment %}
+Checkbox with its label. Styles in web/css/checkbox.css.
+
+  {% include "web/components/checkbox.html" with id="remember_me" label="Keep me logged in on this device" %}
+
+  id (required; also the name unless `name` is given), label (required),
+  name, value (default "on"), checked
+{% endcomment %}
+<label class="checkbox" for="{{ id }}">
+    <input class="checkbox-input" type="checkbox" id="{{ id }}" name="{{ name|default:id }}" value="{{ value|default:'on' }}"{% if checked %} checked{% endif %}>
+    <span class="checkbox-box" aria-hidden="true">{% heroicon_outline "check" size=16 %}</span>
+    <span class="checkbox-label">{{ label }}</span>
+</label>

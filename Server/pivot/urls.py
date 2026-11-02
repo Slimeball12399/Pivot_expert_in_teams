@@ -15,10 +15,13 @@ Including another URLconf
     2. Add a URL to urlpatterns:  path('blog/', include('blog.urls'))
 """
 from django.contrib import admin
-from django.urls import path
+from django.urls import include, path
 
-from core.views import health
+# Pivot's own 404 page (only used when DEBUG is off; with DEBUG on Django shows its debug page).
+handler404 = "web.views.page_not_found"
+
 urlpatterns = [
     path('admin/', admin.site.urls),
-    path('health/', health, name='health'),
+    path('api/', include('api.urls')),
+    path('', include('web.urls')),
 ]
