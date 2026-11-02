@@ -13,7 +13,7 @@ export function PrivacyNoticeScreen() {
     <ScreenContainer scroll>
       <Text style={[theme.styles.text.title, styles.title]}>Privacy Notice</Text>
       <Text style={[theme.styles.text.body, { color: theme.colors.textSecondary }]}>
-        PLACEHOLDER — replace with Pivot&apos;s actual privacy notice text before release. This should
+        PLACEHOLDER — replace with Pivot&apos;s actual privacy notice text before release.
         explain what data Pivot collects (account details, balance-board session data, optionally raw
         audio), why, how long it&apos;s kept, and the user&apos;s GDPR rights.
       </Text>
