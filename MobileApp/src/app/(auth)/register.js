@@ -1,3 +1,5 @@
-import { RegisterScreen } from '../../screens/RegisterScreen';
+import { AuthScreen } from '../../screens/AuthScreen';
 
-export default RegisterScreen;
+export default function Register() {
+  return <AuthScreen tab="register" />;
+}

@@ -2,7 +2,7 @@ import { Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { useTheme } from '../providers/ThemeProvider';
 
-export function Checkbox({ checked, onToggle, label }) {
+export function Checkbox({ checked, onToggle, label, required = false }) {
   const { theme } = useTheme();
   const { colors } = theme;
 
@@ -17,7 +17,10 @@ export function Checkbox({ checked, onToggle, label }) {
       >
         {checked && <Text style={{ color: colors.primaryText, fontSize: 13, fontWeight: '700' }}>✓</Text>}
       </View>
-      <Text style={[styles.label, { color: colors.text }]}>{label}</Text>
+      <Text style={[styles.label, { color: colors.text }]}>
+        {label}
+        {required && <Text style={{ color: colors.danger }}> *</Text>}
+      </Text>
     </Pressable>
   );
 }

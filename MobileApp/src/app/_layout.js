@@ -1,18 +1,32 @@
-import { Jost_700Bold } from '@expo-google-fonts/jost';
+import { Jost_400Regular, Jost_700Bold } from '@expo-google-fonts/jost';
 import { Outfit_400Regular } from '@expo-google-fonts/outfit';
 import { useFonts } from 'expo-font';
 import { Stack } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
+import { ActivityIndicator, StyleSheet, Text, View } from 'react-native';
 
 import { AppProviders } from '../providers/AppProviders';
 
-// Root layout: replaces App.js. Providers wrap the navigator so every screen can use them.
-// Fonts match the web app's design system (Jost for headings, Outfit for
-// body) — nothing renders until they're ready, so there's no font-swap flash.
-export default function RootLayout() {
-  const [fontsLoaded] = useFonts({ Jost_700Bold, Outfit_400Regular });
 
-  if (!fontsLoaded) return null;
+// A spinner here
+export default function RootLayout() {
+  const [fontsLoaded, fontError] = useFonts({ Jost_400Regular, Jost_700Bold, Outfit_400Regular });
+
+  if (fontError) {
+    return (
+      <View style={styles.center}>
+        <Text style={styles.errorText}>Failed to load fonts: {fontError.message}</Text>
+      </View>
+    );
+  }
+
+  if (!fontsLoaded) {
+    return (
+      <View style={styles.center}>
+        <ActivityIndicator size="large" />
+      </View>
+    );
+  }
 
   return (
     <AppProviders>
@@ -24,3 +38,8 @@ export default function RootLayout() {
     </AppProviders>
   );
 }
+
+const styles = StyleSheet.create({
+  center: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: 24 },
+  errorText: { textAlign: 'center' },
+});

@@ -7,6 +7,7 @@ export default function AuthLayout() {
     <Stack screenOptions={{ headerShown: false }}>
       <Stack.Screen name="login" />
       <Stack.Screen name="register" />
+      <Stack.Screen name="forgot-password" />
       <Stack.Screen name="privacy-notice" options={{ presentation: 'modal', headerShown: true, title: 'Privacy Notice' }} />
     </Stack>
   );

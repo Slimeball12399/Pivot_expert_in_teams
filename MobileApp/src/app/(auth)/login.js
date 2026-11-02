@@ -1,3 +1,5 @@
-import { LoginScreen } from '../../screens/LoginScreen';
+import { AuthScreen } from '../../screens/AuthScreen';
 
-export default LoginScreen;
+export default function Login() {
+  return <AuthScreen tab="login" />;
+}
