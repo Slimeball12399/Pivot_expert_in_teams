@@ -236,3 +236,36 @@ SPECTACULAR_SETTINGS = {
     "SWAGGER_UI_DIST": "SIDECAR",
     "SWAGGER_UI_FAVICON_HREF": "SIDECAR",
 }
+
+# settings.py
+ENV = os.environ.get("DJANGO_ENV", "dev")
+LOG_LEVEL = os.environ.get("LOG_LEVEL", "DEBUG" if ENV == "dev" else "INFO")
+LOG_DIR = BASE_DIR / "logs"
+LOG_DIR.mkdir(exist_ok=True)
+
+_handlers = ["console", "file"]
+LOGGING = {
+    "version": 1,
+    "disable_existing_loggers": False,
+    "filters": {
+        "request_id": {"()": "core.request_id.RequestIDFilter"},
+        "redact": {"()": "core.log_filters.RedactSensitiveFilter"},
+    },
+    "formatters": {
+        "standard": {"format": "%(asctime)s %(levelname)s [%(request_id)s] %(name)s: %(message)s"},
+    },
+    "handlers": {
+        "console": {"class": "logging.StreamHandler", "formatter": "standard",
+                    "filters": ["request_id", "redact"]},
+        "file": {"class": "logging.handlers.RotatingFileHandler",
+                 "filename": LOG_DIR / "pivot.log", "maxBytes": 5 * 1024 * 1024,
+                 "backupCount": 5, "encoding": "utf-8", "formatter": "standard",
+                 "filters": ["request_id", "redact"]},
+    },
+    "root": {"handlers": _handlers, "level": "WARNING"},
+    "loggers": {
+        "pivot": {"handlers": _handlers, "level": LOG_LEVEL, "propagate": False},
+        "django": {"handlers": _handlers, "level": "INFO", "propagate": False},
+        "django.db.backends": {"level": "WARNING"},
+    },
+}

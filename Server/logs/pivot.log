@@ -1,0 +1,105 @@
+2026-11-02 21:04:21,173 INFO [-] django.utils.autoreload: Watching for file changes with StatReloader
+2026-11-02 21:04:38,468 INFO [-] django.server: "GET / HTTP/1.1" 302 0
+2026-11-02 21:04:38,623 INFO [-] django.server: "GET /login/?next=/ HTTP/1.1" 200 6962
+2026-11-02 21:04:38,964 INFO [-] django.server: "GET /static/web/js/theme.js HTTP/1.1" 200 2685
+2026-11-02 21:04:38,967 INFO [-] django.server: "GET /static/web/css/checkbox.css HTTP/1.1" 200 1323
+2026-11-02 21:04:38,973 INFO [-] django.server: "GET /static/web/css/login.css HTTP/1.1" 200 1827
+2026-11-02 21:04:38,986 INFO [-] django.server: "GET /static/web/css/theme-toggle.css HTTP/1.1" 200 1202
+2026-11-02 21:04:38,992 INFO [-] django.server: "GET /static/web/css/button.css HTTP/1.1" 200 1452
+2026-11-02 21:04:39,011 INFO [-] django.server: "GET /static/web/css/header.css HTTP/1.1" 200 468
+2026-11-02 21:04:39,015 INFO [-] django.server: "GET /static/web/css/base.css HTTP/1.1" 200 1387
+2026-11-02 21:04:39,027 INFO [-] django.server: "GET /static/web/img/pivot-logo-on-dark.svg HTTP/1.1" 200 8501
+2026-11-02 21:04:39,027 INFO [-] django.server: "GET /static/web/img/pivot-logo.svg HTTP/1.1" 200 8501
+2026-11-02 21:04:39,030 INFO [-] django.server: "GET /static/web/img/live-feedback-example.svg HTTP/1.1" 200 13387
+2026-11-02 21:04:39,028 INFO [-] django.server: "GET /static/web/img/live-feedback-example-dark.svg HTTP/1.1" 200 13411
+2026-11-02 21:04:39,028 INFO [-] django.server: "GET /static/web/css/input.css HTTP/1.1" 200 2142
+2026-11-02 21:04:39,028 INFO [-] django.server: "GET /static/web/js/password-toggle.js HTTP/1.1" 200 756
+2026-11-02 21:04:39,359 INFO [-] django.server: "GET /static/web/img/pivot-mark-on-dark.svg HTTP/1.1" 200 8062
+2026-11-02 21:05:58,993 INFO [-] django.server: "GET / HTTP/1.1" 302 0
+2026-11-02 21:05:59,008 INFO [-] django.server: "GET /login/?next=/ HTTP/1.1" 200 6962
+2026-11-02 21:06:41,491 ERROR [-] django.request: Internal Server Error: /login/
+Traceback (most recent call last):
+  File "C:\Users\win\Desktop\Pivot_expert_in_teams\Server\.venv\Lib\site-packages\django\db\backends\utils.py", line 105, in _execute
+    return self.cursor.execute(sql, params)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\win\Desktop\Pivot_expert_in_teams\Server\.venv\Lib\site-packages\psycopg\cursor.py", line 117, in execute
+    raise ex.with_traceback(None)
+psycopg.errors.UndefinedTable: relation "accounts_user" does not exist
+LINE 1: ...user"."phone_number", "accounts_user"."role" FROM "accounts_...
+                                                             ^
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "C:\Users\win\Desktop\Pivot_expert_in_teams\Server\.venv\Lib\site-packages\django\core\handlers\exception.py", line 56, in inner
+    response = get_response(request)
+               ^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\win\Desktop\Pivot_expert_in_teams\Server\.venv\Lib\site-packages\django\core\handlers\base.py", line 199, in _get_response
+    response = wrapped_callback(request, *callback_args, **callback_kwargs)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\win\Desktop\Pivot_expert_in_teams\Server\.venv\Lib\site-packages\django\views\decorators\debug.py", line 142, in sensitive_post_parameters_wrapper
+    return view(request, *args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\win\Desktop\Pivot_expert_in_teams\Server\web\views.py", line 37, in login
+    user = login_user(request, email, request.POST.get("password", ""),
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\win\Desktop\Pivot_expert_in_teams\Server\.venv\Lib\site-packages\django\views\decorators\debug.py", line 74, in sensitive_variables_wrapper
+    return func(*func_args, **func_kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\win\Desktop\Pivot_expert_in_teams\Server\accounts\services.py", line 74, in login_user
+    user = authenticate(request, email=email, password=password)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\win\Desktop\Pivot_expert_in_teams\Server\.venv\Lib\site-packages\django\views\decorators\debug.py", line 74, in sensitive_variables_wrapper
+    return func(*func_args, **func_kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\win\Desktop\Pivot_expert_in_teams\Server\.venv\Lib\site-packages\django\contrib\auth\__init__.py", line 130, in authenticate
+    user = backend.authenticate(request, **credentials)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\win\Desktop\Pivot_expert_in_teams\Server\.venv\Lib\site-packages\django\views\decorators\debug.py", line 74, in sensitive_variables_wrapper
+    return func(*func_args, **func_kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\win\Desktop\Pivot_expert_in_teams\Server\.venv\Lib\site-packages\django\contrib\auth\backends.py", line 71, in authenticate
+    user = UserModel._default_manager.get_by_natural_key(username)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\win\Desktop\Pivot_expert_in_teams\Server\.venv\Lib\site-packages\django\contrib\auth\base_user.py", line 37, in get_by_natural_key
+    return self.get(**{self.model.USERNAME_FIELD: username})
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\win\Desktop\Pivot_expert_in_teams\Server\.venv\Lib\site-packages\django\db\models\manager.py", line 87, in manager_method
+    return getattr(self.get_queryset(), name)(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\win\Desktop\Pivot_expert_in_teams\Server\.venv\Lib\site-packages\django\db\models\query.py", line 718, in get
+    num = len(clone)
+          ^^^^^^^^^^
+  File "C:\Users\win\Desktop\Pivot_expert_in_teams\Server\.venv\Lib\site-packages\django\db\models\query.py", line 455, in __len__
+    self._fetch_all()
+  File "C:\Users\win\Desktop\Pivot_expert_in_teams\Server\.venv\Lib\site-packages\django\db\models\query.py", line 2287, in _fetch_all
+    self._result_cache = list(self._iterable_class(self))
+                         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\win\Desktop\Pivot_expert_in_teams\Server\.venv\Lib\site-packages\django\db\models\query.py", line 131, in __iter__
+    results = compiler.execute_sql(
+              ^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\win\Desktop\Pivot_expert_in_teams\Server\.venv\Lib\site-packages\django\db\models\sql\compiler.py", line 1643, in execute_sql
+    cursor.execute(sql, params)
+  File "C:\Users\win\Desktop\Pivot_expert_in_teams\Server\.venv\Lib\site-packages\django\db\backends\utils.py", line 122, in execute
+    return super().execute(sql, params)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\win\Desktop\Pivot_expert_in_teams\Server\.venv\Lib\site-packages\django\db\backends\utils.py", line 79, in execute
+    return self._execute_with_wrappers(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\win\Desktop\Pivot_expert_in_teams\Server\.venv\Lib\site-packages\django\db\backends\utils.py", line 92, in _execute_with_wrappers
+    return executor(sql, params, many, context)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\win\Desktop\Pivot_expert_in_teams\Server\.venv\Lib\site-packages\django\db\backends\utils.py", line 100, in _execute
+    with self.db.wrap_database_errors:
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\win\Desktop\Pivot_expert_in_teams\Server\.venv\Lib\site-packages\django\db\utils.py", line 94, in __exit__
+    raise dj_exc_value.with_traceback(traceback) from exc_value
+  File "C:\Users\win\Desktop\Pivot_expert_in_teams\Server\.venv\Lib\site-packages\django\db\backends\utils.py", line 105, in _execute
+    return self.cursor.execute(sql, params)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\win\Desktop\Pivot_expert_in_teams\Server\.venv\Lib\site-packages\psycopg\cursor.py", line 117, in execute
+    raise ex.with_traceback(None)
+django.db.utils.ProgrammingError: relation "accounts_user" does not exist
+LINE 1: ...user"."phone_number", "accounts_user"."role" FROM "accounts_...
+                                                             ^
+2026-11-02 21:06:41,502 ERROR [-] django.server: "POST /login/ HTTP/1.1" 500 187416
