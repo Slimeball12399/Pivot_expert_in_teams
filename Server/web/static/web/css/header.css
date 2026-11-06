@@ -17,7 +17,26 @@
     gap: 1rem;
 }
 
-/* Pushes the theme toggle (and anything after the nav) to the right edge. */
+/* Pushes the logged-in user (or, when logged out, the theme toggle) to the right edge. */
+.site-header > .site-header-user,
 .site-header > .theme-toggle {
     margin-left: auto;
+}
+
+.site-header > .site-header-user + .theme-toggle {
+    margin-left: 0;
+}
+
+/* Logged-in user: first name, with the role in smaller, quieter text after it. */
+.site-header-user {
+    display: inline-flex;
+    align-items: baseline;
+    gap: 0.5rem;
+    font-weight: 500;
+}
+
+.site-header-role {
+    font-size: 0.875rem;
+    font-weight: 400;
+    opacity: 0.7;
 }

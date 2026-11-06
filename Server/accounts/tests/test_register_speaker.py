@@ -5,7 +5,7 @@ from django.core.exceptions import ValidationError
 from django.test import TestCase, override_settings
 
 from accounts.models import Consent, SpeakerProfile, User
-from accounts.services import register_speaker
+from accounts.services.accounts import register_speaker
 from accounts.validators import MAX_HEIGHT_CM, MIN_AGE, MIN_HEIGHT_CM
 
 from .utils import FIXED_NOW, frozen_now

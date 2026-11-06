@@ -2,7 +2,7 @@ from django.core.exceptions import ValidationError as DjangoValidationError
 from rest_framework import serializers
 
 from accounts.models import Consent
-from accounts.services import register_speaker, update_profile
+from accounts.services.accounts import register_speaker, update_profile
 
 # Base serializers: each field is defined once here, and the input and output
 # serializers below extend them. Change a field here and every serializer that

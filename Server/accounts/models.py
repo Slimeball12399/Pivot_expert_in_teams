@@ -79,10 +79,11 @@ class User(AbstractUser, UUIDModel):
 
         if email_changed:
             # Imported here: services imports this module.
-            from .services import send_verification_code
+            from .services.accounts import send_verification_code
             self.email_codes.filter(used_at__isnull=True, invalidated_at__isnull=True).update(
                 invalidated_at=timezone.now())
-            transaction.on_commit(partial(send_verification_code, self), robust=True)
+            transaction.on_commit(
+                partial(send_verification_code, self), robust=True)
         if email_changed or password_changed:
             from rest_framework_simplejwt.token_blacklist.models import (
                 BlacklistedToken,
@@ -160,8 +161,6 @@ class Consent(UUIDModel):
             raise ImproperlyConfigured(
                 f"settings.CONSENT_VERSIONS has no version for '{purpose}'.")
 
-# Invite model as a next step later
-
 class EmailCode(UUIDModel):
     """A one-time code emailed to a user (email verification, password reset).
 
@@ -175,7 +174,8 @@ class EmailCode(UUIDModel):
         VERIFY_EMAIL = "verify_email", "Verify email"
         RESET_PASSWORD = "reset_password", "Reset password"
 
-    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name="email_codes")
+    user = models.ForeignKey(
+        User, on_delete=models.CASCADE, related_name="email_codes")
     purpose = models.CharField(max_length=20, choices=Purpose.choices)
     code_hash = models.CharField(max_length=128)
     expires_at = models.DateTimeField()
@@ -200,4 +200,79 @@ class EmailCode(UUIDModel):
             and self.invalidated_at is None
             and self.expires_at > timezone.now()
             and self.attempts < settings.EMAIL_CODE_MAX_ATTEMPTS
-        )
+        )
+
+
+class UserInviteQuerySet(models.QuerySet):
+    """The UserInvite.status rules as database filters, since a property
+    can't be filtered on."""
+
+    def pending(self):
+        """Open invites: not accepted, declined or revoked, and not expired."""
+        return self.filter(
+            accepted_at__isnull=True, declined_at__isnull=True, revoked_at__isnull=True,
+            expires_at__gt=timezone.now())
+
+    def inactive(self):
+        """Invites that ended without being accepted: declined, revoked or expired."""
+        return self.filter(accepted_at__isnull=True).filter(
+            models.Q(declined_at__isnull=False)
+            | models.Q(revoked_at__isnull=False)
+            | models.Q(expires_at__lte=timezone.now()))
+
+
+class UserInvite(UUIDModel):
+    """A trainer's invitation for a speaker to join Pivot and be linked to them.
+
+    It is for an email, not a user: the person usually has no account yet.
+    There is no secret token. Accepting needs a verified account with this
+    email, which already proves the person owns the address, and the speaker
+    accepts in the app themselves, because it gives the trainer access to
+    their data. Like EmailCode, the status is worked out from the timestamps
+    (see status), never stored as a field that could go stale.
+    """
+
+    class Status(models.TextChoices):
+        PENDING = "pending", "Pending"
+        ACCEPTED = "accepted", "Accepted"
+        DECLINED = "declined", "Declined"
+        REVOKED = "revoked", "Revoked"
+        EXPIRED = "expired", "Expired"
+
+    invited_by = models.ForeignKey(
+        AdminProfile, on_delete=models.CASCADE, related_name="invites")
+    email = models.EmailField()
+    created_at = models.DateTimeField(auto_now_add=True)
+    # Set when the invite is made: created_at + settings.INVITE_LIFETIME.
+    expires_at = models.DateTimeField()
+    accepted_at = models.DateTimeField(null=True, blank=True)
+    # The account that accepted. Kept as a record if the invite outlives it.
+    accepted_by = models.ForeignKey(
+        User, on_delete=models.SET_NULL, null=True, blank=True,
+        related_name="accepted_invites")
+    declined_at = models.DateTimeField(null=True, blank=True)
+    # Cancelled by the trainer, or replaced by a newer invite to the same email.
+    revoked_at = models.DateTimeField(null=True, blank=True)
+
+    objects = UserInviteQuerySet.as_manager()
+
+    class Meta:
+        ordering = ["-created_at"]
+        indexes = [models.Index(fields=["invited_by", "email"])]
+
+    def __str__(self):
+        return f"Invite for {self.email} ({self.status})"
+
+    @property
+    def status(self):
+        """Accepted, declined or revoked once it happened; otherwise expired
+        or still pending, depending on expires_at."""
+        if self.accepted_at is not None:
+            return self.Status.ACCEPTED
+        if self.declined_at is not None:
+            return self.Status.DECLINED
+        if self.revoked_at is not None:
+            return self.Status.REVOKED
+        if self.expires_at <= timezone.now():
+            return self.Status.EXPIRED
+        return self.Status.PENDING

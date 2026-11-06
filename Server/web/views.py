@@ -8,7 +8,7 @@ from django.utils.http import url_has_allowed_host_and_scheme
 from django.views.decorators.debug import sensitive_post_parameters
 from django.views.decorators.http import require_POST
 
-from accounts import services
+from accounts.services import accounts as account_services
 from accounts.emails import code_lifetime_minutes
 from accounts.models import EmailCode, User
 
@@ -61,10 +61,10 @@ def login(request):
             "next": next_url,
         })
     try:
-        user = services.login_user(request, form.cleaned_data["email"],
+        user = account_services.login_user(request, form.cleaned_data["email"],
                                    form.cleaned_data["password"], role=User.Role.ADMIN)
     except ValidationError as e:
-        if getattr(e, "code", None) == services.EMAIL_NOT_VERIFIED:
+        if getattr(e, "code", None) == account_services.EMAIL_NOT_VERIFIED:
             # Only reached with the right password. The code page reads who it's
             # for and where to go afterwards from the session.
             request.session[CODE_FLOW] = {
@@ -98,7 +98,7 @@ def forgot_password(request):
     if request.method == "POST" and form.is_valid():
         email = form.cleaned_data["email"]
         # The same next step whether or not the email has an account.
-        services.request_password_reset(email)
+        account_services.request_password_reset(email)
         request.session[CODE_FLOW] = {"purpose": EmailCode.Purpose.RESET_PASSWORD, "email": email}
         return redirect("web:verify_code")
     return render(request, "web/forgot_password.html", {
@@ -124,7 +124,7 @@ def verify_code(request):
             error = form.errors["code"][0]
         elif is_reset:
             try:
-                uid, token = services.verify_password_reset_code(
+                uid, token = account_services.verify_password_reset_code(
                     flow["email"], form.cleaned_data["code"])
             except ValidationError as e:
                 error = e.messages[0]
@@ -134,7 +134,7 @@ def verify_code(request):
                 return redirect("web:password_reset")
         else:
             try:
-                user = services.verify_email(flow["email"], form.cleaned_data["code"])
+                user = account_services.verify_email(flow["email"], form.cleaned_data["code"])
             except ValidationError as e:
                 error = e.messages[0]
             else:
@@ -174,9 +174,9 @@ def resend_code(request):
     if not flow:
         return redirect("web:login")
     if flow["purpose"] == EmailCode.Purpose.RESET_PASSWORD:
-        services.request_password_reset(flow["email"])
+        account_services.request_password_reset(flow["email"])
     else:
-        services.resend_verification_code(flow["email"])
+        account_services.resend_verification_code(flow["email"])
     messages.info(request, SENT_NEW_CODE)
     return redirect("web:verify_code")
 
@@ -195,7 +195,7 @@ def password_reset(request):
     if request.method == "POST":
         if form.is_valid():
             try:
-                services.reset_password(
+                account_services.reset_password(
                     reset["uid"], reset["token"], form.cleaned_data["new_password"])
             except ValidationError as e:
                 if not hasattr(e, "error_dict"):  # token expired or already used

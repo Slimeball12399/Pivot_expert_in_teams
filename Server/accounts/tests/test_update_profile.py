@@ -5,7 +5,7 @@ from django.core.exceptions import ValidationError
 from django.test import TestCase
 
 from accounts.models import User
-from accounts.services import register_speaker, update_profile
+from accounts.services.accounts import register_speaker, update_profile
 
 PASSWORD = "Str0ng-test-pass!"
 

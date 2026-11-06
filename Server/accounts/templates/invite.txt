@@ -1,0 +1,16 @@
+{% autoescape off %}Hi,
+
+{{ trainer_name }} has invited you to Pivot, so you can train your voice and balance together.
+
+Download the Pivot app and register with this email address within {{ days }} days, then accept the invitation in the app:
+
+    {{ email }}
+
+Don't know {{ trainer_name }}? You can ignore this email. Nothing happens unless you accept the invitation in the app.
+
+Steady stance. Stronger voice.
+Live voice and balance feedback for speakers and their trainers, measured while you talk on the board.
+
+This email was sent by Pivot to {{ to_email }}. It's sent automatically, so please don't reply.
+Expert in teams project · Built with all the good speakers · © 2026 SDU
+{% endautoescape %}

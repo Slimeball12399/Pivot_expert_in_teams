@@ -8,7 +8,7 @@ from django.contrib.auth.models import Group
 from django.db import transaction
 
 from .models import AdminProfile, Consent, SpeakerProfile, User
-from .services import send_verification_code
+from .services.accounts import send_verification_code
 
 
 # The default user forms are built around `username`, so point them at our model.

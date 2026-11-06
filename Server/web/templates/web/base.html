@@ -31,7 +31,18 @@
             <img class="logo-light" src="{% static 'web/img/pivot-logo.svg' %}" alt="Pivot" height="40">
             <img class="logo-dark" src="{% static 'web/img/pivot-logo-on-dark.svg' %}" alt="Pivot" height="40">
         </a>
-        <nav class="site-nav" aria-label="Main">{% block nav %}{% endblock %}</nav>
+        <nav class="site-nav" aria-label="Main">{% block nav %}
+            <a>Users</a>
+            <a>Trainings</a>
+            <a>Insight</a>
+            <a>Devices</a>
+        {% endblock %}</nav>
+        {% if user.is_authenticated %}
+        <span class="site-header-user">
+            {{ user.first_name|default:user.email }}
+            <span class="site-header-role">{{ user.get_role_display }}</span>
+        </span>
+        {% endif %}
         {% include "web/components/theme_toggle.html" %}
     </header>
     {% endblock %}

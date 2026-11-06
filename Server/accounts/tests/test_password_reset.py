@@ -10,7 +10,7 @@ from rest_framework_simplejwt.token_blacklist.models import BlacklistedToken
 from rest_framework_simplejwt.tokens import RefreshToken
 
 from accounts.models import EmailCode, User
-from accounts.services import (
+from accounts.services.accounts import (
     INVALID_CODE,
     INVALID_RESET_TOKEN,
     request_password_reset,

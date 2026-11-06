@@ -61,7 +61,7 @@ class UserManager(BaseUserManager):
 
         # Imported here because models.py imports this file (avoids a circular import).
         from .models import AdminProfile, Consent
-        from .services import send_verification_code
+        from .services.accounts import send_verification_code
 
         # Create the user, its admin profile and its consents together, or nothing.
         with transaction.atomic(using=self._db):

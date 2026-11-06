@@ -8,9 +8,9 @@ from django.utils import timezone
 from rest_framework_simplejwt.token_blacklist.models import BlacklistedToken
 from rest_framework_simplejwt.tokens import RefreshToken
 
-from accounts import services
+from accounts.services import accounts as account_services
 from accounts.models import EmailCode, User
-from accounts.services import (
+from accounts.services.accounts import (
     EMAIL_NOT_VERIFIED,
     INVALID_CODE,
     INVALID_LOGIN,
@@ -97,7 +97,7 @@ class EmailVerificationTests(TestCase):
 
     def test_verify_email(self):
         user = make_user()
-        services.send_verification_code(user)
+        account_services.send_verification_code(user)
         code = code_in(mail.outbox[0])
 
         cases = [
@@ -110,7 +110,7 @@ class EmailVerificationTests(TestCase):
 
         with self.subTest("rejects: a password reset code"):
             let_cooldown_pass()
-            services.request_password_reset("anna@example.com")
+            account_services.request_password_reset("anna@example.com")
             self.assertRaisesCode(INVALID_CODE, verify_email, "anna@example.com",
                                   code_in(mail.outbox[-1]))
             user.refresh_from_db()
@@ -138,7 +138,7 @@ class EmailVerificationTests(TestCase):
 
         with self.subTest("new email: unverified, old codes invalidated, code to the new address, logged out"):
             refresh = RefreshToken.for_user(user)
-            services.request_password_reset("anna@example.com")  # a code to the old address
+            account_services.request_password_reset("anna@example.com")  # a code to the old address
             mail.outbox.clear()
             user.email = "anna.new@example.com"
             with self.captureOnCommitCallbacks(execute=True):

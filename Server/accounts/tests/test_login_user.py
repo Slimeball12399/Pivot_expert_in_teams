@@ -3,7 +3,7 @@ from django.test import TestCase
 from django.utils import timezone
 
 from accounts.models import User
-from accounts.services import login_user
+from accounts.services.accounts import login_user
 
 PASSWORD = "Str0ng-test-pass!"
 LOGIN_FAILED = "Wrong email or password."
