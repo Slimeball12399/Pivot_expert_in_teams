@@ -1,0 +1,23 @@
+{% comment %}
+Code input: one box per digit for one-time codes, in groups of four ("1234 5678",
+like the emails). Styles in web/css/code-input.css; typing, Backspace, arrows and
+pasting the whole code are handled by web/js/code-input.js.
+
+  {% include "web/components/code_input.html" with digits=digits error=error %}
+
+  digits  one item per box, e.g. range(settings.EMAIL_CODE_LENGTH) from the view (required)
+  name    (default "code") every box gets this name, so the view reads the code with
+          "".join(request.POST.getlist("code"))
+  label   (default "Code")
+  error   error text under the boxes; also marks them invalid
+{% endcomment %}
+<fieldset class="code-field{% if error %} code-field-error{% endif %}" data-code-input>
+    <legend class="input-label">{{ label|default:"Code" }}</legend>
+    <div class="code-boxes">
+        {% for digit in digits %}
+        <input class="code-box" type="text" name="{{ name|default:'code' }}" inputmode="numeric" pattern="[0-9]" autocomplete="{% if forloop.first %}one-time-code{% else %}off{% endif %}" aria-label="Digit {{ forloop.counter }} of {{ digits|length }}" required{% if forloop.first %} autofocus{% endif %}{% if error %} aria-invalid="true" aria-describedby="code-message"{% endif %}>
+        {% if forloop.counter|divisibleby:4 and not forloop.last %}<span class="code-separator" aria-hidden="true"></span>{% endif %}
+        {% endfor %}
+    </div>
+    {% if error %}<p class="input-message input-message-error" id="code-message">{{ error }}</p>{% endif %}
+</fieldset>

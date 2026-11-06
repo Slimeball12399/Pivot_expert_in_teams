@@ -67,6 +67,7 @@ class MeEndpointTests(APITestCase):
                 "last_name": "Jensen",
                 "phone_number": "+4520123456",
                 "role": "speaker",
+                "pending_email": "",
                 "profile": {
                     "id": str(self.speaker.speaker_profile.id),
                     "birth_date": "1996-01-01",
@@ -162,7 +163,6 @@ class MeEndpointTests(APITestCase):
     def test_patch_ignores_read_only_fields(self):
         self.client.force_authenticate(self.speaker)
         cases = [
-            ("email", {"email": "new@example.com"}),
             ("role", {"role": "admin"}),
             ("id", {"id": "00000000-0000-0000-0000-000000000000"}),
             ("password", {"password": "N3w-strong-pass!"}),
@@ -269,7 +269,7 @@ class MeEndpointTests(APITestCase):
             self.assertCountEqual(with_profile, [True, False])
         for option in options:
             with self.subTest("no read-only fields", fields=sorted(option["properties"])):
-                for name in ("email", "role", "id", "password"):
+                for name in ("role", "id", "password"):
                     self.assertNotIn(name, option["properties"])
 
     def test_only_get_and_patch_are_allowed(self):

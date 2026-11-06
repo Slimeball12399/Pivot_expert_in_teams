@@ -1,0 +1,67 @@
+/* Code input component (web/components/code_input.html): one box per digit. */
+
+.code-field {
+    min-width: 0;
+    margin: 0;
+    padding: 0;
+    border: 0;
+}
+
+/* Label, boxes and error message are all centered in the form. */
+.code-field .input-label {
+    display: block;
+    width: 100%;  /* a legend is only as wide as its text unless told otherwise */
+    margin-bottom: 8px;
+    padding: 0;
+    text-align: center;
+}
+
+/* The boxes share the width and shrink on narrow screens, up to 48px each. */
+.code-boxes {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+}
+
+.code-box {
+    flex: 1 1 0;
+    width: 0;  /* no intrinsic width, so the boxes never push the form wider */
+    min-width: 0;
+    max-width: 48px;
+    box-sizing: border-box;
+    height: 56px;
+    padding: 0;
+    border: 1px solid color-mix(in srgb, var(--text) 55%, transparent);
+    border-radius: 8px;
+    background: transparent;
+    color: var(--text);
+    font-family: "Jost", sans-serif;
+    font-size: 24px;
+    font-weight: 500;
+    text-align: center;
+    caret-color: transparent;
+}
+
+.code-box:focus-visible {
+    outline: 3px solid var(--text);
+    outline-offset: 1px;
+}
+
+.code-field-error .code-box {
+    border: 2px solid var(--red);
+}
+
+.code-field .input-message {
+    margin-top: 8px;
+    text-align: center;
+}
+
+/* Short dash between the groups of four. */
+.code-separator {
+    flex: none;
+    width: 12px;
+    height: 2px;
+    border-radius: 1px;
+    background: color-mix(in srgb, var(--text) 55%, transparent);
+}

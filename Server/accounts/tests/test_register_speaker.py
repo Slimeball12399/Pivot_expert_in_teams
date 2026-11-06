@@ -1,11 +1,12 @@
-from datetime import date
+from datetime import date, timedelta
 from unittest import mock
 
 from django.core.exceptions import ValidationError
 from django.test import TestCase, override_settings
+from django.utils import timezone
 
-from accounts.models import Consent, SpeakerProfile, User
-from accounts.services import register_speaker
+from accounts.models import Consent, EmailCode, SpeakerProfile, User
+from accounts.services import register_speaker, update_profile
 from accounts.validators import MAX_HEIGHT_CM, MIN_AGE, MIN_HEIGHT_CM
 
 from .utils import FIXED_NOW, frozen_now
@@ -144,3 +145,29 @@ class RegisterSpeakerTests(TestCase):
                 with self.assertRaises(RuntimeError):
                     register_speaker(**speaker_data())
             self.assertEqual(User.objects.count(), 0)
+
+    def test_email_already_in_use(self):
+        existing = register_speaker(**speaker_data())
+
+        with self.subTest("the same email in other letter case"):
+            with self.assertRaises(ValidationError) as ctx:
+                register_speaker(**speaker_data(email="Speaker@Example.com"))
+            self.assertEqual(ctx.exception.message_dict["email"],
+                             ["An account with this email already exists."])
+
+        with self.captureOnCommitCallbacks(execute=True):
+            update_profile(existing, email="wanted@example.com",
+                           current_password=speaker_data()["password"])
+
+        with self.subTest("another account's pending email with a usable code"):
+            with self.assertRaises(ValidationError) as ctx:
+                register_speaker(**speaker_data(email="wanted@example.com"))
+            self.assertIn("email", ctx.exception.message_dict)
+
+        with self.subTest("a pending email whose code expired is free, and is cleared"):
+            EmailCode.objects.update(expires_at=timezone.now() - timedelta(minutes=1))
+            register_speaker(**speaker_data(email="wanted@example.com"))
+            existing.refresh_from_db()
+            self.assertEqual(existing.pending_email, "")
+
+        self.assertEqual(User.objects.count(), 2)

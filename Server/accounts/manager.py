@@ -1,3 +1,5 @@
+from functools import partial
+
 from django.contrib.auth.models import BaseUserManager
 from django.contrib.auth.password_validation import validate_password
 from django.core.exceptions import ValidationError
@@ -42,6 +44,9 @@ class UserManager(BaseUserManager):
 
         Admins must accept all consents. The createsuperuser command asks for
         that before calling this, so only call it after the person agreed.
+
+        The email starts unverified, like everyone's: a verification code is
+        emailed once the admin is saved, and logging in asks for it.
         """
         extra_fields.setdefault("role", "admin")
         extra_fields.setdefault("is_staff", True)
@@ -56,6 +61,7 @@ class UserManager(BaseUserManager):
 
         # Imported here because models.py imports this file (avoids a circular import).
         from .models import AdminProfile, Consent
+        from .services import send_verification_code
 
         # Create the user, its admin profile and its consents together, or nothing.
         with transaction.atomic(using=self._db):
@@ -66,4 +72,7 @@ class UserManager(BaseUserManager):
                         notice_version=Consent.current_version(purpose))
                 for purpose in Consent.Purpose.values
             ])
+            # robust: a failed email doesn't undo the admin; logging in sends a new code.
+            transaction.on_commit(partial(send_verification_code, user),
+                                  using=self._db, robust=True)
         return user

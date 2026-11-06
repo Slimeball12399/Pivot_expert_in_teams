@@ -17,3 +17,13 @@ def frozen_now(moment=FIXED_NOW):
             return moment if tz is not None else moment.replace(tzinfo=None)
 
     return mock.patch("accounts.validators.datetime", FrozenDatetime)
+
+
+def code_in(message):
+    """The one-time code in a code email (the "1234 5678" line), without spaces."""
+    import re
+
+    match = re.search(r"^\s+(\d[\d ]*\d)\s*$", message.body, re.MULTILINE)
+    if match is None:
+        raise AssertionError(f"No code in the email:\n{message.body}")
+    return match.group(1).replace(" ", "")
