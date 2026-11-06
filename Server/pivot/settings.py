@@ -240,10 +240,24 @@ SPECTACULAR_SETTINGS = {
 # settings.py
 ENV = os.environ.get("DJANGO_ENV", "dev")
 LOG_LEVEL = os.environ.get("LOG_LEVEL", "DEBUG" if ENV == "dev" else "INFO")
-LOG_DIR = BASE_DIR / "logs"
-LOG_DIR.mkdir(exist_ok=True)
+LOG_TO_FILE = os.environ.get("LOG_TO_FILE", "true").lower() == "true"
 
-_handlers = ["console", "file"]
+_log_handlers = {
+    "console": {"class": "logging.StreamHandler", "formatter": "standard",
+                "filters": ["request_id", "redact"]},
+}
+
+if LOG_TO_FILE:
+    LOG_DIR = BASE_DIR / "logs"
+    LOG_DIR.mkdir(exist_ok=True)
+    _log_handlers["file"] = {
+        "class": "logging.handlers.RotatingFileHandler",
+        "filename": LOG_DIR / "pivot.log", "maxBytes": 5 * 1024 * 1024,
+        "backupCount": 5, "encoding": "utf-8", "formatter": "standard",
+        "filters": ["request_id", "redact"],
+    }
+
+_handlers = list(_log_handlers)
 LOGGING = {
     "version": 1,
     "disable_existing_loggers": False,
@@ -254,14 +268,7 @@ LOGGING = {
     "formatters": {
         "standard": {"format": "%(asctime)s %(levelname)s [%(request_id)s] %(name)s: %(message)s"},
     },
-    "handlers": {
-        "console": {"class": "logging.StreamHandler", "formatter": "standard",
-                    "filters": ["request_id", "redact"]},
-        "file": {"class": "logging.handlers.RotatingFileHandler",
-                 "filename": LOG_DIR / "pivot.log", "maxBytes": 5 * 1024 * 1024,
-                 "backupCount": 5, "encoding": "utf-8", "formatter": "standard",
-                 "filters": ["request_id", "redact"]},
-    },
+    "handlers": _log_handlers,
     "root": {"handlers": _handlers, "level": "WARNING"},
     "loggers": {
         "pivot": {"handlers": _handlers, "level": LOG_LEVEL, "propagate": False},
