@@ -1,11 +1,14 @@
-from datetime import date
+from datetime import date, timedelta
 
 from django.core import mail
 from django.core.exceptions import ValidationError
 from django.test import TestCase
+from django.utils import timezone
 
-from accounts.models import User
-from accounts.services import register_speaker, update_profile
+from accounts.models import EmailCode, User
+from accounts.services import register_speaker, update_profile, verify_email
+
+from .utils import code_in
 
 PASSWORD = "Str0ng-test-pass!"
 
@@ -116,3 +119,57 @@ class UpdateProfileTests(TestCase):
             update_profile(self.speaker, email="speaker@example.com")
             self.speaker.refresh_from_db()
             self.assertEqual(self.speaker.pending_email, "")
+
+    def test_pending_email_holds_the_address_while_it_can_be_confirmed(self):
+        with self.captureOnCommitCallbacks(execute=True):
+            update_profile(self.speaker, email="new@example.com", current_password=PASSWORD)
+
+        for email in ("new@example.com", "NEW@example.com"):
+            with self.subTest("another account can't take it", email=email):
+                with self.assertRaises(ValidationError) as ctx:
+                    update_profile(self.admin, email=email, current_password=PASSWORD)
+                self.assertIn("email", ctx.exception.message_dict)
+
+        with self.subTest("once its code has expired, another account can take it"):
+            EmailCode.objects.update(expires_at=timezone.now() - timedelta(minutes=1))
+            update_profile(self.admin, email="new@example.com", current_password=PASSWORD)
+            self.admin.refresh_from_db()
+            self.speaker.refresh_from_db()
+            self.assertEqual(self.admin.pending_email, "new@example.com")
+            self.assertEqual(self.speaker.pending_email, "")  # the stale one is cleared
+
+    def test_email_taken_in_other_letter_case(self):
+        with self.assertRaises(ValidationError) as ctx:
+            update_profile(self.speaker, email="Admin@Example.com", current_password=PASSWORD)
+        self.assertIn("email", ctx.exception.message_dict)
+
+    def test_code_for_an_earlier_pending_email_does_not_confirm_a_new_one(self):
+        with self.captureOnCommitCallbacks(execute=True):
+            update_profile(self.speaker, email="mine@example.com", current_password=PASSWORD)
+        code = code_in(mail.outbox[-1])
+        # Inside the resend cooldown, so no new code is sent for this one.
+        update_profile(self.speaker, email="someone@example.com", current_password=PASSWORD)
+
+        for email in ("someone@example.com", "mine@example.com"):
+            with self.subTest(email=email):
+                with self.assertRaises(ValidationError):
+                    verify_email(email, code)
+        self.speaker.refresh_from_db()
+        self.assertEqual(self.speaker.email, "speaker@example.com")
+
+    def test_sending_the_same_pending_email_again_keeps_its_code(self):
+        with self.captureOnCommitCallbacks(execute=True):
+            update_profile(self.speaker, email="new@example.com", current_password=PASSWORD)
+        code = code_in(mail.outbox[-1])
+        update_profile(self.speaker, email="new@example.com", current_password=PASSWORD)
+        verify_email("new@example.com", code)
+        self.speaker.refresh_from_db()
+        self.assertEqual(self.speaker.email, "new@example.com")
+
+    def test_confirming_keeps_the_spelling_that_was_saved(self):
+        with self.captureOnCommitCallbacks(execute=True):
+            update_profile(self.speaker, email="New.Name@example.com", current_password=PASSWORD)
+        verify_email("new.name@EXAMPLE.com", code_in(mail.outbox[-1]))
+        self.speaker.refresh_from_db()
+        self.assertEqual(self.speaker.email, "New.Name@example.com")
+        self.assertEqual(self.speaker.pending_email, "")
