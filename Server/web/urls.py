@@ -1,15 +1,15 @@
 from django.urls import path
 
-from . import views
+from .views import auth, pages
 
 app_name = "web"
 
 urlpatterns = [
-    path("", views.home, name="home"),
-    path("login/", views.login, name="login"),
+    path("", pages.home, name="home"),
+    path("login/", auth.login, name="login"),
     # Password reset: email -> code -> new password.
-    path("forgot-password/", views.forgot_password, name="forgot_password"),
-    path("verify-code/", views.verify_code, name="verify_code"),
-    path("verify-code/resend/", views.resend_code, name="resend_code"),
-    path("password-reset/", views.password_reset, name="password_reset"),
+    path("forgot-password/", auth.forgot_password, name="forgot_password"),
+    path("verify-code/", auth.verify_code, name="verify_code"),
+    path("verify-code/resend/", auth.resend_code, name="resend_code"),
+    path("password-reset/", auth.password_reset, name="password_reset"),
 ]

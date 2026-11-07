@@ -12,28 +12,26 @@ from functools import partial
 from django.conf import settings
 from django.core.exceptions import ValidationError
 from django.db import transaction
-from django.db.models import (
-    Case,
-    CharField,
-    DateField,
-    DateTimeField,
-    Exists,
-    F,
-    OuterRef,
-    Q,
-    Value,
-    When,
-)
+from django.db.models import Q
 from django.utils import timezone
 
 from .. import emails
+from ..dbviews import TrainerUser
 from ..models import AdminProfile, SpeakerProfile, User, UserInvite
 
 INVITE_NOT_FOUND = "invite_not_found"
 INVITE_NOT_FOUND_MESSAGE = "This invitation doesn't exist or is no longer open."
 
-# The filters of the trainer's user list (get_users).
-USER_FILTERS = ("speakers", "invites", "active", "inactive", "all")
+# The filters of the trainer's user list (get_users): which TrainerUser.state
+# values each one shows. None shows everything in the view.
+USER_FILTERS = {
+    "speakers": ["active"],
+    "invites": [UserInvite.Status.PENDING],
+    "active": ["active", UserInvite.Status.PENDING],
+    "inactive": [UserInvite.Status.DECLINED, UserInvite.Status.REVOKED,
+                 UserInvite.Status.EXPIRED],
+    "all": None,
+}
 
 # suggest_invite_emails() looks at every speaker in Pivot, not only the
 # trainer's own, so it only answers long enough prefixes, with a few emails.
@@ -96,13 +94,14 @@ def revoke_invite(user, invite_id) -> UserInvite:
 
 
 @transaction.atomic
-def accept_invite(user, invite_id) -> AdminProfile | None:
+def accept_invite(user, invite_id) -> tuple[UserInvite, AdminProfile | None]:
     """Accept an open invite sent to the speaker's verified email.
 
     The speaker moves to the inviting trainer, replacing their current one,
     the invite is marked accepted, and their other open invites are revoked,
     so accepting another one later can't move them again by accident.
-    Returns the previous trainer (an AdminProfile) when it changed, else None.
+    Returns (invite, previous trainer): the previous trainer is an
+    AdminProfile when it changed, else None.
 
     Raises ValidationError(code=INVITE_NOT_FOUND) like revoke_invite().
     """
@@ -123,8 +122,8 @@ def accept_invite(user, invite_id) -> AdminProfile | None:
         email__iexact=user.email).exclude(pk=invite.pk).update(revoked_at=now)
 
     if previous_admin_id in (None, invite.invited_by_id):
-        return None
-    return AdminProfile.objects.get(pk=previous_admin_id)
+        return invite, None
+    return invite, AdminProfile.objects.get(pk=previous_admin_id)
 
 
 def pending_invites_for(user):
@@ -138,94 +137,33 @@ def pending_invites_for(user):
 
 
 def get_users(trainer, status="speakers", query=""):
-    """The trainer's user list: their speakers and/or their invites as one
-    queryset of rows with the same columns, so the view can page through
-    them together (Paginator works on it directly).
+    """The trainer's user list: their speakers and/or their invites, newest
+    first, as TrainerUser rows read from the accounts_trainer_user view. The
+    database sorts and pages them, so Paginator works on the result directly.
 
     status, one of USER_FILTERS:
       speakers  their speakers (the default)
       invites   open invites
       active    speakers and open invites
-      inactive  revoked, declined and expired invites
+      inactive  declined, revoked and expired invites
       all       speakers and every invite that wasn't accepted
 
-    Each email shows only its most recent invite, and none at all once the
-    person is one of the trainer's speakers. Deactivated accounts are left
-    out. `query` searches the name and email (any part).
-
-    Rows are dicts, newest first, with the keys: row_id, kind ("speaker" or
-    "invite"), email_address, first_name, last_name, born_on, phone, state,
-    since and expires. Speaker rows carry the profile; invite rows only the
-    email, state and dates. Raises ValueError for an unknown status.
+    Which rows exist at all (latest invite per email, no invites for existing
+    speakers, no deactivated accounts) is decided by the view; see
+    TrainerUser. `query` searches the name and email (any part). Raises
+    ValueError for an unknown status.
     """
     if status not in USER_FILTERS:
         raise ValueError(f"Unknown status: {status}")
+    rows = TrainerUser.objects.filter(trainer=trainer)
+    if USER_FILTERS[status] is not None:
+        rows = rows.filter(state__in=USER_FILTERS[status])
     query = query.strip()
-    now = timezone.now()
-    # Both parts annotate the same names in the same order, so union() lines
-    # the columns up; only annotations are selected, no model fields.
-    columns = ["row_id", "kind", "email_address", "first_name", "last_name",
-               "born_on", "phone", "state", "since", "expires"]
-    parts = []
-
-    if status in ("speakers", "active", "all"):
-        speakers = SpeakerProfile.objects.filter(admin=trainer, user__is_active=True)
-        if query:
-            speakers = speakers.filter(
-                Q(user__first_name__icontains=query)
-                | Q(user__last_name__icontains=query)
-                | Q(user__email__icontains=query))
-        parts.append(speakers.annotate(
-            row_id=F("pk"),
-            kind=Value("speaker"),
-            email_address=F("user__email"),
-            first_name=F("user__first_name"),
-            last_name=F("user__last_name"),
-            born_on=F("birth_date"),
-            phone=F("user__phone_number"),
-            state=Value("active"),
-            since=F("user__date_joined"),
-            expires=Value(None, output_field=DateTimeField()),
-        ).values(*columns))
-
-    if status != "speakers":
-        invites = UserInvite.objects.filter(invited_by=trainer).filter(
-            # Only the most recent invite for each email...
-            ~Exists(UserInvite.objects.filter(
-                invited_by=trainer, email__iexact=OuterRef("email"),
-                created_at__gt=OuterRef("created_at"))),
-            # ...and none for people who are already this trainer's speakers.
-            ~Exists(SpeakerProfile.objects.filter(
-                admin=trainer, user__email__iexact=OuterRef("email"))),
-        )
-        if status in ("invites", "active"):
-            invites = invites.pending()
-        elif status == "inactive":
-            invites = invites.inactive()
-        else:  # all
-            invites = invites.filter(accepted_at__isnull=True)
-        if query:
-            invites = invites.filter(email__icontains=query)
-        parts.append(invites.annotate(
-            row_id=F("pk"),
-            kind=Value("invite"),
-            email_address=F("email"),
-            first_name=Value(None, output_field=CharField()),
-            last_name=Value(None, output_field=CharField()),
-            born_on=Value(None, output_field=DateField()),
-            phone=Value(None, output_field=CharField()),
-            # UserInvite.status in SQL (accepted invites are never listed).
-            state=Case(
-                When(declined_at__isnull=False, then=Value(UserInvite.Status.DECLINED)),
-                When(revoked_at__isnull=False, then=Value(UserInvite.Status.REVOKED)),
-                When(expires_at__lte=now, then=Value(UserInvite.Status.EXPIRED)),
-                default=Value(UserInvite.Status.PENDING),
-            ),
-            since=F("created_at"),
-            expires=F("expires_at"),
-        ).values(*columns))
-
-    rows = parts[0].union(*parts[1:], all=True) if len(parts) > 1 else parts[0]
+    if query:
+        rows = rows.filter(
+            Q(email__icontains=query)
+            | Q(first_name__icontains=query)
+            | Q(last_name__icontains=query))
     return rows.order_by("-since")
 
 

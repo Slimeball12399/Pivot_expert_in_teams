@@ -1,12 +1,11 @@
 import tempfile
+from datetime import timedelta
 from io import StringIO
 from pathlib import Path
 from types import SimpleNamespace
 
 from django.core import mail
 from django.core.management import call_command
-from datetime import timedelta
-
 from django.test import SimpleTestCase, override_settings
 
 from accounts.emails import (

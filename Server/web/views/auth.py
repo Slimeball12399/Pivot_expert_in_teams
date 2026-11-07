@@ -1,19 +1,21 @@
+"""Logged-out pages: trainer login, and the code flows for email
+verification and password reset."""
+
 from django.conf import settings
 from django.contrib import messages
 from django.contrib.auth import login as auth_login
-from django.contrib.auth.decorators import login_not_required, login_required
+from django.contrib.auth.decorators import login_not_required
 from django.core.exceptions import ValidationError
 from django.shortcuts import redirect, render, resolve_url
 from django.utils.http import url_has_allowed_host_and_scheme
 from django.views.decorators.debug import sensitive_post_parameters
 from django.views.decorators.http import require_POST
 
-from accounts.services import accounts as account_services
 from accounts.emails import code_lifetime_minutes
 from accounts.models import EmailCode, User
+from accounts.services import accounts as account_services
 
-from .decorators import role_required
-from .forms import CodeForm, EmailForm, LoginForm, NewPasswordForm
+from ..forms import CodeForm, EmailForm, LoginForm, NewPasswordForm
 
 # Session keys for the logged-out flows.
 # CODE_FLOW: who the code page is for and what a right code does:
@@ -24,17 +26,6 @@ CODE_FLOW = "code_flow"
 RESET = "password_reset"
 
 SENT_NEW_CODE = "If that account needs a code, we sent a new one."
-
-
-def page_not_found(request, exception):
-    """Pivot's 404 page. Used for any unknown URL when DEBUG is off (see handler404)."""
-    return render(request, "web/404.html", status=404)
-
-
-@login_required  # also covered by LoginRequiredMiddleware; kept so the view says it
-def home(request):
-    """Placeholder home page; also where a login goes without ?next=."""
-    return render(request, "web/home.html")
 
 
 @login_not_required

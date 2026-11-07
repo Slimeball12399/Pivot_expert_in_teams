@@ -8,10 +8,12 @@ from django.utils import timezone
 
 from accounts.models import Consent, User
 
+PASSWORD = "Str0ng-test-pass!"
+
 
 def make_user(email="user@example.com"):
     return User.objects.create_user(
-        email, "Str0ng-test-pass!", first_name="Test", last_name="User")
+        email, PASSWORD, first_name="Test", last_name="User")
 
 
 class ConsentTests(TestCase):

@@ -1,3 +1,6 @@
+from .dbviews import TrainerUser
+# Registers the read-only view models with Django (they live in dbviews.py).
+
 from functools import partial
 
 from django.contrib.auth.models import AbstractUser
@@ -160,6 +163,7 @@ class Consent(UUIDModel):
         except KeyError:
             raise ImproperlyConfigured(
                 f"settings.CONSENT_VERSIONS has no version for '{purpose}'.")
+
 
 class EmailCode(UUIDModel):
     """A one-time code emailed to a user (email verification, password reset).

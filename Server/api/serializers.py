@@ -210,3 +210,30 @@ class HealthSerializer(serializers.Serializer):
 
     status = serializers.CharField()
     database = serializers.ChoiceField(choices=["ok", "down"])
+
+
+# Invites
+
+
+class InviteTrainerSerializer(serializers.Serializer):
+    """Who an invitation is from: the trainer's name (an AdminProfile)."""
+
+    first_name = serializers.CharField(source="user.first_name")
+    last_name = serializers.CharField(source="user.last_name")
+
+
+class InviteSerializer(serializers.Serializer):
+    """An open invitation in GET /api/invites/."""
+
+    id = serializers.UUIDField()
+    trainer = InviteTrainerSerializer(source="invited_by")
+    created_at = serializers.DateTimeField()
+    expires_at = serializers.DateTimeField()
+
+
+class InviteAcceptedSerializer(DetailSerializer):
+    """Response of POST /api/invites/<id>/accept/: the new trainer, and the
+    one they replaced (null when the speaker had none)."""
+
+    trainer = InviteTrainerSerializer()
+    previous_trainer = InviteTrainerSerializer(allow_null=True)

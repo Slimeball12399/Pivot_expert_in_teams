@@ -27,6 +27,8 @@ def error_at(response, path):
 
 
 class MeEndpointTests(APITestCase):
+    """The HTTP layer of /api/me/. The rules are tested in accounts/tests/test_update_profile.py."""
+
     @classmethod
     def setUpTestData(cls):
         cls.speaker = register_speaker(

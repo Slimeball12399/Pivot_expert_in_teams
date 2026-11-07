@@ -4,6 +4,8 @@ from rest_framework.test import APITestCase
 
 
 class HealthTests(APITestCase):
+    """GET /api/health/, the public up-check."""
+
     def test_health_is_public_and_reports_database(self):
         response = self.client.get(reverse("api:health"))
         self.assertEqual(response.status_code, status.HTTP_200_OK)

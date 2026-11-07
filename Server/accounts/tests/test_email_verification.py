@@ -8,8 +8,8 @@ from django.utils import timezone
 from rest_framework_simplejwt.token_blacklist.models import BlacklistedToken
 from rest_framework_simplejwt.tokens import RefreshToken
 
-from accounts.services import accounts as account_services
 from accounts.models import EmailCode, User
+from accounts.services import accounts as account_services
 from accounts.services.accounts import (
     EMAIL_NOT_VERIFIED,
     INVALID_CODE,

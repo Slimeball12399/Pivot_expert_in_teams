@@ -10,6 +10,8 @@ from accounts.validators import MAX_HEIGHT_CM, MIN_AGE, MIN_HEIGHT_CM
 
 from .utils import FIXED_NOW, frozen_now
 
+PASSWORD = "Str0ng-test-pass!"
+
 # The validators themselves are tested in test_validators.py.
 # This file checks what register_speaker adds on top: creating both models,
 # that each field's validation is wired up, collecting errors, and rollback.
@@ -18,7 +20,7 @@ from .utils import FIXED_NOW, frozen_now
 def speaker_data(**overrides):
     data = {
         "email": "speaker@example.com",
-        "password": "Str0ng-test-pass!",
+        "password": PASSWORD,
         "first_name": "Mikkel",
         "last_name": "Jensen",
         "phone_number": "+4520123456",
@@ -52,7 +54,7 @@ class RegisterSpeakerTests(TestCase):
         user = register_speaker(**speaker_data())
 
         self.assertEqual(user.role, User.Role.SPEAKER)
-        self.assertTrue(user.check_password("Str0ng-test-pass!"))
+        self.assertTrue(user.check_password(PASSWORD))
         self.assertFalse(user.is_staff)
         self.assertFalse(user.is_superuser)
 
