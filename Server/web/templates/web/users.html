@@ -29,6 +29,8 @@
 
         <div class="users-actions">
             <form class="users-search" method="get" role="search">
+                {# Keeps the current filter when searching. #}
+                <input type="hidden" name="status" value="{{ status }}">
                 {% heroicon_outline "magnifying-glass" size=20 aria_hidden="true" %}
                 <input class="input" type="search" name="q" value="{{ query }}" placeholder="Search users"
                     aria-label="Search users">
@@ -60,22 +62,29 @@
         </div>
         {% for row in rows %}
         {% include "web/components/user_row.html" %}
+        {% empty %}
+        <p class="user-table-empty">
+            {% if query %}No one matches &ldquo;{{ query }}&rdquo;.
+            {% elif status == "speakers" %}No speakers yet. Invite someone to get started.
+            {% else %}No one here yet.{% endif %}
+        </p>
         {% endfor %}
     </div>
 </section>
 
-{# Invite dialog (invite-dialog.js). The suggestions come from web:invite_suggestions; Send invite just closes it for now. #}
+{# Invite dialog (invite-dialog.js). Suggestions from web:invite_suggestions; Send invite posts to web:invite_create. #}
 <dialog class="dialog" id="invite-dialog" aria-labelledby="invite-dialog-title"
     data-suggestions-url="{% url 'web:invite_suggestions' %}">
-    <form class="dialog-panel" method="dialog" novalidate>
-        <button type="submit" class="dialog-close" value="cancel" aria-label="Close">
+    <form class="dialog-panel" method="post" action="{% url 'web:invite_create' %}" novalidate>
+        {% csrf_token %}
+        <button type="button" class="dialog-close" data-dialog-close aria-label="Close">
             {% heroicon_outline "x-mark" size=20 aria_hidden="true" %}
         </button>
         <div class="dialog-icon">{% heroicon_outline "user-plus" size=24 aria_hidden="true" %}</div>
         <h2 class="dialog-title" id="invite-dialog-title">Invite a user</h2>
         <p class="dialog-body">They get an email with a link to train with you in Pivot.</p>
 
-        <div class="input-field dialog-field">
+        <div class="input-field dialog-field" id="invite-email-field">
             <label class="input-label" for="invite-email">Email</label>
             <div class="input-control combobox">
                 <input class="input" id="invite-email" name="email" type="email" autocomplete="off"
@@ -85,11 +94,13 @@
                 </ul>
             </div>
             <p class="input-message" id="invite-email-hint">Speakers already in Pivot show up as you type.</p>
+            {# Filled by invite-dialog.js when the server says no. #}
+            <p class="input-message input-message-error" id="invite-email-error" hidden></p>
         </div>
 
         <div class="dialog-actions">
-            {% include "web/components/button.html" with text="Cancel" variant="quiet" type="submit" %}
-            {% include "web/components/button.html" with text="Send invite" type="submit" %}
+            {% include "web/components/button.html" with text="Cancel" variant="quiet" id="invite-cancel" %}
+            {% include "web/components/button.html" with text="Send invite" type="submit" id="invite-send" %}
         </div>
     </form>
 </dialog>

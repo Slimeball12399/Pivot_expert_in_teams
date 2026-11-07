@@ -71,22 +71,32 @@ narrow list layout a meta line under it stands in for the hidden columns.
     </div>
     <div class="user-table-since" role="cell">{{ row.since|date:"j M Y" }}</div>
     {% endif %}
+    {# Actions. Invites: Resend, and Cancel while open; both post and come back to this page. #}
+    {# Speakers: their page doesn't exist yet, so the arrow is disabled. #}
     <div class="user-table-actions" role="cell">
         {% if row.kind == "speaker" %}
-        <button type="button" class="icon-button" aria-label="Open {{ row.first_name }} {{ row.last_name }}"
-            title="Open">
+        <button type="button" class="icon-button" disabled
+            aria-label="Open {{ row.first_name }} {{ row.last_name }} (coming soon)" title="Coming soon">
             {% heroicon_outline "chevron-right" size=20 aria_hidden="true" %}
         </button>
         {% else %}
-        <button type="button" class="icon-button" aria-label="Resend the invite to {{ row.email }}"
-            title="Resend invite">
-            {% heroicon_outline "arrow-path" size=20 aria_hidden="true" %}
-        </button>
+        <form method="post" action="{% url 'web:invite_resend' row.id %}">
+            {% csrf_token %}
+            <input type="hidden" name="next" value="{{ request.get_full_path }}">
+            <button type="submit" class="icon-button" aria-label="Resend the invite to {{ row.email }}"
+                title="Resend invite">
+                {% heroicon_outline "arrow-path" size=20 aria_hidden="true" %}
+            </button>
+        </form>
         {% if row.state == "pending" %}
-        <button type="button" class="icon-button" aria-label="Cancel the invite to {{ row.email }}"
-            title="Cancel invite">
-            {% heroicon_outline "x-mark" size=20 aria_hidden="true" %}
-        </button>
+        <form method="post" action="{% url 'web:invite_cancel' row.id %}">
+            {% csrf_token %}
+            <input type="hidden" name="next" value="{{ request.get_full_path }}">
+            <button type="submit" class="icon-button" aria-label="Cancel the invite to {{ row.email }}"
+                title="Cancel invite">
+                {% heroicon_outline "x-mark" size=20 aria_hidden="true" %}
+            </button>
+        </form>
         {% endif %}
         {% endif %}
     </div>

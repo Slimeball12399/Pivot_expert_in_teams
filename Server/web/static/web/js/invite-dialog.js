@@ -1,7 +1,10 @@
-// Invite dialog on the Users page. Send invite just closes the dialog for now.
+// Invite dialog on the Users page.
 //
 // Opens with the Invite user button; closes with Escape, Cancel, the cross or
-// a click on the backdrop. The email field is a combobox: from 3 characters it
+// a click on the backdrop. Send invite posts the form to web:invite_create:
+// on success the page reloads (showing the new row and a toast); on an error
+// the message shows under the email field and the dialog stays open.
+// The email field is a combobox: from 3 characters it
 // asks the server (data-suggestions-url, web:invite_suggestions) for speaker
 // emails that start with what you typed, 200ms after the last keystroke, and
 // cancels a request that is no longer needed. Arrow keys move through the
@@ -12,7 +15,11 @@ document.addEventListener("DOMContentLoaded", function () {
     if (!dialog || !opener) {
         return;
     }
+    var form = dialog.querySelector("form");
     var input = document.getElementById("invite-email");
+    var field = document.getElementById("invite-email-field");
+    var error = document.getElementById("invite-email-error");
+    var send = document.getElementById("invite-send");
     var list = document.getElementById("invite-suggestions");
     var suggestionsUrl = dialog.dataset.suggestionsUrl;
     var MIN_LENGTH = 3;  // the server answers nothing shorter (SUGGEST_MIN_LENGTH)
@@ -115,10 +122,12 @@ document.addEventListener("DOMContentLoaded", function () {
             email.className = "combobox-option-email";
             email.textContent = match.email;
             item.append(email);
-            if (match.already_linked) {
+            var tagText = match.already_linked ? "Already your speaker"
+                : match.already_invited ? "Already invited" : "";
+            if (tagText) {
                 var tag = document.createElement("span");
                 tag.className = "combobox-tag";
-                tag.textContent = "Already your speaker";
+                tag.textContent = tagText;
                 item.append(tag);
             }
             // mousedown, not click, so the input keeps focus.
@@ -131,6 +140,61 @@ document.addEventListener("DOMContentLoaded", function () {
         list.hidden = false;
         input.setAttribute("aria-expanded", "true");
     }
+
+    function showError(message) {
+        error.textContent = message;
+        error.hidden = false;
+        field.classList.add("input-field-error");
+        input.setAttribute("aria-invalid", "true");
+        input.setAttribute("aria-describedby", "invite-email-error");
+        input.focus();
+    }
+
+    function clearError() {
+        error.hidden = true;
+        error.textContent = "";
+        field.classList.remove("input-field-error");
+        input.removeAttribute("aria-invalid");
+        input.setAttribute("aria-describedby", "invite-email-hint");
+    }
+
+    form.addEventListener("submit", function (event) {
+        event.preventDefault();
+        closeList();
+        clearError();
+        send.disabled = true;
+        fetch(form.action, {
+            method: "POST",
+            body: new FormData(form),  // includes the CSRF token
+            headers: {"Accept": "application/json"},
+        })
+            .then(function (response) {
+                return response.json().then(function (data) {
+                    return {ok: response.ok, data: data};
+                });
+            })
+            .then(function (result) {
+                if (result.ok) {
+                    window.location.reload();
+                    return;
+                }
+                var errors = result.data.errors || {};
+                showError((errors.email || errors.__all__ || ["Couldn't send the invite."])[0]);
+                send.disabled = false;
+            })
+            .catch(function () {
+                showError("Couldn't send the invite. Check your connection and try again.");
+                send.disabled = false;
+            });
+    });
+
+    dialog.querySelectorAll("[data-dialog-close], #invite-cancel").forEach(function (button) {
+        button.addEventListener("click", function () {
+            dialog.close();
+        });
+    });
+
+    input.addEventListener("input", clearError);
 
     opener.addEventListener("click", function () {
         dialog.showModal();
@@ -147,6 +211,8 @@ document.addEventListener("DOMContentLoaded", function () {
     dialog.addEventListener("close", function () {
         input.value = "";
         closeList();
+        clearError();
+        send.disabled = false;
     });
 
     input.addEventListener("input", suggest);

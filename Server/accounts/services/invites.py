@@ -168,22 +168,42 @@ def get_users(trainer, status="speakers", query=""):
 
 
 def suggest_invite_emails(trainer, query) -> list[dict]:
-    """Registered speaker emails starting with `query`, for the invite form,
-    so the trainer sees an email is typed right and already in Pivot.
+    """Emails starting with `query`, for the invite form, so the trainer sees
+    an email is typed right, already in Pivot, or already invited:
 
-    It looks at every speaker in Pivot, not only the trainer's own, so it
+    - registered speaker emails; already_linked marks the trainer's own;
+    - emails the trainer has an open invite for, registered or not
+      (already_invited), from their user list (TrainerUser).
+
+    The speakers come from all of Pivot, not only the trainer's own, so it
     stays small on purpose: it matches from the start of the email (a domain
     like "@gmail.com" finds nothing), answers only from SUGGEST_MIN_LENGTH
-    characters, and returns at most SUGGEST_LIMIT emails and nothing else
-    about the person. already_linked marks the trainer's own speakers.
+    characters, and returns at most SUGGEST_LIMIT emails, in email order,
+    and nothing else about the person.
     """
     query = query.strip()
     if len(query) < SUGGEST_MIN_LENGTH:
         return []
-    rows = (User.objects
-            .filter(role=User.Role.SPEAKER, is_active=True,
-                    email_verified_at__isnull=False, email__istartswith=query)
-            .order_by("email")
-            .values_list("email", "speaker_profile__admin")[:SUGGEST_LIMIT])
-    return [{"email": email, "already_linked": admin_id == trainer.pk}
-            for email, admin_id in rows]
+    speakers = (User.objects
+                .filter(role=User.Role.SPEAKER, is_active=True,
+                        email_verified_at__isnull=False, email__istartswith=query)
+                .order_by("email")
+                .values_list("email", "speaker_profile__admin")[:SUGGEST_LIMIT])
+    invited = (TrainerUser.objects
+               .filter(trainer=trainer, kind=TrainerUser.Kind.INVITE,
+                       state=UserInvite.Status.PENDING, email__istartswith=query)
+               .order_by("email")
+               .values_list("email", flat=True)[:SUGGEST_LIMIT])
+
+    # One entry per email (any case): an invited speaker is both.
+    suggestions = {
+        email.lower(): {"email": email, "already_linked": admin_id == trainer.pk,
+                        "already_invited": False}
+        for email, admin_id in speakers
+    }
+    for email in invited:
+        suggestions.setdefault(
+            email.lower(),
+            {"email": email, "already_linked": False, "already_invited": False},
+        )["already_invited"] = True
+    return sorted(suggestions.values(), key=lambda s: s["email"].lower())[:SUGGEST_LIMIT]

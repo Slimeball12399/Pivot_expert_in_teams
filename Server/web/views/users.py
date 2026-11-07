@@ -1,20 +1,30 @@
-"""The trainer's Users page, and the invite dialog's email suggestions.
+"""The trainer's Users page and its actions: the users table (speakers and
+invites, with search and filters), the invite dialog with its email
+suggestions, and resending or cancelling an invite.
 
-The page is UI only for now: the table shows sample rows, and the search,
-the row actions and Send invite are not connected to the invite services
-yet. The suggestions are real (invite_suggestions)."""
+Sessions don't exist yet, so the session columns (sessions, last session,
+speech and stability scores) stay empty for now.
+"""
 
-from datetime import timedelta
+from django.contrib import messages
+from django.core.exceptions import ValidationError
+from django.core.validators import validate_email
+from django.http import Http404, JsonResponse
+from django.shortcuts import redirect, render
+from django.urls import reverse
+from django.utils.http import url_has_allowed_host_and_scheme
+from django.views.decorators.http import require_POST
 
-from django.http import JsonResponse
-from django.shortcuts import render
-from django.utils.timezone import now
-
-from accounts.models import User
-from accounts.services.invites import USER_FILTERS, get_users, suggest_invite_emails
+from accounts.models import User, UserInvite
+from accounts.services.invites import (
+    USER_FILTERS,
+    create_invite,
+    get_users,
+    revoke_invite,
+    suggest_invite_emails,
+)
 
 from ..decorators import role_required
-
 
 # The status values of the filter menu are the keys of USER_FILTERS.
 STATUS_OPTIONS = [
@@ -24,6 +34,7 @@ STATUS_OPTIONS = [
     {"value": "invites", "label": "Invites"},
     {"value": "inactive", "label": "Inactive"},
 ]
+DEFAULT_STATUS = "speakers"
 
 
 def filter_groups(status):
@@ -35,55 +46,28 @@ def filter_groups(status):
     ]
 
 
-def sample_rows():
-    """Placeholder rows, shaped like accounts.dbviews.TrainerUser (kind,
-    state, names, email, since, expires), one invite of each state. Speakers
-    also have the session numbers the table will show once sessions exist
-    (sessions, last_session, speech and stability scores out of 100, and how
-    much each score changed over the last month)."""
-    today = now()
-    speaker = {"kind": "speaker", "state": "active", "expires": None}
-    invite = {"kind": "invite", "first_name": "", "last_name": ""}
-    return [
-        {**speaker, "first_name": "Anna", "last_name": "Hansen",
-         "email": "anna.hansen@example.com", "since": today - timedelta(days=30),
-         "sessions": 12, "last_session": today - timedelta(days=2),
-         "speech": 78, "speech_change": 14, "stability": 64, "stability_change": -3},
-        {**invite, "state": "pending", "email": "mette.poulsen@example.com",
-         "since": today - timedelta(days=2), "expires": today + timedelta(days=5)},
-        {**speaker, "first_name": "Sofie", "last_name": "Madsen",
-         "email": "sofie.madsen@example.com", "since": today - timedelta(days=21),
-         "sessions": 5, "last_session": today - timedelta(days=6),
-         "speech": 61, "speech_change": -23, "stability": 82, "stability_change": 0},
-        {**speaker, "first_name": "Mikkel", "last_name": "Jensen",
-         "email": "mikkel.jensen@example.com", "since": today - timedelta(days=12),
-         "sessions": 0, "last_session": None,
-         "speech": None, "speech_change": None, "stability": None, "stability_change": None},
-        {**invite, "state": "expired", "email": "anders.nielsen@example.com",
-         "since": today - timedelta(days=10), "expires": today - timedelta(days=3)},
-        {**invite, "state": "declined", "email": "andrea.larsen@example.com",
-         "since": today - timedelta(days=4), "expires": today + timedelta(days=3)},
-        {**invite, "state": "revoked", "email": "lars.berg@example.com",
-         "since": today - timedelta(days=6), "expires": today + timedelta(days=1)},
-    ]
-
-
 @role_required(User.Role.ADMIN)
 def user_list(request):
-    """Users page: the trainer's numbers, search, filters, the users table
-    and the invite dialog. ?status= (default "speakers") picks the rows (sample rows for now,
-    narrowed the way USER_FILTERS will narrow get_users()) and, for
-    "speakers", the speaker columns (sessions and scores)."""
+    """Users page: the trainer's numbers, search (?q=), filters (?status=,
+    default "speakers", which also switches to the speaker columns), the
+    users table and the invite dialog."""
     trainer = request.user.admin_profile
-    status = request.GET.get("status", "speakers")
+    status = request.GET.get("status", DEFAULT_STATUS)
     if status not in USER_FILTERS:
-        status = "speakers"
-    states = USER_FILTERS[status]
-    rows = [row for row in sample_rows() if states is None or row["state"] in states]
+        status = DEFAULT_STATUS
+    query = request.GET.get("q", "").strip()
+
+    rows = list(get_users(trainer, status, query))
+    for row in rows:
+        # Until there are sessions: the speaker columns stay empty.
+        row.sessions, row.last_session = 0, None
+        row.speech = row.speech_change = row.stability = row.stability_change = None
+
     return render(request, "web/users.html", {
         "speaker_count": get_users(trainer, "speakers").count(),
-        "sessions_this_week": 0,  # placeholder until there are sessions
-        "query": request.GET.get("q", "").strip(),
+        "sessions_this_week": 0,  # until there are sessions
+        "status": status,
+        "query": query,
         "filter_groups": filter_groups(status),
         "rows": rows,
         "layout": "speakers" if status == "speakers" else "mixed",
@@ -93,10 +77,70 @@ def user_list(request):
 @role_required(User.Role.ADMIN)
 def invite_suggestions(request):
     """Emails for the invite dialog's dropdown, as JSON:
-    {"suggestions": [{"email": ..., "already_linked": true}, ...]}.
+    {"suggestions": [{"email": ..., "already_linked": true, "already_invited": false}, ...]}.
     suggest_invite_emails() decides what is shown (from 3 characters, start
-    of the email, at most 5); already_linked marks the trainer's own speakers."""
+    of the email, at most 5): already_linked marks the trainer's own speakers,
+    already_invited the emails with an open invite from them."""
     query = request.GET.get("q", "")
     return JsonResponse({
         "suggestions": suggest_invite_emails(request.user.admin_profile, query),
     })
+
+
+@require_POST
+@role_required(User.Role.ADMIN)
+def invite_create(request):
+    """Send invite, from the invite dialog (invite-dialog.js posts the form).
+
+    201 {"message": ...}: sent; the message also waits as a toast for the
+    reload that shows the new row. 400 {"errors": {"email": [...]}}: shown
+    under the email field, and the dialog stays open."""
+    email = request.POST.get("email", "").strip()
+    try:
+        validate_email(email)
+    except ValidationError:
+        return JsonResponse({"errors": {"email": ["Enter a valid email address."]}}, status=400)
+    try:
+        invite, _ = create_invite(request.user.admin_profile, email)
+    except ValidationError as error:
+        return JsonResponse({"errors": error.message_dict}, status=400)
+    message = f"Invite sent to {invite.email}."
+    messages.success(request, message)
+    return JsonResponse({"message": message}, status=201)
+
+
+@require_POST
+@role_required(User.Role.ADMIN)
+def invite_resend(request, invite_id):
+    """Resend from a table row: a new invite to the same email (create_invite
+    closes the older open one). Back to the page it came from (?next=)."""
+    trainer = request.user.admin_profile
+    invite = UserInvite.objects.filter(pk=invite_id, invited_by=trainer).first()
+    if invite is None:
+        raise Http404
+    try:
+        create_invite(trainer, invite.email)
+    except ValidationError as error:
+        messages.error(request, " ".join(error.messages))
+    else:
+        messages.success(request, f"Invite sent again to {invite.email}.")
+    next_url = request.POST.get("next", "")
+    if not url_has_allowed_host_and_scheme(next_url, {request.get_host()}):
+        next_url = reverse("web:users")
+    return redirect(next_url)
+
+
+@require_POST
+@role_required(User.Role.ADMIN)
+def invite_cancel(request, invite_id):
+    """Cancel from a table row (revoke_invite). Back to the page it came from (?next=)."""
+    try:
+        invite = revoke_invite(request.user, invite_id)
+    except ValidationError as error:
+        messages.error(request, " ".join(error.messages))
+    else:
+        messages.success(request, f"Invite to {invite.email} cancelled.")
+    next_url = request.POST.get("next", "")
+    if not url_has_allowed_host_and_scheme(next_url, {request.get_host()}):
+        next_url = reverse("web:users")
+    return redirect(next_url)

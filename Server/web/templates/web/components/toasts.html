@@ -1,0 +1,30 @@
+{% comment %}
+Toasts: Django's messages (messages.success / messages.error in a view),
+shown at the bottom of the screen, like the design system's Toast. Each
+one closes with its cross and goes by itself after a few seconds.
+Styles in web/css/toast.css, behaviour in web/js/toast.js; base.html
+includes this, so every page shows them.
+{% endcomment %}
+{% if messages %}
+<div class="toast-stack" role="status" aria-live="polite">
+    {% for message in messages %}
+    <div class="toast{% if message.level_tag %} toast-{{ message.level_tag }}{% endif %}" data-toast>
+        <span class="toast-icon" aria-hidden="true">
+            {% if message.level_tag == "error" %}
+            {% heroicon_outline "x-circle" size=20 %}
+            {% elif message.level_tag == "warning" %}
+            {% heroicon_outline "exclamation-triangle" size=20 %}
+            {% elif message.level_tag == "success" %}
+            {% heroicon_outline "check-circle" size=20 %}
+            {% else %}
+            {% heroicon_outline "information-circle" size=20 %}
+            {% endif %}
+        </span>
+        <p class="toast-text">{{ message }}</p>
+        <button type="button" class="toast-close" data-toast-close aria-label="Close">
+            {% heroicon_outline "x-mark" size=16 aria_hidden="true" %}
+        </button>
+    </div>
+    {% endfor %}
+</div>
+{% endif %}

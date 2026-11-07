@@ -7,7 +7,10 @@ app_name = "web"
 urlpatterns = [
     path("", pages.home, name="home"),
     path("users/", users.user_list, name="users"),
+    path("users/invite/", users.invite_create, name="invite_create"),
     path("users/invite/suggestions/", users.invite_suggestions, name="invite_suggestions"),
+    path("users/invites/<uuid:invite_id>/resend/", users.invite_resend, name="invite_resend"),
+    path("users/invites/<uuid:invite_id>/cancel/", users.invite_cancel, name="invite_cancel"),
     path("login/", auth.login, name="login"),
     # Password reset: email -> code -> new password.
     path("forgot-password/", auth.forgot_password, name="forgot_password"),

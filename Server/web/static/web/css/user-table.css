@@ -139,6 +139,19 @@
     gap: 4px;
 }
 
+/* Each action is a small form with one button. */
+.user-table-actions form {
+    display: contents;
+}
+
+/* No rows (nobody yet, or nothing matches the search). */
+.user-table-empty {
+    margin: 0;
+    padding: 32px 16px;
+    text-align: center;
+    color: var(--text-muted);
+}
+
 /* Name cell: avatar and name. */
 .user-table-row .user-table-name {
     display: flex;
@@ -219,7 +232,12 @@
     cursor: pointer;
 }
 
-.icon-button:hover {
+.icon-button:disabled {
+    opacity: 0.45;
+    cursor: not-allowed;
+}
+
+.icon-button:hover:not(:disabled) {
     background: var(--rose);
     color: var(--navy);
 }

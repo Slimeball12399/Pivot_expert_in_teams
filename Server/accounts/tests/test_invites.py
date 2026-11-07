@@ -211,14 +211,24 @@ class SuggestInviteEmailsTests(TestCase):
         make_speaker("mira@gmail.com")
         make_speaker("mike@example.com", email_verified_at=None)
         make_speaker("milo@example.com", is_active=False)
+        make_invite(cls.trainer, "zara@example.com")         # open, no account
+        make_invite(cls.trainer, "mira@gmail.com")           # open, a speaker
+        make_invite(cls.trainer, "zoe@example.com", days_old=10)  # expired
+        make_invite(make_trainer("bo@example.com"), "zak@example.com")  # another trainer's
 
     def test_suggestions(self):
         cases = [
             ("too short", "mi", []),
             ("from the start, any case, marks the trainer's own", "MIK",
-             [{"email": "mikkel@example.com", "already_linked": True}]),
+             [{"email": "mikkel@example.com", "already_linked": True, "already_invited": False}]),
             ("someone else's speaker", "mia",
-             [{"email": "mia@example.com", "already_linked": False}]),
+             [{"email": "mia@example.com", "already_linked": False, "already_invited": False}]),
+            ("an open invite, no account yet", "zar",
+             [{"email": "zara@example.com", "already_linked": False, "already_invited": True}]),
+            ("an invited speaker is one entry", "mir",
+             [{"email": "mira@gmail.com", "already_linked": False, "already_invited": True}]),
+            ("an expired invite isn't", "zoe", []),
+            ("another trainer's invite isn't", "zak", []),
             ("a domain finds nothing", "@gmail.com", []),
             ("the middle of an email finds nothing", "kel@ex", []),
             ("trainers are never suggested", "anne", []),
