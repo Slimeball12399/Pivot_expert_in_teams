@@ -1,0 +1,165 @@
+/* Filter menu component (web/components/filter_menu.html): a row with the
+   Filters button and the selected tags, and a panel under the button with
+   groups of tags. */
+
+.filter-menu {
+    --filter-row-height: 34px;  /* the Filters button and the selected tags */
+    position: relative;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 8px;
+}
+
+/* Selected: navy with paper text in light mode, rose with navy text in dark
+   mode, like the primary button. Used for the selected tags in the row and
+   in the panel. */
+.filter-menu {
+    --filter-selected-background: var(--navy);
+    --filter-selected-text: var(--paper);
+}
+
+[data-theme="dark"] .filter-menu {
+    --filter-selected-background: var(--rose);
+    --filter-selected-text: var(--navy);
+}
+
+/* The Filters button: a small quiet button, so the selected tags stand out. */
+.filter-menu-button {
+    height: var(--filter-row-height);
+    gap: 6px;
+    padding: 0 12px;
+    border-width: 1px;
+    font-size: 14px;
+}
+
+.filter-menu-button svg {
+    width: 16px;
+    height: 16px;
+}
+
+.filter-chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+}
+
+.filter-chip {
+    display: inline-flex;
+    align-items: center;
+    box-sizing: border-box;
+    height: var(--filter-row-height);
+    padding: 0 16px;
+    border-radius: calc(var(--filter-row-height) / 2);
+    background: var(--filter-selected-background);
+    color: var(--filter-selected-text);
+    font-size: 15px;
+    font-weight: 500;
+    white-space: nowrap;
+}
+
+.filter-menu-panel {
+    position: absolute;
+    top: calc(100% + 8px);
+    left: 0;
+    z-index: 20;
+    box-sizing: border-box;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    width: max-content;
+    min-width: 260px;
+    max-width: min(360px, calc(100vw - 2rem));
+    padding: 16px;
+    border: 1px solid var(--line);
+    border-radius: 12px;
+    background: var(--background-raised);
+    box-shadow: var(--shadow-menu);
+}
+
+.filter-menu-panel[hidden] {
+    display: none;
+}
+
+/* Small cross in the top right corner, level with the first group's label. */
+.filter-menu-close {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    display: inline-grid;
+    place-items: center;
+    width: 28px;
+    height: 28px;
+    padding: 0;
+    border: 0;
+    border-radius: 14px;
+    background: transparent;
+    color: var(--text-muted);
+    cursor: pointer;
+}
+
+.filter-menu-close:hover {
+    background: var(--background);
+    color: var(--text);
+}
+
+.filter-menu-close:focus-visible {
+    outline: 3px solid var(--text);
+}
+
+.filter-menu-close svg {
+    display: block;
+}
+
+/* Keep the first label clear of the cross. */
+.filter-group:first-of-type .filter-group-label {
+    padding-right: 32px;
+}
+
+.filter-group-label {
+    margin: 0 0 8px;
+    font-size: 12px;
+    line-height: 16px;
+    font-weight: 500;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    color: var(--text-muted);
+}
+
+.filter-group-tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+
+/* A tag: an outlined pill; selected, filled (see the colours above). */
+.filter-tag {
+    height: 32px;
+    padding: 0 14px;
+    border: 1px solid var(--line);
+    border-radius: 16px;
+    background: transparent;
+    color: var(--text);
+    font: inherit;
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+}
+
+.filter-tag:hover {
+    background: var(--background);
+}
+
+.filter-tag[aria-pressed="true"] {
+    border-color: var(--filter-selected-background);
+    background: var(--filter-selected-background);
+    color: var(--filter-selected-text);
+}
+
+.filter-tag:focus-visible {
+    outline: 3px solid var(--text);
+    outline-offset: 2px;
+}

@@ -1,12 +1,13 @@
 from django.urls import path
 
-from .views import auth, pages
+from .views import auth, pages, users
 
 app_name = "web"
 
 urlpatterns = [
     path("", pages.home, name="home"),
-    path("users/", pages.users, name="users"),
+    path("users/", users.user_list, name="users"),
+    path("users/invite/suggestions/", users.invite_suggestions, name="invite_suggestions"),
     path("login/", auth.login, name="login"),
     # Password reset: email -> code -> new password.
     path("forgot-password/", auth.forgot_password, name="forgot_password"),

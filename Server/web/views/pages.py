@@ -1,4 +1,4 @@
-"""General pages: the home page, the users page and the 404 page."""
+"""General pages: the home page and the 404 page."""
 
 from django.contrib.auth.decorators import login_required
 from django.shortcuts import render
@@ -14,9 +14,3 @@ def home(request):
     """Placeholder home page; also where a login goes without ?next=."""
     return render(request, "web/home.html")
 
-
-
-@login_required
-def users(request):
-    """Placeholder users page."""
-    return render(request, "web/users.html")

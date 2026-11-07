@@ -1,0 +1,52 @@
+{% comment %}
+Filter menu: a Filters button that opens a panel of tag groups, with the
+selected tags shown next to the button. Styles in web/css/filter-menu.css,
+behaviour in web/js/filter-menu.js.
+
+  {% include "web/components/filter_menu.html" with id="user-filters" groups=filter_groups %}
+
+  id       base for the element ids (required)
+  groups   list of {name, label, multiple, options: [{value, label}], selected: [values]}
+           multiple False: one tag per group; True: any number
+
+Closing the panel fires a "filtermenu:apply" event on the menu with the
+selected values per group and, if they changed, reloads the page with them
+as query parameters named after the groups (?status=active).
+{% endcomment %}
+<div class="filter-menu" data-filter-menu>
+    <button type="button" class="button button-quiet filter-menu-button" data-filter-menu-toggle
+        aria-expanded="false" aria-controls="{{ id }}-panel">
+        {% heroicon_outline "adjustments-horizontal" size=16 aria_hidden="true" %}
+        Filters
+    </button>
+    {# The selected tags; filter-menu.js redraws them when the panel closes. #}
+    <ul class="filter-chips" data-filter-chips aria-label="Selected filters">
+        {% for group in groups %}
+        {% for option in group.options %}
+        {% if option.value in group.selected %}
+        <li class="filter-chip">{{ option.label }}</li>
+        {% endif %}
+        {% endfor %}
+        {% endfor %}
+    </ul>
+    <div class="filter-menu-panel" id="{{ id }}-panel" hidden>
+        {# Top right, on the first group's label row. #}
+        <button type="button" class="filter-menu-close" data-filter-menu-close aria-label="Close filters">
+            {% heroicon_outline "x-mark" size=16 aria_hidden="true" %}
+        </button>
+        {% for group in groups %}
+        <div class="filter-group" role="group" aria-labelledby="{{ id }}-{{ group.name }}"
+            data-filter-group="{{ group.name }}" data-multiple="{{ group.multiple|yesno:'true,false' }}">
+            <p class="filter-group-label" id="{{ id }}-{{ group.name }}">{{ group.label }}</p>
+            <div class="filter-group-tags">
+                {% for option in group.options %}
+                <button type="button" class="filter-tag" data-value="{{ option.value }}"
+                    aria-pressed="{% if option.value in group.selected %}true{% else %}false{% endif %}">
+                    {{ option.label }}
+                </button>
+                {% endfor %}
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+</div>

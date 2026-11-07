@@ -1,0 +1,66 @@
+/* Combobox: an input with a list of suggestions under it (role="combobox"
+   on the input, role="listbox" on the list). Used in the invite dialog. */
+
+.combobox {
+    position: relative;
+}
+
+.combobox-list {
+    position: absolute;
+    top: calc(100% + 4px);
+    left: 0;
+    right: 0;
+    z-index: 5;
+    margin: 0;
+    padding: 4px;
+    list-style: none;
+    background: var(--background-raised);
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    box-shadow: var(--shadow-menu);
+}
+
+.combobox-list[hidden] {
+    display: none;
+}
+
+.combobox-option {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    padding: 10px 12px;
+    border-radius: 6px;
+    font-size: 15px;
+    cursor: pointer;
+}
+
+.combobox-option:hover,
+.combobox-option[aria-selected="true"] {
+    background: var(--background);
+}
+
+.combobox-option-email {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+/* "Already your speaker": a small pill, like the design system's Badge. */
+.combobox-tag {
+    flex: none;
+    padding: 2px 8px;
+    border: 1px solid var(--line);
+    border-radius: 12px;
+    font-size: 12px;
+    color: var(--text-muted);
+    white-space: nowrap;
+}
+
+/* Shown when nothing matches; not an option. */
+.combobox-empty {
+    padding: 10px 12px;
+    font-size: 14px;
+    color: var(--text-muted);
+}

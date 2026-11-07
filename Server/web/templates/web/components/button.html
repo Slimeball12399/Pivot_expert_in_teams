@@ -3,11 +3,33 @@ Button: a normal (primary) button or a text button. Styles in web/css/button.css
 
   {% include "web/components/button.html" with text="Log in" type="submit" full_width=True %}
   {% include "web/components/button.html" with text="Forgot password?" variant="text" href="/password-reset/" %}
+  {% include "web/components/button.html" with text="Invite user" icon="plus" id="invite-open" %}
 
   text        label (required)
-  variant     "primary" (default) or "text"
+  variant     "primary" (default), "quiet" (outlined, for Cancel and other second choices) or "text"
+  icon        Heroicons outline name shown before the text, e.g. "plus"
+  id          id of the button or link
   type        "button" (default), "submit" or "reset"; ignored when href is set
   href        renders a link that looks like a button instead of a <button>
   full_width  stretch to the full width of the container
+
+Short lines on purpose: a Django tag must stay on one line, so an HTML
+formatter that wraps long lines would break the template.
 {% endcomment %}
-{% if href %}<a class="button button-{{ variant|default:'primary' }}{% if full_width %} button-full{% endif %}" href="{{ href }}">{{ text }}</a>{% else %}<button type="{{ type|default:'button' }}" class="button button-{{ variant|default:'primary' }}{% if full_width %} button-full{% endif %}">{{ text }}</button>{% endif %}
+{% if href %}
+<a
+    {% if id %}id="{{ id }}"{% endif %}
+    class="button button-{{ variant|default:'primary' }}{% if full_width %} button-full{% endif %}"
+    href="{{ href }}">
+    {% if icon %}{% heroicon_outline icon size=20 aria_hidden="true" %}{% endif %}
+    {{ text }}
+</a>
+{% else %}
+<button
+    {% if id %}id="{{ id }}"{% endif %}
+    type="{{ type|default:'button' }}"
+    class="button button-{{ variant|default:'primary' }}{% if full_width %} button-full{% endif %}">
+    {% if icon %}{% heroicon_outline icon size=20 aria_hidden="true" %}{% endif %}
+    {{ text }}
+</button>
+{% endif %}

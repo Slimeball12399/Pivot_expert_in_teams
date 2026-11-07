@@ -1,0 +1,294 @@
+/* Users table (web/users.html, rows in web/components/user_row.html), like
+   the design system's Table: raised box, line border, small uppercase column
+   headers, a line between rows.
+
+   A grid per row instead of a <table>, so on narrow screens the same rows can
+   become list items. Every row uses the same column widths, so the columns
+   line up. Two layouts (data-layout on the table), with columns dropping out
+   as the screen narrows:
+
+   The email is always under the name, not a column of its own.
+
+   speakers (the default filter)
+     800px and up   Name, Sessions, Last session, Speech, Stability, Actions
+     480 to 799px   a list: name, email and "sessions · last" under it, the two scores, actions
+     below 480px    the list without the scores
+
+   mixed (speakers and invites)
+     1024px and up  Name, Status, Activity, Since, Actions
+     800 to 1023px  without Since
+     below 800px    a list: name, email and activity under it, status, actions
+*/
+
+.user-table {
+    /* mixed: Name, Status, Activity, Since, Actions */
+    --user-table-columns: minmax(0, 1.6fr) 120px minmax(0, 1fr) 110px 88px;
+    border: 1px solid var(--line);
+    border-radius: 16px;
+    background: var(--background-raised);
+    overflow: hidden;
+    font-size: 14px;
+    line-height: 20px;
+}
+
+.user-table[data-layout="speakers"] {
+    /* Name, Sessions, Last session, Speech, Stability, Actions */
+    --user-table-columns: minmax(0, 1.6fr) 80px 120px 96px 96px 48px;
+}
+
+.user-table-row {
+    display: grid;
+    grid-template-columns: var(--user-table-columns);
+    align-items: center;
+    column-gap: 16px;
+    padding: 0 16px;
+    border-bottom: 1px solid var(--line);
+}
+
+.user-table-row:last-child {
+    border-bottom: 0;
+}
+
+.user-table-row:not(.user-table-head):hover {
+    background: var(--background);
+}
+
+.user-table-row > [role="cell"] {
+    min-width: 0;
+    padding: 12px 0;
+}
+
+/* Header row: the page's grey (paper in light mode, navy in dark mode), so it
+   stands apart from the white rows. */
+.user-table-head {
+    background: var(--background);
+}
+
+/* Column headers: the design system's caption style. */
+.user-table-head > [role="columnheader"] {
+    padding: 10px 0;
+    font-size: 12px;
+    line-height: 16px;
+    font-weight: 500;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    color: var(--text-muted);
+}
+
+/* Long text is cut off with "...", dates stay on one line. */
+.user-table-activity,
+.user-name-text,
+.user-email,
+.user-meta {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.user-table-activity,
+.user-table-since,
+.user-table-last {
+    color: var(--text-muted);
+}
+
+.user-table-since,
+.user-table-last,
+.user-table-sessions {
+    white-space: nowrap;
+    font-variant-numeric: tabular-nums;
+}
+
+/* Score: the number with the month's change next to it, small. */
+.score-row {
+    display: flex;
+    align-items: baseline;
+    gap: 4px;
+}
+
+.score-change {
+    font-size: 12px;
+    line-height: 16px;
+    font-weight: 500;
+    font-variant-numeric: tabular-nums;
+    color: var(--text-muted);
+}
+
+.score-up {
+    color: var(--success-text);
+}
+
+.score-down {
+    color: var(--error-text);
+}
+
+.score-num {
+    font-family: "Jost", sans-serif;
+    font-size: 15px;
+    line-height: 18px;
+    font-weight: 600;
+    font-variant-numeric: tabular-nums;
+}
+
+.score-none {
+    color: var(--text-muted);
+}
+
+.user-table-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 4px;
+}
+
+/* Name cell: avatar and name. */
+.user-table-row .user-table-name {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+/* Initials in a rose disc with navy text, in both themes. */
+.user-avatar {
+    flex: none;
+    display: inline-grid;
+    place-items: center;
+    width: 32px;
+    height: 32px;
+    border-radius: 16px;
+    background: var(--rose);
+    color: var(--navy);
+    font-family: "Jost", sans-serif;
+    font-size: 13px;
+    font-weight: 600;
+    letter-spacing: 0.02em;
+}
+
+/* An invite: dashed and muted, someone who hasn't joined yet. */
+.user-avatar-invite {
+    box-sizing: border-box;
+    border: 1.5px dashed var(--text-muted);
+    background: transparent;
+    color: var(--text-muted);
+}
+
+.user-avatar svg {
+    display: block;
+}
+
+.user-name {
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+}
+
+.user-name-text {
+    font-family: "Jost", sans-serif;
+    font-size: 15px;
+    font-weight: 600;
+}
+
+.user-name-none {
+    font-family: "Outfit", sans-serif;
+    font-weight: 400;
+    color: var(--text-muted);
+}
+
+/* The email under the name, small and muted. */
+.user-email {
+    font-size: 13px;
+    line-height: 18px;
+    color: var(--text-muted);
+}
+
+/* The meta line under the email: only in the narrow list layout. */
+.user-meta {
+    display: none;
+    color: var(--text-muted);
+}
+
+/* Row action buttons: icon only, quiet. */
+.icon-button {
+    display: inline-grid;
+    place-items: center;
+    width: 36px;
+    height: 36px;
+    padding: 0;
+    border: 0;
+    border-radius: 8px;
+    background: transparent;
+    color: var(--text-muted);
+    cursor: pointer;
+}
+
+.icon-button:hover {
+    background: var(--rose);
+    color: var(--navy);
+}
+
+.icon-button:focus-visible {
+    outline: 3px solid var(--text);
+    outline-offset: 1px;
+}
+
+.icon-button svg {
+    display: block;
+}
+
+/* ---------- narrower screens: mixed layout ---------- */
+
+@media (max-width: 1023px) {
+    .user-table {
+        --user-table-columns: minmax(0, 1.6fr) 120px minmax(0, 1fr) 88px;
+    }
+
+    .user-table-since {
+        display: none;
+    }
+}
+
+/* Below 800px: a list. No column headers; the activity moves under the name. */
+@media (max-width: 799px) {
+    .user-table {
+        --user-table-columns: minmax(0, 1fr) auto auto;
+    }
+
+    .user-table-head,
+    .user-table-activity {
+        display: none;
+    }
+
+    .user-meta {
+        display: block;
+        font-size: 13px;
+        line-height: 18px;
+    }
+
+    .user-table-actions {
+        gap: 0;
+    }
+}
+
+/* ---------- narrower screens: speakers layout ---------- */
+
+/* Below 800px: a list. Sessions and last session move under the name. */
+@media (max-width: 799px) {
+    .user-table[data-layout="speakers"] {
+        --user-table-columns: minmax(0, 1fr) auto auto auto;
+    }
+
+    .user-table[data-layout="speakers"] .user-table-sessions,
+    .user-table[data-layout="speakers"] .user-table-last {
+        display: none;
+    }
+}
+
+/* Below 480px: no room for the scores either. */
+@media (max-width: 479px) {
+    .user-table[data-layout="speakers"] {
+        --user-table-columns: minmax(0, 1fr) auto;
+    }
+
+    .user-table[data-layout="speakers"] .user-table-speech,
+    .user-table[data-layout="speakers"] .user-table-stability {
+        display: none;
+    }
+}

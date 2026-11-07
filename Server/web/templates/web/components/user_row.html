@@ -1,0 +1,93 @@
+{% comment %}
+One row of the users table (web/users.html), for a speaker or an invite.
+Styles in web/css/user-table.css. Needs `row` with the fields of
+accounts.dbviews.TrainerUser (kind, state, first_name, last_name, email,
+since, expires), speakers also sessions, last_session, speech, stability and their _change,
+and `layout`: "mixed" (Status, Activity and Since columns) or "speakers"
+(Sessions, Last session, Speech and Stability columns).
+
+The email is always under the name ("Not joined yet" for an invite). In the
+narrow list layout a meta line under it stands in for the hidden columns.
+{% endcomment %}
+<div class="user-table-row" role="row">
+    <div class="user-table-name" role="cell">
+        {% if row.kind == "speaker" %}
+        <span class="user-avatar" aria-hidden="true">
+            {{ row.first_name|first }}{{ row.last_name|first }}
+        </span>
+        {% else %}
+        <span class="user-avatar user-avatar-invite" aria-hidden="true">
+            {% heroicon_outline "envelope" size=16 %}
+        </span>
+        {% endif %}
+        <span class="user-name">
+            {% if row.kind == "speaker" %}
+            <span class="user-name-text">{{ row.first_name }} {{ row.last_name }}</span>
+            {% else %}
+            <span class="user-name-text user-name-none">Not joined yet</span>
+            {% endif %}
+            <span class="user-email">{{ row.email }}</span>
+            <span class="user-meta">
+                {% if layout == "speakers" %}
+                {{ row.sessions }} session{{ row.sessions|pluralize }}
+                {% if row.last_session %}&middot; last {{ row.last_session|date:"j M" }}{% endif %}
+                {% else %}
+                {% include "web/components/user_activity.html" %}
+                {% endif %}
+            </span>
+        </span>
+    </div>
+    {% if layout == "speakers" %}
+    <div class="user-table-sessions" role="cell">{{ row.sessions }}</div>
+    {# The year only when it isn't this year: "5 Nov", "28 Dec 2025". #}
+    <div class="user-table-last" role="cell">
+        {% now "Y" as this_year %}
+        {% if not row.last_session %}&ndash;
+        {% elif row.last_session|date:"Y" == this_year %}{{ row.last_session|date:"j M" }}
+        {% else %}{{ row.last_session|date:"j M Y" }}{% endif %}
+    </div>
+    <div class="user-table-speech" role="cell">
+        {% include "web/components/score.html" with value=row.speech change=row.speech_change measure="speech" %}
+    </div>
+    <div class="user-table-stability" role="cell">
+        {% include "web/components/score.html" with value=row.stability change=row.stability_change measure="stability" %}
+    </div>
+    {% else %}
+    <div class="user-table-status" role="cell">
+        {% if row.state == "active" %}
+        {% include "web/components/badge.html" with text="Active" tone="success" %}
+        {% elif row.state == "pending" %}
+        {% include "web/components/badge.html" with text="Pending" tone="warning" %}
+        {% elif row.state == "declined" %}
+        {% include "web/components/badge.html" with text="Declined" tone="error" %}
+        {% elif row.state == "expired" %}
+        {% include "web/components/badge.html" with text="Expired" %}
+        {% else %}
+        {% include "web/components/badge.html" with text="Cancelled" %}
+        {% endif %}
+    </div>
+    <div class="user-table-activity" role="cell">
+        {% include "web/components/user_activity.html" %}
+    </div>
+    <div class="user-table-since" role="cell">{{ row.since|date:"j M Y" }}</div>
+    {% endif %}
+    <div class="user-table-actions" role="cell">
+        {% if row.kind == "speaker" %}
+        <button type="button" class="icon-button" aria-label="Open {{ row.first_name }} {{ row.last_name }}"
+            title="Open">
+            {% heroicon_outline "chevron-right" size=20 aria_hidden="true" %}
+        </button>
+        {% else %}
+        <button type="button" class="icon-button" aria-label="Resend the invite to {{ row.email }}"
+            title="Resend invite">
+            {% heroicon_outline "arrow-path" size=20 aria_hidden="true" %}
+        </button>
+        {% if row.state == "pending" %}
+        <button type="button" class="icon-button" aria-label="Cancel the invite to {{ row.email }}"
+            title="Cancel invite">
+            {% heroicon_outline "x-mark" size=20 aria_hidden="true" %}
+        </button>
+        {% endif %}
+        {% endif %}
+    </div>
+</div>

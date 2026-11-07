@@ -1,0 +1,10 @@
+{% comment %}
+Badge: a small pill with a coloured dot and a label, like the design
+system's Badge. Styles in web/css/badge.css.
+
+  {% include "web/components/badge.html" with text="Active" tone="success" %}
+
+  text   label (required)
+  tone   "success", "warning", "error" or "info"; none gives a muted dot
+{% endcomment %}
+<span class="badge{% if tone %} badge-{{ tone }}{% endif %}">{{ text }}</span>

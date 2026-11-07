@@ -1,7 +1,96 @@
 {% extends "web/base.html" %}
+{% load static %}
 
 {% block title %}Users | Pivot{% endblock %}
 
+{% block head %}
+<link rel="stylesheet" href="{% static 'web/css/users.css' %}">
+<link rel="stylesheet" href="{% static 'web/css/dialog.css' %}">
+<link rel="stylesheet" href="{% static 'web/css/combobox.css' %}">
+<link rel="stylesheet" href="{% static 'web/css/badge.css' %}">
+<link rel="stylesheet" href="{% static 'web/css/filter-menu.css' %}">
+<link rel="stylesheet" href="{% static 'web/css/user-table.css' %}">
+<script src="{% static 'web/js/invite-dialog.js' %}" defer></script>
+<script src="{% static 'web/js/filter-menu.js' %}" defer></script>
+{% endblock %}
+
 {% block content %}
-<h1>Users</h1>
+<section class="users-page">
+    {# Page head: the title and numbers on the left, search and invite on the right, bottoms lined up. #}
+    <div class="users-head">
+        <div class="users-head-text">
+            <h1>Users</h1>
+            <p class="users-summary">
+                <span>{{ speaker_count }} speaker{{ speaker_count|pluralize }}</span>
+                <span class="users-summary-dot" aria-hidden="true">&middot;</span>
+                <span>{{ sessions_this_week }} session{{ sessions_this_week|pluralize }} this week</span>
+            </p>
+        </div>
+
+        <div class="users-actions">
+            <form class="users-search" method="get" role="search">
+                {% heroicon_outline "magnifying-glass" size=20 aria_hidden="true" %}
+                <input class="input" type="search" name="q" value="{{ query }}" placeholder="Search users"
+                    aria-label="Search users">
+            </form>
+            {% include "web/components/button.html" with text="Invite user" icon="plus" id="invite-open" %}
+        </div>
+    </div>
+
+    {# Its own row: the Filters button and the selected filters as tags. #}
+    {% include "web/components/filter_menu.html" with id="user-filters" groups=filter_groups %}
+
+    {# Users table: speakers and invites in one list ("mixed"), or only speakers with their session numbers ("speakers"). Sample rows for now. #}
+    <div class="user-table" role="table" aria-label="Users" data-layout="{{ layout }}">
+        <div class="user-table-row user-table-head" role="row">
+            <div class="user-table-name" role="columnheader">Name</div>
+            {% if layout == "speakers" %}
+            <div class="user-table-sessions" role="columnheader">Sessions</div>
+            <div class="user-table-last" role="columnheader">Last session</div>
+            <div class="user-table-speech" role="columnheader">Speech</div>
+            <div class="user-table-stability" role="columnheader">Stability</div>
+            {% else %}
+            <div class="user-table-status" role="columnheader">Status</div>
+            <div class="user-table-activity" role="columnheader">Activity</div>
+            <div class="user-table-since" role="columnheader">Since</div>
+            {% endif %}
+            <div class="user-table-actions" role="columnheader">
+                <span class="visually-hidden">Actions</span>
+            </div>
+        </div>
+        {% for row in rows %}
+        {% include "web/components/user_row.html" %}
+        {% endfor %}
+    </div>
+</section>
+
+{# Invite dialog (invite-dialog.js). The suggestions come from web:invite_suggestions; Send invite just closes it for now. #}
+<dialog class="dialog" id="invite-dialog" aria-labelledby="invite-dialog-title"
+    data-suggestions-url="{% url 'web:invite_suggestions' %}">
+    <form class="dialog-panel" method="dialog" novalidate>
+        <button type="submit" class="dialog-close" value="cancel" aria-label="Close">
+            {% heroicon_outline "x-mark" size=20 aria_hidden="true" %}
+        </button>
+        <div class="dialog-icon">{% heroicon_outline "user-plus" size=24 aria_hidden="true" %}</div>
+        <h2 class="dialog-title" id="invite-dialog-title">Invite a user</h2>
+        <p class="dialog-body">They get an email with a link to train with you in Pivot.</p>
+
+        <div class="input-field dialog-field">
+            <label class="input-label" for="invite-email">Email</label>
+            <div class="input-control combobox">
+                <input class="input" id="invite-email" name="email" type="email" autocomplete="off"
+                    placeholder="name@example.com" role="combobox" aria-autocomplete="list" aria-expanded="false"
+                    aria-controls="invite-suggestions" aria-describedby="invite-email-hint">
+                <ul class="combobox-list" id="invite-suggestions" role="listbox" aria-label="Speakers in Pivot" hidden>
+                </ul>
+            </div>
+            <p class="input-message" id="invite-email-hint">Speakers already in Pivot show up as you type.</p>
+        </div>
+
+        <div class="dialog-actions">
+            {% include "web/components/button.html" with text="Cancel" variant="quiet" type="submit" %}
+            {% include "web/components/button.html" with text="Send invite" type="submit" %}
+        </div>
+    </form>
+</dialog>
 {% endblock %}

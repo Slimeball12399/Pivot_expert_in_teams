@@ -1,0 +1,9 @@
+{% comment %}
+The Activity text of a users table row (user_row.html): what is happening
+with that speaker or invite now.
+{% endcomment %}
+{% if row.kind == "speaker" %}{% if row.last_session %}Last session {{ row.last_session|date:"j M" }}{% else %}No sessions yet{% endif %}
+{% elif row.state == "pending" %}Expires in {{ row.expires|timeuntil }}
+{% elif row.state == "expired" %}Expired {{ row.expires|date:"j M" }}
+{% elif row.state == "declined" %}Declined {{ row.since|date:"j M" }}
+{% else %}Cancelled{% endif %}
