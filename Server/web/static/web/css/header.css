@@ -1,30 +1,97 @@
-/* Site header: logo on the left, nav items next to it, theme toggle pushed right. */
+/* Site header: logo on the left, nav items next to it, theme toggle pushed right.
+   The nav runs the full height of the bar, so the current page's line sits on its bottom edge. */
 
 .site-header {
+    position: relative;  /* the narrow-screen menu opens below it */
     display: flex;
-    align-items: center;
-    gap: 2rem;
-    padding: 1rem 2rem;
+    align-items: stretch;
+    min-height: 61px;  /* 72px less 15% */
+    padding: 0 1rem;
+    /* One step up from the page background, in both themes. */
+    background: var(--background-raised);
+    border-bottom: 1px solid var(--line);
+}
+
+.site-header-logo,
+.site-header-user,
+.site-header > .theme-toggle {
+    align-self: center;
 }
 
 .site-header-logo {
     display: inline-flex;
 }
 
+/* stretch: each link is as tall as the bar. The -1px puts the links' bottom
+   border over the header's divider line, on the bar's bottom edge. */
 .site-nav {
     display: flex;
-    align-items: center;
+    align-items: stretch;
     gap: 1rem;
+    margin-bottom: -1px;
+    margin-left: 1rem;
+}
+
+/* Nav links: icon and label, muted until hovered or current. The transparent
+   top and bottom borders keep the label centred when the bottom one turns rose. */
+.site-nav a {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    border-top: 3px solid transparent;
+    border-bottom: 3px solid transparent;
+    font-family: "Jost", sans-serif;
+    font-weight: 500;
+    color: var(--text-muted);
+    text-decoration: none;
+    padding: 0 0.5rem;
+    width: fit-content;
+    flex: 1;
+}
+
+.site-nav a[href]:hover {
+    color: var(--text);
+}
+
+/* The page you are on: full text colour, bold, a rose line on the bar's bottom edge. */
+.site-nav a[aria-current="page"] {
+    color: var(--text);
+    font-weight: 700;
+    border-bottom-color: var(--rose);
+}
+
+/* An invisible bold copy of the label sets its width, so going bold doesn't move the other links. */
+.site-nav-label {
+    display: inline-grid;
+}
+
+.site-nav-label::after {
+    content: attr(data-label);
+    font-weight: 700;
+    height: 0;
+    overflow: hidden;
+    visibility: hidden;
+}
+
+/* Narrow screens (below 800px): no nav icons, to free up space. */
+@media (max-width: 799px) {
+    .site-header {
+        gap: 1rem;
+        padding: 0 1rem;
+    }
+
+    .site-nav svg {
+        display: none;
+    }
 }
 
 /* Pushes the logged-in user (or, when logged out, the theme toggle) to the right edge. */
-.site-header > .site-header-user,
-.site-header > .theme-toggle {
+.site-header > .site-header-user {
     margin-left: auto;
 }
 
-.site-header > .site-header-user + .theme-toggle {
-    margin-left: 0;
+.site-header > .theme-toggle {
+    margin-left: 0.5rem;
 }
 
 /* Logged-in user: first name, with the role in smaller, quieter text after it. */
@@ -38,5 +105,113 @@
 .site-header-role {
     font-size: 0.875rem;
     font-weight: 400;
-    opacity: 0.7;
+    color: var(--text-muted);
+}
+
+
+/* Menu button: only shown below 680px. Looks like the theme toggle. */
+.site-nav-toggle {
+    display: none;
+    place-items: center;
+    align-self: center;
+    width: 36px;
+    height: 36px;
+    margin-left: 0.5rem;
+    padding: 0;
+    border: 1px solid transparent;
+    border-radius: 8px;
+    background: transparent;
+    color: var(--text);
+    cursor: pointer;
+}
+
+.site-nav-toggle:hover {
+    background: var(--rose);
+    color: var(--navy);
+}
+
+.site-nav-toggle:focus-visible {
+    outline: 2px solid var(--text);
+    outline-offset: 2px;
+}
+
+.site-nav-toggle svg {
+    display: block;
+}
+
+/* Bars when closed, a cross when open. */
+.site-nav-toggle-close,
+.site-nav-toggle[aria-expanded="true"] .site-nav-toggle-open {
+    display: none;
+}
+
+.site-nav-toggle[aria-expanded="true"] .site-nav-toggle-close {
+    display: block;
+}
+
+/* Below 680px: no role text, and the nav becomes a menu under the bar,
+   opened with the menu button (nav-menu.js sets data-nav-open on the header). */
+@media (max-width: 679px) {
+    /* Name, theme button and menu button close together. The buttons' own
+       padding around their icons already gives some space. */
+    .site-header {
+        gap: 0.25rem;
+    }
+
+    .site-header > .theme-toggle,
+    .site-nav-toggle {
+        margin-left: 0;
+    }
+
+    /* The buttons have 8px of padding around their icons, so icon to icon is
+       8 + gap + 8. The same 8px after the name makes name to icon match. */
+    .site-header-user {
+        margin-right: 0.5rem;
+    }
+
+    .site-header-role {
+        display: none;
+    }
+
+    .site-nav-toggle {
+        display: inline-grid;
+    }
+
+    .site-nav {
+        display: none;
+        position: absolute;
+        top: calc(100% + 1px);  /* below the header's divider line */
+        left: 0;
+        right: 0;
+        z-index: 10;
+        flex-direction: column;
+        gap: 0;
+        margin: 0;
+        padding: 0.5rem 0;
+        background: var(--background-raised);
+        border-bottom: 1px solid var(--line);
+        box-shadow: var(--shadow-menu);
+    }
+
+    .site-header[data-nav-open] .site-nav {
+        display: flex;
+    }
+
+    /* Menu rows: icons back, and the current page marked with a rose line on the left. */
+    .site-nav a {
+        flex: none;
+        width: auto;
+        padding: 0.75rem 1rem;
+        border-top: 0;
+        border-bottom: 0;
+        border-left: 3px solid transparent;
+    }
+
+    .site-nav a[aria-current="page"] {
+        border-left-color: var(--rose);
+    }
+
+    .site-nav svg {
+        display: block;
+    }
 }

@@ -21,6 +21,7 @@
     <link rel="stylesheet" href="{% static 'web/css/input.css' %}">
     <link rel="stylesheet" href="{% static 'web/css/checkbox.css' %}">
     <script src="{% static 'web/js/password-toggle.js' %}" defer></script>
+    <script src="{% static 'web/js/nav-menu.js' %}" defer></script>
     {% block head %}{% endblock %}
 </head>
 <body>
@@ -31,12 +32,16 @@
             <img class="logo-light" src="{% static 'web/img/pivot-logo.svg' %}" alt="Pivot" height="40">
             <img class="logo-dark" src="{% static 'web/img/pivot-logo-on-dark.svg' %}" alt="Pivot" height="40">
         </a>
-        <nav class="site-nav" aria-label="Main">{% block nav %}
-            <a>Users</a>
-            <a>Trainings</a>
-            <a>Insight</a>
-            <a>Devices</a>
+        {# The current page gets aria-current="page" (bold, rose line at the bottom of the bar), matched on the URL name. #}
+        {# Icons: Heroicons outline, as in the design system. data-label reserves the bold width, so nothing shifts. #}
+        {% with current=request.resolver_match.url_name %}
+        <nav class="site-nav" id="site-nav" aria-label="Main">{% block nav %}
+            <a href="{% url 'web:home' %}" {% if current == "home" %}aria-current="page"{% endif %}>{% heroicon_outline "home" size=20 aria_hidden="true" %}<span class="site-nav-label" data-label="Home">Home</span></a>
+            <a href="{% url 'web:users' %}" {% if current == "users" %}aria-current="page"{% endif %}>{% heroicon_outline "users" size=20 aria_hidden="true" %}<span class="site-nav-label" data-label="Users">Users</span></a>
+            <a {% if current == "trainings" %}aria-current="page"{% endif %}>{% heroicon_outline "clock" size=20 aria_hidden="true" %}<span class="site-nav-label" data-label="Trainings">Trainings</span></a>
+            <a {% if current == "devices" %}aria-current="page"{% endif %}>{% heroicon_outline "wifi" size=20 aria_hidden="true" %}<span class="site-nav-label" data-label="Devices">Devices</span></a>
         {% endblock %}</nav>
+        {% endwith %}
         {% if user.is_authenticated %}
         <span class="site-header-user">
             {{ user.first_name|default:user.email }}
@@ -44,6 +49,11 @@
         </span>
         {% endif %}
         {% include "web/components/theme_toggle.html" %}
+        {# Below 680px the nav links are hidden and this button opens them as a menu (nav-menu.js). #}
+        <button type="button" class="site-nav-toggle" aria-controls="site-nav" aria-expanded="false" aria-label="Menu" data-nav-toggle>
+            <span class="site-nav-toggle-open">{% heroicon_outline "bars-3" size=20 aria_hidden="true" %}</span>
+            <span class="site-nav-toggle-close">{% heroicon_outline "x-mark" size=20 aria_hidden="true" %}</span>
+        </button>
     </header>
     {% endblock %}
 

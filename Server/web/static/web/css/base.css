@@ -16,6 +16,12 @@
     /* Light theme */
     --background: var(--paper);
     --text: var(--navy);
+    /* Derived, from the design system: the header and cards that sit on the
+       background (surface-raised), quieter text (ink-muted), dividers (line). */
+    --background-raised: #ffffff;
+    --text-muted: #4a5e70;
+    --line: #d3d8de;
+    --shadow-menu: 0 8px 24px rgba(18, 48, 72, 0.18);  /* design system: shadow-toast */
     color-scheme: light;
 }
 
@@ -23,6 +29,10 @@
 [data-theme="dark"] {
     --background: var(--navy);
     --text: var(--paper);
+    --background-raised: #1b3b57;
+    --text-muted: #a9b6c3;
+    --line: #2a4660;
+    --shadow-menu: 0 8px 24px rgba(0, 0, 0, 0.45);
     color-scheme: dark;
 }
 
@@ -32,6 +42,10 @@ body {
     background: var(--background);
     color: var(--text);
     font-family: "Outfit", sans-serif;
+}
+
+main {
+    padding: 1rem;
 }
 
 /* Links take the surrounding text colour instead of the browser's blue/purple. */

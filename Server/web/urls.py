@@ -6,6 +6,7 @@ app_name = "web"
 
 urlpatterns = [
     path("", pages.home, name="home"),
+    path("users/", pages.users, name="users"),
     path("login/", auth.login, name="login"),
     # Password reset: email -> code -> new password.
     path("forgot-password/", auth.forgot_password, name="forgot_password"),

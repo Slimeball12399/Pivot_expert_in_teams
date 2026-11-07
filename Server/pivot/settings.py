@@ -184,7 +184,8 @@ STATIC_URL = 'static/'
 # SEND_EMAILS in .env:
 #   True: really sent, through Resend's SMTP server. Needs RESEND_API_KEY, and
 #         DEFAULT_FROM_EMAIL must be on a domain verified in Resend.
-#   False (default): only logged to the terminal running the server.
+#   False (default): the text version is printed in the terminal running the
+#         server.
 #   Anything other than "true" counts as False.
 # Tests always use Django's in-memory backend instead (django.core.mail.outbox).
 
@@ -209,9 +210,10 @@ if SEND_EMAILS:
         },
     }
 else:
+    # Prints only the text version (see accounts/mail_backends.py).
     MAILERS = {
         "default": {
-            "BACKEND": "django.core.mail.backends.console.EmailBackend",
+            "BACKEND": "accounts.mail_backends.EmailBackend",
         },
     }
 

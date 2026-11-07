@@ -9,10 +9,13 @@ from django.core.management import call_command
 from django.test import SimpleTestCase, override_settings
 
 from accounts.emails import (
+    build_email,
+    code_email_context,
     format_code,
     send_password_reset_code_email,
     send_verification_code_email,
 )
+from accounts.mail_backends import EmailBackend as DevEmailBackend
 
 USER = SimpleNamespace(email="anna@example.com", first_name="Anna")
 
@@ -116,3 +119,27 @@ class SendTestEmailCommandTests(SimpleTestCase):
         self.assertIn("data:image/png;base64,", html)
         self.assertIn("Confirm your email", html)
         self.assertEqual(mail.outbox, [])
+
+
+@override_settings(EMAIL_CODE_LIFETIME=timedelta(minutes=15), EMAIL_STATIC_URL="")
+class DevEmailBackendTests(SimpleTestCase):
+    """The backend used when SEND_EMAILS=False."""
+
+    def test_prints_only_the_text_version(self):
+        message = build_email(
+            to="anna@example.com", subject="Your Pivot verification code",
+            template="verification_code",
+            context=code_email_context(first_name="Anna", code="12345678"))
+        stream = StringIO()
+        DevEmailBackend(stream=stream).send_messages([message])
+        output = stream.getvalue()
+
+        with self.subTest("headers and the text body"):
+            self.assertIn("To:      anna@example.com", output)
+            self.assertIn("Subject: Your Pivot verification code", output)
+            self.assertIn("Hi Anna", output)
+            self.assertIn("1234 5678", output)
+
+        with self.subTest("no HTML and no logos"):
+            self.assertNotIn("<html", output.lower())
+            self.assertNotIn("base64", output)
