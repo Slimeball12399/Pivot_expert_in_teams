@@ -13,4 +13,3 @@ def page_not_found(request, exception):
 def home(request):
     """Placeholder home page; also where a login goes without ?next=."""
     return render(request, "web/home.html")
-

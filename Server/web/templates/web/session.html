@@ -1,0 +1,18 @@
+{% extends "web/base.html" %}
+{% load static %}
+
+{% block title %}Session · Pivot{% endblock %}
+
+{% block head %}
+<script src="https://cdn.jsdelivr.net/npm/echarts@5/dist/echarts.min.js"></script>
+<link rel="stylesheet" href="{% static 'web/css/timeline-chart.css' %}">
+{% endblock %}
+
+{% block content %}
+<h1>Session</h1>
+{% include "web/components/timeline_chart.html" with id="stability-chart" config=stability_config %}
+{% endblock %}
+
+{% block scripts %}
+<script src="{% static 'web/js/timeline-chart.js' %}"></script>
+{% endblock %}

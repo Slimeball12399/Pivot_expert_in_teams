@@ -1,0 +1,25 @@
+{% comment %}
+Timeline chart: one measure over time (speech or stability) with the target
+band, marker dots and a playhead. Drawn by web/js/timeline-chart.js with
+ECharts; styles in web/css/timeline-chart.css. The page loads ECharts,
+timeline-chart.css and timeline-chart.js once (see demo.html).
+
+  {% include "web/components/timeline_chart.html" with id="stability-chart" config=stability_config %}
+
+  id      unique id on the page (required)
+  config  dict from the view:
+            measure  "speech" or "stability" (sets the colour; stability is dashed)
+            x        {"min", "max", "interval"} in seconds
+            y        {"min", "max", "interval"}, optional, default 0 to 100
+            target   {"low", "high"}, optional, the target band
+            points   [[seconds, value], ...]
+            markers  [[seconds, value], ...], optional, dots on the line
+            time     playhead position in seconds, optional
+
+Other code moves the playhead with
+document.getElementById(id).timeline.setTime(seconds).
+{% endcomment %}
+{% with config_id=id|add:"-config" %}
+<div class="timeline-chart" id="{{ id }}" data-timeline-chart="{{ config_id }}"></div>
+{{ config|json_script:config_id }}
+{% endwith %}
