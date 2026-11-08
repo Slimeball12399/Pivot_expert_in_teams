@@ -26,10 +26,6 @@
     /* Data colours, one per measure everywhere: speech solid, stability dashed. */
     --speech: #85356e;
     --stability: #2695ac;
-    /* Chart dots by target range, the same in every chart: below, inside, above. */
-    --range-below: var(--yellow);
-    --range-inside: var(--green);
-    --range-above: var(--blue);
     /* Feedback colours as text (darker in light mode, lighter in dark mode, 4.5:1 or better). */
     --success-text: #2a7550;
     --error-text: #c2262a;
@@ -47,7 +43,7 @@
     --shadow-dialog: 0 16px 48px rgba(0, 0, 0, 0.5);
     --speech: #ca6789;
     --stability: #1d97a3;
-    --range-above: #8faae8;  /* design system: info blue, dark theme */
+    --blue: #8faae8;  /* design system: info blue in the dark theme (#183b89 is too dark on navy) */
     --success-text: #6fcc9c;
     --error-text: #ff8a8b;
     color-scheme: dark;

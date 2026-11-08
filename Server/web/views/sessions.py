@@ -27,4 +27,7 @@ def demo(request):
         "markers": sorted(random.sample(points, 8)),
         "time": 35,
     }
-    return render(request, "web/session.html", {"stability_config": stability_config})
+    return render(request, "web/session.html", {
+        "stability_config": stability_config,
+        "stability_score": 64,  # fake; later from the stability analysis
+    })

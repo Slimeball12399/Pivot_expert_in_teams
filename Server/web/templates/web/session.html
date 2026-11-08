@@ -6,13 +6,52 @@
 {% block head %}
 <script src="https://cdn.jsdelivr.net/npm/echarts@5/dist/echarts.min.js"></script>
 <link rel="stylesheet" href="{% static 'web/css/timeline-chart.css' %}">
+<link rel="stylesheet" href="{% static 'web/css/score-ring.css' %}">
+<link rel="stylesheet" href="{% static 'web/css/score-card.css' %}">
 {% endblock %}
 
 {% block content %}
 <h1>Session</h1>
+<section class="score-card stability">
+<div class="graph">
+<h3>Stability over the talk</h3>
+<div class="graph-plot">
 {% include "web/components/timeline_chart.html" with id="stability-chart" config=stability_config %}
+</div>
+<div class="score-scale">
+    <span class="score-scale-level score-scale-range">Your usual range</span>
+    <span class="score-scale-level score-scale-below">Below usual</span>
+    <span class="score-scale-level score-scale-good">Good</span>
+    <span class="score-scale-level score-scale-excellent">Excellent</span>
+</div>
+</div>
+<div class="score">
+{% include "web/components/score_ring.html" with id="stability-score" measure="stability" value=stability_score label="Stability" %}
+<div class="data-grid">
+    <div class="data good">
+        <h4>Sway Area</h4>
+        <h3>10.1</h3><span>cm^2</span>
+    </div>
+    <div class="data bad">
+        <h4>Sway Speed</h4>
+        <h3>12.4</h3><span>mm/s</span>
+    </div>
+    <div class="data good">
+        <h4>Time Centered</h4>
+        <h3>74</h3><span>%</span>
+    </div>
+    <div class="data bad">
+        <h4>Max Lean</h4>
+        <h3>2.6</h3><span>cm</span>
+    </div>
+</div>
+</div>
+</section>
+
+
 {% endblock %}
 
 {% block scripts %}
 <script src="{% static 'web/js/timeline-chart.js' %}"></script>
+<script src="{% static 'web/js/score-ring.js' %}"></script>
 {% endblock %}

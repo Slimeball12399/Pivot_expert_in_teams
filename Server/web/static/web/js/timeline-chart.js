@@ -4,43 +4,51 @@
 // After setup the div gets controls for other code (slider, transcript, live data):
 //   div.timeline.setTime(seconds)          move the playhead line and dot
 //   div.timeline.setData(points, markers)  replace the data (markers optional)
-// Colours come from the CSS variables in base.css, read once on page load.
+// Colours come from the CSS variables in base.css. They are read again and the
+// chart redrawn whenever the theme switches (data-theme on <html>, see theme.js).
 document.addEventListener("DOMContentLoaded", function () {
-    var styles = getComputedStyle(document.documentElement);
-    var colors = {
-        speech: styles.getPropertyValue("--speech").trim(),
-        stability: styles.getPropertyValue("--stability").trim(),
-        text: styles.getPropertyValue("--text").trim(),
-        textMuted: styles.getPropertyValue("--text-muted").trim(),
-        line: styles.getPropertyValue("--line").trim(),
-        surface: styles.getPropertyValue("--background-raised").trim(),
-        target: styles.getPropertyValue("--green").trim(),
-        rangeBelow: styles.getPropertyValue("--range-below").trim(),
-        rangeInside: styles.getPropertyValue("--range-inside").trim(),
-        rangeAbove: styles.getPropertyValue("--range-above").trim()
-    };
+    var colors;
 
-    document.querySelectorAll("[data-timeline-chart]").forEach(function (container) {
+    function readColors() {
+        var styles = getComputedStyle(document.documentElement);
+        colors = {
+            speech: styles.getPropertyValue("--speech").trim(),
+            stability: styles.getPropertyValue("--stability").trim(),
+            text: styles.getPropertyValue("--text").trim(),
+            textMuted: styles.getPropertyValue("--text-muted").trim(),
+            line: styles.getPropertyValue("--line").trim(),
+            surface: styles.getPropertyValue("--background-raised").trim(),
+            green: styles.getPropertyValue("--green").trim(),
+            yellow: styles.getPropertyValue("--yellow").trim(),
+            blue: styles.getPropertyValue("--blue").trim()
+        };
+    }
+    readColors();
+
+    var containers = document.querySelectorAll("[data-timeline-chart]");
+
+    containers.forEach(function (container) {
         var configElement = document.getElementById(container.dataset.timelineChart);
         if (!configElement) {
             return;
         }
         var config = JSON.parse(configElement.textContent);
-        var color = config.measure === "speech" ? colors.speech : colors.stability;
         var y = config.y || { min: 0, max: 100, interval: 20 };
         var points = config.points || [];
+        var markers = config.markers || [];
         var currentTime = config.time === undefined ? null : config.time;
+        var color;
         var chart = echarts.init(container);
 
         // Marker dots coloured by where they sit against the target band:
-        // below, inside or above. Without a target they use the measure colour.
-        function markerData(markers) {
-            return markers.map(function (point) {
+        // below yellow, inside green, above blue. Without a target they use the measure colour.
+        function markerData(list) {
+            return list.map(function (point) {
                 var dotColor = color;
                 if (config.target) {
-                    dotColor = point[1] < config.target.low ? colors.rangeBelow
-                        : point[1] > config.target.high ? colors.rangeAbove
-                        : colors.rangeInside;
+                    dotColor = point[1] < config.target.low ? colors.yellow
+                        : point[1] > config.target.high ? colors.blue
+                        : colors.green;
                 }
                 return { value: point, itemStyle: { color: dotColor } };
             });
@@ -62,24 +70,14 @@ document.addEventListener("DOMContentLoaded", function () {
                 }
             }
             return {
+                // The playhead line and its time pill are the x axis pointer (see draw);
+                // this invisible mark line only carries the value label at the top.
                 markLine: {
                     symbol: "none",
                     silent: true,
                     animation: false,
-                    lineStyle: { color: colors.text, width: 2, type: "solid" },
-                    // Two lines at the same x (drawn on top of each other) so the playhead
-                    // gets two labels: the time at the bottom, the value at the top.
+                    lineStyle: { color: "transparent" },   // not opacity 0: that hides the label too
                     data: [{
-                        xAxis: t,
-                        label: {
-                            position: "start",
-                            formatter: Math.floor(t / 60) + ":" + String(Math.floor(t % 60)).padStart(2, "0"),
-                            color: colors.surface,
-                            backgroundColor: colors.text,
-                            padding: [2, 6],
-                            borderRadius: 4
-                        }
-                    }, {
                         xAxis: t,
                         label: {
                             position: "end",
@@ -101,79 +99,136 @@ document.addEventListener("DOMContentLoaded", function () {
             };
         }
 
-        var lineSeries = Object.assign({
-            type: "line",
-            symbol: "none",
-            data: points,
-            lineStyle: {
-                color: color,
-                width: 2,
-                type: config.measure === "stability" ? [7, 5] : "solid"   // design system: stability is dashed
-            },
-            markArea: config.target ? {
-                silent: true,
-                itemStyle: { color: colors.target, opacity: 0.14 },
-                data: [[{ yAxis: config.target.low }, { yAxis: config.target.high }]]
-            } : undefined
-        }, playhead(currentTime));
+        // The whole chart from the current colours and data. Used on setup and
+        // again when the theme switches (notMerge: replace everything).
+        function draw() {
+            color = config.measure === "speech" ? colors.speech : colors.stability;
 
-        chart.setOption({
-            animation: false,   // design system: live data stays still
-            grid: { left: 8, right: 16, top: 24, bottom: 8, containLabel: true },
-            xAxis: {
-                type: "value",
-                min: config.x.min,
-                max: config.x.max,
-                interval: config.x.interval,
-                axisLine: { lineStyle: { color: colors.line } },
-                axisTick: { lineStyle: { color: colors.line } },
-                axisLabel: {
-                    color: colors.textMuted,
-                    fontSize: 12,
-                    formatter: function (s) {
-                        return Math.floor(s / 60) + ":" + String(s % 60).padStart(2, "0");
+            var lineSeries = Object.assign({
+                type: "line",
+                symbol: "none",
+                data: points,
+                lineStyle: {
+                    color: color,
+                    width: 2,
+                    type: config.measure === "stability" ? [7, 5] : "solid"   // design system: stability is dashed
+                },
+                markArea: config.target ? {
+                    silent: true,
+                    itemStyle: { color: colors.green, opacity: 0.14 },
+                    data: [[{ yAxis: config.target.low }, { yAxis: config.target.high }]]
+                } : undefined
+            }, playhead(currentTime));
+
+            chart.setOption({
+                animation: false,   // design system: live data stays still
+                axisPointer: { triggerOn: "none" },   // the pointer is the playhead: set from code, not the mouse
+                grid: { left: 8, right: 16, top: 24, bottom: 8, containLabel: true },
+                xAxis: {
+                    type: "value",
+                    min: config.x.min,
+                    max: config.x.max,
+                    interval: config.x.interval,
+                    // Only the inner grid: no axis line, no ticks, no grid line at the edges.
+                    axisLine: { show: false },
+                    axisTick: { show: false },
+                    axisLabel: {
+                        color: colors.textMuted,
+                        fontSize: 12,
+                        lineHeight: 12,   // same as the playhead pill's text, so they line up
+                        margin: 8,
+                        formatter: function (s) {
+                            return Math.floor(s / 60) + ":" + String(s % 60).padStart(2, "0");
+                        }
+                    },
+                    splitLine: { showMinLine: false, showMaxLine: false, lineStyle: { color: colors.line } },
+                    // Playhead: a vertical line with the time in a pill on the same row as
+                    // the other time labels, centred on the playhead.
+                    axisPointer: {
+                        show: currentTime !== null,
+                        status: currentTime === null ? "hide" : "show",
+                        value: currentTime,
+                        snap: false,
+                        triggerTooltip: false,
+                        type: "line",
+                        lineStyle: { color: colors.textMuted, width: 2, type: "solid" },   // like the design system's crosshair
+                        label: {
+                            show: true,
+                            // Axis labels start 8px below the axis; 2.5px here + 5.5px top padding
+                            // puts the pill's text on exactly the same row.
+                            margin: 2.5,
+                            formatter: function (params) {
+                                var t = params.value;
+                                return Math.floor(t / 60) + ":" + String(Math.floor(t % 60)).padStart(2, "0");
+                            },
+                            color: colors.surface,
+                            backgroundColor: colors.text,
+                            fontSize: 12,
+                            lineHeight: 12,
+                            // Uneven on purpose: digits sit high in their 12px line, so more
+                            // space on top centres them in the 20px pill (measured).
+                            padding: [5.5, 8, 2.5, 8],
+                            borderRadius: 10   // 20px high, so both ends are full half circles
+                        }
                     }
                 },
-                splitLine: { lineStyle: { color: colors.line } }
-            },
-            yAxis: {
-                type: "value",
-                min: y.min,
-                max: y.max,
-                interval: y.interval,
-                axisLine: { show: true, lineStyle: { color: colors.line } },
-                axisTick: { show: true, lineStyle: { color: colors.line } },
-                axisLabel: { color: colors.textMuted, fontSize: 12 },
-                splitLine: { lineStyle: { color: colors.line } }
-            },
-            series: [lineSeries, {
-                type: "scatter",
-                data: markerData(config.markers || []),
-                symbol: "circle",
-                symbolSize: 8,
-                itemStyle: { color: color },
-                z: 3
-            }]
-        });
+                yAxis: {
+                    type: "value",
+                    min: y.min,
+                    max: y.max,
+                    interval: y.interval,
+                    axisLine: { show: false },
+                    axisTick: { show: false },
+                    axisLabel: { color: colors.textMuted, fontSize: 12 },
+                    splitLine: { showMinLine: false, showMaxLine: false, lineStyle: { color: colors.line } }
+                },
+                series: [lineSeries, {
+                    type: "scatter",
+                    data: markerData(markers),
+                    symbol: "circle",
+                    symbolSize: 8,
+                    itemStyle: { color: color },
+                    z: 3
+                }]
+            }, true);
+        }
+        draw();
 
         container.timeline = {
             chart: chart,
+            redraw: draw,
             setTime: function (t) {
                 currentTime = t;
-                chart.setOption({ series: [playhead(t)] });   // merges into the line series only
+                chart.setOption({
+                    xAxis: { axisPointer: { show: t !== null, status: t === null ? "hide" : "show", value: t } },
+                    series: [playhead(t)]   // merges into the line series only
+                });
             },
             setData: function (newPoints, newMarkers) {
                 points = newPoints;
                 var series = [Object.assign({ data: points }, playhead(currentTime))];
                 if (newMarkers) {
-                    series.push({ data: markerData(newMarkers) });
+                    markers = newMarkers;
+                    series.push({ data: markerData(markers) });
                 }
                 chart.setOption({ series: series });
             }
         };
 
-        window.addEventListener("resize", function () {
+        // Redraw at the new size whenever the div changes size (window resize,
+        // layout changes, content appearing next to it).
+        new ResizeObserver(function () {
             chart.resize();
-        });
+        }).observe(container);
     });
+
+    // Theme switch (light/dark): read the colours again and redraw every chart.
+    new MutationObserver(function () {
+        readColors();
+        containers.forEach(function (container) {
+            if (container.timeline) {
+                container.timeline.redraw();
+            }
+        });
+    }).observe(document.documentElement, { attributes: true, attributeFilter: ["data-theme"] });
 });
