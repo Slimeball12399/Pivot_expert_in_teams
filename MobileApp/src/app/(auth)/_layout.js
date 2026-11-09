@@ -9,6 +9,8 @@ export default function AuthLayout() {
       <Stack.Screen name="register" />
       <Stack.Screen name="check-inbox" />
       <Stack.Screen name="forgot-password" />
+      <Stack.Screen name="reset-code" />
+      <Stack.Screen name="new-password" />
       <Stack.Screen name="privacy-notice" options={{ presentation: 'modal', headerShown: true, title: 'Privacy Notice' }} />
     </Stack>
   );

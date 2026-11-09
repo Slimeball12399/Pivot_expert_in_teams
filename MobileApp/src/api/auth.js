@@ -34,8 +34,7 @@ export function register({
   });
 }
 
-// POST /api/auth/verify-email/ — request a new code (register/login already
-// trigger the first one on the backend; this is the "resend" button).
+// POST /api/auth/verify-email/ — request a new code .
 export function resendVerificationCode(email) {
   return publicRequest('/auth/verify-email/', { method: 'POST', body: { email } });
 }
@@ -43,6 +42,25 @@ export function resendVerificationCode(email) {
 // PUT /api/auth/verify-email/ — confirm the code. 
 export function verifyEmail(email, code) {
   return publicRequest('/auth/verify-email/', { method: 'PUT', body: { email, code } });
+}
+
+// POST /api/auth/password-reset/ — request a code (also the resend button).
+export function requestPasswordReset(email) {
+  return publicRequest('/auth/password-reset/', { method: 'POST', body: { email } });
+}
+
+// POST /api/auth/password-reset/verify/ — confirm the code.
+export function verifyPasswordResetCode(email, code) {
+  return publicRequest('/auth/password-reset/verify/', { method: 'POST', body: { email, code } });
+}
+
+// PUT /api/auth/password-reset/confirm/ — uid + reset_token (from verify)
+// + new_password in.
+export function confirmPasswordReset(uid, resetToken, newPassword) {
+  return publicRequest('/auth/password-reset/confirm/', {
+    method: 'PUT',
+    body: { uid, reset_token: resetToken, new_password: newPassword },
+  });
 }
 
 // POST /api/auth/refresh/

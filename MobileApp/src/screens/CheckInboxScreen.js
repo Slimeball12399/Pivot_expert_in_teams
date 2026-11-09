@@ -7,7 +7,7 @@ import { CODE_LENGTH, useCheckInbox } from '../hooks/useCheckInbox';
 import { useTheme } from '../providers/ThemeProvider';
 import { Button } from '../ui/Button';
 import { CodeInput } from '../ui/CodeInput';
-.
+
 export function CheckInboxScreen() {
   const { theme } = useTheme();
   const {

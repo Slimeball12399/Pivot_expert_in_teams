@@ -10,6 +10,8 @@ export function AuthProvider({ children }) {
   const [isLoading, setIsLoading] = useState(true);
   const [pendingVerification, setPendingVerification] = useState(null);
 
+  const [passwordReset, setPasswordReset] = useState(null);
+
   // On launch: if a token is already stored, fetch the user 
   useEffect(() => {
     (async () => {
@@ -44,6 +46,20 @@ export function AuthProvider({ children }) {
     setPendingVerification(null);
   }
 
+  function startPasswordReset(email) {
+    setPasswordReset({ email });
+  }
+
+  // Called once the reset code's confirmed, to carry the uid/token into the
+  // new-password screen.
+  function setPasswordResetToken(uid, resetToken) {
+    setPasswordReset((prev) => prev && { ...prev, uid, resetToken });
+  }
+
+  function clearPasswordReset() {
+    setPasswordReset(null);
+  }
+
   async function logout() {
     const { refreshToken } = await getTokens();
     if (refreshToken) {
@@ -56,6 +72,7 @@ export function AuthProvider({ children }) {
   const value = {
     user, isLoading, isAuthenticated: !!user, login, register, logout,
     pendingVerification, needsVerification, clearVerification,
+    passwordReset, startPasswordReset, setPasswordResetToken, clearPasswordReset,
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
