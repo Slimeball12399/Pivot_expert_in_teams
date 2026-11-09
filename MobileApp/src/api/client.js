@@ -8,7 +8,12 @@ const BACKEND_PORT = 8000;
 // Derives the backend host from the Metro dev server's own address
 // (Constants.expoConfig.hostUri, e.g. "192.168.1.23:8081") instead of hardcoding
 // 10.0.2.2 (Android emulator) or localhost (iOS simulator) — this one value works
+// EXPO_PUBLIC_API_URL (e.g. in .env.local) overrides this, to test against a deployed
+// server: EXPO_PUBLIC_API_URL=http://193.180.209.45/api
 function resolveBaseUrl() {
+  const override = process.env.EXPO_PUBLIC_API_URL;
+  if (override) return override.replace(/\/+$/, '');
+
   const hostUri = Constants.expoConfig?.hostUri;
   const host = hostUri ? hostUri.split(':')[0] : 'localhost';
   return `http://${host}:${BACKEND_PORT}/api`;
@@ -85,6 +90,17 @@ export async function apiRequest(path, options = {}) {
 // Public request: no stored token attached, no refresh-and-retry (login/register).
 export function publicRequest(path, options = {}) {
   return rawRequest(path, options);
+}
+
+// Dev only: prints why a request failed to the Metro terminal, since the screens
+// show a generic message. No status means the server was never reached (wrong URL,
+// server down, or plain http blocked).
+export function logRequestError(label, error) {
+  console.warn(
+    `[api] ${label} failed. URL: ${API_BASE_URL}`,
+    error?.status ? `HTTP ${error.status}` : 'no response (network error)',
+    error?.data ?? error?.message,
+  );
 }
 
 export { ApiError };

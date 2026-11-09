@@ -9,6 +9,7 @@ import {
   validatePassword,
   validatePhone,
 } from '../utils/validators';
+import { logRequestError } from '../api/client';
 
 function firstMessage(value) {
   if (Array.isArray(value)) return value[0];
@@ -70,6 +71,7 @@ export function useRegisterForm() {
       });
       router.replace('/');
     } catch (error) {
+      if (__DEV__) logRequestError('Register', error);
       // Map the backend's field errors 
       // handling the duplicate-email case.
       const backendErrors = error.data && typeof error.data === 'object' ? error.data : null;
