@@ -32,7 +32,7 @@ const INITIAL_CONSENTS = { privacy_notice: false, audio_storage: false, research
 
 // Owns RegisterScreen's state and submit flow.
 export function useRegisterForm() {
-  const { register } = useAuth();
+  const { register, needsVerification } = useAuth();
 
   const [fields, setFields] = useState(INITIAL_FIELDS);
   const [consents, setConsents] = useState(INITIAL_CONSENTS);
@@ -65,13 +65,16 @@ export function useRegisterForm() {
     setFormError(null);
     setSubmitting(true);
     try {
+      const email = fields.email.trim();
       await register({
         ...fields,
-        email: fields.email.trim(),
+        email,
         birthDate: toIsoBirthDate(fields.birthDate),
         consents: Object.keys(consents).filter((purpose) => consents[purpose]),
       });
-      router.replace('/');
+
+      needsVerification(email, fields.password);
+      router.replace('/(auth)/check-inbox');
     } catch (error) {
       if (__DEV__) logRequestError('Register', error);
       // Map the backend's field errors 

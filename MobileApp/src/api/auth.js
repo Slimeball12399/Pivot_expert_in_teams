@@ -34,6 +34,17 @@ export function register({
   });
 }
 
+// POST /api/auth/verify-email/ — request a new code (register/login already
+// trigger the first one on the backend; this is the "resend" button).
+export function resendVerificationCode(email) {
+  return publicRequest('/auth/verify-email/', { method: 'POST', body: { email } });
+}
+
+// PUT /api/auth/verify-email/ — confirm the code. 
+export function verifyEmail(email, code) {
+  return publicRequest('/auth/verify-email/', { method: 'PUT', body: { email, code } });
+}
+
 // POST /api/auth/refresh/
 export function refresh(refreshToken) {
   return publicRequest('/auth/refresh/', { method: 'POST', body: { refresh: refreshToken } });

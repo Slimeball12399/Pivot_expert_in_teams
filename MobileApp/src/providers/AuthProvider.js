@@ -8,6 +8,7 @@ const AuthContext = createContext(null);
 export function AuthProvider({ children }) {
   const [user, setUser] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [pendingVerification, setPendingVerification] = useState(null);
 
   // On launch: if a token is already stored, fetch the user 
   useEffect(() => {
@@ -30,11 +31,17 @@ export function AuthProvider({ children }) {
     setUser(await authApi.me());
   }
 
-  // The register endpoint only creates the account (no tokens back), so log
-  // in with the same credentials right after to land the user inside the app.
   async function register(fields) {
     await authApi.register(fields);
-    await login(fields.email, fields.password);
+  }
+
+
+  function needsVerification(email, password) {
+    setPendingVerification({ email, password });
+  }
+
+  function clearVerification() {
+    setPendingVerification(null);
   }
 
   async function logout() {
@@ -46,7 +53,10 @@ export function AuthProvider({ children }) {
     setUser(null);
   }
 
-  const value = { user, isLoading, isAuthenticated: !!user, login, register, logout };
+  const value = {
+    user, isLoading, isAuthenticated: !!user, login, register, logout,
+    pendingVerification, needsVerification, clearVerification,
+  };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }

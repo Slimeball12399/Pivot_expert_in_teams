@@ -7,7 +7,7 @@ import { logRequestError } from '../api/client';
 
 // Login logic
 export function useLoginForm() {
-  const { login } = useAuth();
+  const { login, needsVerification } = useAuth();
 
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -22,11 +22,19 @@ export function useLoginForm() {
 
     setFormError(null);
     setSubmitting(true);
+    const trimmedEmail = email.trim();
     try {
-      await login(email.trim(), password);
+      await login(trimmedEmail, password);
       router.replace('/');
     } catch (error) {
       if (__DEV__) logRequestError('Login', error);
+      if (error.data?.code === 'email_not_verified') {
+      
+        // check-inbox can log in once it's confirmed.
+        needsVerification(trimmedEmail, password);
+        router.replace('/(auth)/check-inbox');
+        return;
+      }
       setFormError(error.status === 401 ? 'Wrong email or password.' : 'Something went wrong. Try again.');
     } finally {
       setSubmitting(false);
