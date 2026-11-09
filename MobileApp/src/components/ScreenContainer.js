@@ -5,7 +5,9 @@ import { useTheme } from '../providers/ThemeProvider';
 
 // Shared screen wrapper: safe-area + themed background + padding, every screen uses it
 // instead of styling its own container. `scroll` wraps content in a ScrollView for forms
-// (registration has many fields) and handles the keyboard pushing content up on iOS.
+// (registration has many fields) and handles the keyboard pushing content up 
+
+
 export function ScreenContainer({ children, scroll = false }) {
   const { theme } = useTheme();
   const Content = scroll ? ScrollView : View;
@@ -14,7 +16,7 @@ export function ScreenContainer({ children, scroll = false }) {
     <SafeAreaView style={[styles.safeArea, { backgroundColor: theme.colors.background }]}>
       <KeyboardAvoidingView
         style={styles.flex}
-        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
       >
         <Content
           style={styles.flex}
@@ -38,5 +40,6 @@ const styles = StyleSheet.create({
   content: {
     flexGrow: 1,
     padding: 24,
+    paddingBottom: 48,
   },
 });
