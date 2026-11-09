@@ -150,6 +150,8 @@ USE_TZ = True
 # https://docs.djangoproject.com/en/6.1/howto/static-files/
 
 STATIC_URL = 'static/'
+# collectstatic target; mounted to /opt/uni/static on the VPS so NGINX can serve it
+STATIC_ROOT = BASE_DIR / 'staticfiles'
 
 
 # Email
