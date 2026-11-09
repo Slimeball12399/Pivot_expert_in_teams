@@ -2,27 +2,32 @@ import { StyleSheet, Text, TextInput as RNTextInput, View } from 'react-native';
 
 import { useTheme } from '../providers/ThemeProvider';
 
-export function TextInput({ label, value, onChangeText, error, ...inputProps }) {
+// `prefix` is a fixed +45
+export function TextInput({ label, value, onChangeText, error, prefix, ...inputProps }) {
   const { theme } = useTheme();
   const { colors } = theme;
 
   return (
     <View style={styles.wrapper}>
       {label && <Text style={[styles.label, { color: colors.text }]}>{label}</Text>}
-      <RNTextInput
-        value={value}
-        onChangeText={onChangeText}
-        placeholderTextColor={colors.placeholder}
+      <View
         style={[
-          styles.input,
+          styles.inputRow,
           {
             backgroundColor: colors.surface,
             borderColor: error ? colors.danger : colors.border,
-            color: colors.text,
           },
         ]}
-        {...inputProps}
-      />
+      >
+        {prefix && <Text style={[styles.prefix, { color: colors.text }]}>{prefix}</Text>}
+        <RNTextInput
+          value={value}
+          onChangeText={onChangeText}
+          placeholderTextColor={colors.placeholder}
+          style={[styles.input, { color: colors.text }]}
+          {...inputProps}
+        />
+      </View>
       {error && <Text style={[styles.error, { color: colors.danger }]}>{error}</Text>}
     </View>
   );
@@ -37,12 +42,22 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     marginBottom: 6,
   },
-  input: {
+  inputRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
     minHeight: 52,
     borderWidth: 1,
     borderRadius: 12,
     paddingHorizontal: 16,
+  },
+  prefix: {
     fontSize: 16,
+    marginRight: 6,
+  },
+  input: {
+    flex: 1,
+    fontSize: 16,
+    paddingVertical: 0,
   },
   error: {
     fontSize: 13,

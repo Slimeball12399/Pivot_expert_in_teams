@@ -3,6 +3,7 @@ import { useState } from 'react';
 
 import { useAuth } from '../providers/AuthProvider';
 import {
+  toIsoBirthDate,
   validateBirthDate,
   validateEmail,
   validateHeight,
@@ -54,7 +55,7 @@ export function useRegisterForm() {
       firstName: fields.firstName.trim() ? null : 'Enter your first name.',
       lastName: fields.lastName.trim() ? null : 'Enter your last name.',
       phoneNumber: validatePhone(fields.phoneNumber),
-      birthDate: validateBirthDate(fields.birthDate ? new Date(fields.birthDate) : null),
+      birthDate: validateBirthDate(fields.birthDate),
       heightCm: validateHeight(fields.heightCm),
       consents: consents.privacy_notice ? null : 'You must accept the privacy notice.',
     };
@@ -67,6 +68,7 @@ export function useRegisterForm() {
       await register({
         ...fields,
         email: fields.email.trim(),
+        birthDate: toIsoBirthDate(fields.birthDate),
         consents: Object.keys(consents).filter((purpose) => consents[purpose]),
       });
       router.replace('/');

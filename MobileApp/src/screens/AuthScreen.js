@@ -114,6 +114,7 @@ export function AuthScreen({ tab: initialTab }) {
             value={registerForm.fields.phoneNumber}
             onChangeText={(v) => registerForm.setField('phoneNumber', v)}
             error={registerForm.fieldErrors.phoneNumber}
+            prefix="+45"
             placeholder="e.g. 12345678"
             keyboardType="phone-pad"
           />
@@ -122,7 +123,7 @@ export function AuthScreen({ tab: initialTab }) {
             value={registerForm.fields.birthDate}
             onChangeText={(v) => registerForm.setField('birthDate', v)}
             error={registerForm.fieldErrors.birthDate}
-            placeholder="YYYY-MM-DD"
+            placeholder="DD/MM/YYYY"
           />
           <TextInput
             label="Height (cm)"
