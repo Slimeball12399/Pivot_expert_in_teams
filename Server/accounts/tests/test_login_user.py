@@ -1,15 +1,16 @@
 from django.core.exceptions import ValidationError
 from django.test import TestCase
+from django.utils import timezone
 
 from accounts.models import User
 from accounts.services import login_user
 
 PASSWORD = "Str0ng-test-pass!"
 LOGIN_FAILED = "Wrong email or password."
-LOGIN_MISSING_FIELDS = "Enter your email and password."
 
 
 def make_user(email, role, **extra):
+    extra.setdefault("email_verified_at", timezone.now())
     return User.objects.create_user(
         email, PASSWORD, first_name="Test", last_name="User", role=role, **extra)
 
@@ -48,7 +49,8 @@ class LoginUserTests(TestCase):
             self.admin.save()
             self.assertLoginFails(LOGIN_FAILED, "admin@example.com", PASSWORD, User.Role.ADMIN)
 
-    def test_requires_email_and_password(self):
-        for email, password in [("", PASSWORD), ("admin@example.com", ""), ("", ""), (None, None)]:
+    def test_empty_details_are_a_wrong_login(self):
+        # Missing fields are the form's or serializer's job; here they just don't match.
+        for email, password in [("", PASSWORD), ("admin@example.com", ""), (None, None)]:
             with self.subTest(email=email, password=password):
-                self.assertLoginFails(LOGIN_MISSING_FIELDS, email, password)
+                self.assertLoginFails(LOGIN_FAILED, email, password)

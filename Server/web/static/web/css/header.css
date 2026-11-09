@@ -21,3 +21,38 @@
 .site-header > .theme-toggle {
     margin-left: auto;
 }
+
+/* Logout button: icon only, same look as the theme toggle it sits next to. */
+.logout-button-form {
+    display: inline-flex;
+    margin: 0;
+}
+
+.logout-button {
+    display: inline-grid;
+    place-items: center;
+    width: 36px;
+    height: 36px;
+    padding: 0;
+    border: 1px solid transparent;
+    border-radius: 8px;
+    background: transparent;
+    color: var(--text);
+    cursor: pointer;
+}
+
+.logout-button:hover {
+    background: var(--rose);
+    color: var(--navy);
+}
+
+.logout-button:focus-visible {
+    outline: 2px solid var(--text);
+    outline-offset: 2px;
+}
+
+.logout-button svg {
+    display: block;
+    width: 20px;
+    height: 20px;
+}
