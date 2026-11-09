@@ -4,6 +4,7 @@ services:
     env_file: .env
     environment:
       POSTGRES_HOST: db
+      POSTGRES_PORT: "5432"   # containers talk to db on its internal port
     ports:
       - "8000:8000"         # HTTP / API
       - "9000:9000/udp"     # live board telemetry (SCRUM-178)
@@ -25,7 +26,7 @@ services:
     volumes:
       - pgdata:/var/lib/postgresql/data
     ports:
-      - "5432:5432"         # only so you can connect with DBeaver/psql from your laptop
+      - "${POSTGRES_PORT:-5432}:5432"   # host port from .env (local Django, DBeaver/psql)
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
       interval: 5s

@@ -1,0 +1,13 @@
+{% comment %}
+Button: a normal (primary) button or a text button. Styles in web/css/button.css.
+
+  {% include "web/components/button.html" with text="Log in" type="submit" full_width=True %}
+  {% include "web/components/button.html" with text="Forgot password?" variant="text" href="/password-reset/" %}
+
+  text        label (required)
+  variant     "primary" (default) or "text"
+  type        "button" (default), "submit" or "reset"; ignored when href is set
+  href        renders a link that looks like a button instead of a <button>
+  full_width  stretch to the full width of the container
+{% endcomment %}
+{% if href %}<a class="button button-{{ variant|default:'primary' }}{% if full_width %} button-full{% endif %}" href="{{ href }}">{{ text }}</a>{% else %}<button type="{{ type|default:'button' }}" class="button button-{{ variant|default:'primary' }}{% if full_width %} button-full{% endif %}">{{ text }}</button>{% endif %}
