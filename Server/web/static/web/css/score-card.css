@@ -1,5 +1,29 @@
 /* Session page (session.html): the score card, the chart frame and the legend under the chart. */
 
+/* Page layout. talk-stats stacks its parts in a column (no minimum width of
+   its own: on a 320px screen it has 288px inside the page margins). graphs puts the score cards next to each other only when both are
+   wide enough for their graph (300px) and score next to each other (a screen of
+   about 1220px); otherwise they stack. So side-by-side cards never squeeze the graph. */
+.talk-stats {
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+    min-width: 0;
+}
+
+.graphs {
+    display: flex;
+    flex-direction: row;
+    flex-wrap: wrap;
+    gap: 1.5rem;
+}
+
+.graphs > .score-card {
+    /* graph 300px + gap 1.5rem + score (160px + 3rem) + padding 2 x 1.5rem + border 2px = 582px */
+    flex: 1 1 calc(300px + 1.5rem + 160px + 3rem + 3rem + 2px);
+    min-width: 0;
+}
+
 /* Card: the raised surface (white in light mode, raised navy in dark mode),
    with a top border in the measure colour. The chart frame inside uses the
    page background, so it stands out from the card.
@@ -10,6 +34,8 @@
     box-sizing: border-box;
     display: flex;
     flex-direction: row;
+    flex-wrap: wrap;            /* score goes under the graph when the card is narrow (see .graph) */
+    justify-content: center;    /* ...and is then centred */
     align-items: flex-start;
     gap: 1.5rem;
     padding: 1.5rem;
@@ -21,7 +47,9 @@
     box-shadow: var(--shadow-menu);
 }
 
-/* Colour modifiers: <section class="score-card stability"> or "score-card speech". */
+/* Colour modifiers: <section class="score-card stability"> or "score-card voice"
+   (voice uses the speech colour; "speech" works too). */
+.score-card.voice,
 .score-card.speech {
     --card-accent: var(--speech);
 }
@@ -32,9 +60,12 @@
 
 /* Heading, chart and scale stacked with one even gap, so the spacing comes
    from here and not from each element's default margins. */
+/* The graph is at least 300px wide (less only on a tiny screen, so it still
+   fits). When there is no room for 300px next to the score, the score wraps
+   under the graph. */
 .score-card > .graph {
-    flex: 1;
-    min-width: 0;  /* lets the chart shrink with the card instead of overflowing */
+    flex: 1 1 300px;
+    min-width: min(300px, 100%);
     display: flex;
     flex-direction: column;
     gap: 1rem;
@@ -43,6 +74,7 @@
 .score-card > .graph > * {
     margin: 0;
 }
+
 
 /* Right column: the score ring with the data grid under it, 0.5rem apart,
    centred vertically next to the graph. */
@@ -60,20 +92,14 @@
    height, because the chart fills whatever it is placed in. */
 .graph-plot {
     box-sizing: border-box;
-    height: 320px;
+    height: min(320px, 30vh);   /* at most 30% of the screen height, so several fit on one screen */
     padding: 0.5rem;
     border: 1px solid var(--line);
     border-radius: 8px;
     background: var(--background);
+    overflow: hidden;   /* while the window shrinks, the chart can't poke out before it redraws */
 }
 
-/* Stacked on narrow screens (same width as the header's menu switch). */
-@media (max-width: 680px) {
-    .score-card {
-        flex-direction: column;
-        align-items: stretch;
-    }
-}
 
 /* Below usual / Good / Excellent: yellow, green and blue dots (base.css). */
 .score-scale {
