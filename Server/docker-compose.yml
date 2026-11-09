@@ -6,9 +6,11 @@ services:
       POSTGRES_HOST: db
       POSTGRES_PORT: "5432"   # containers talk to db on its internal port
     ports:
-      - "8000:8000"         # HTTP / API
+      - "127.0.0.1:8000:8000"   # HTTP / API (only via NGINX on the VPS)
       - "9000:9000/udp"     # live board telemetry (SCRUM-178)
       - "9001:9001"         # TCP batch ingestion (SCRUM-183)
+    volumes:
+      - ${STATIC_HOST_DIR:-./staticfiles}:/Server/staticfiles   # collectstatic output, served by NGINX
     depends_on:
       db:
         condition: service_healthy
@@ -26,7 +28,7 @@ services:
     volumes:
       - pgdata:/var/lib/postgresql/data
     ports:
-      - "${POSTGRES_PORT:-5432}:5432"   # host port from .env (local Django, DBeaver/psql)
+      - "127.0.0.1:${POSTGRES_PORT:-5432}:5432"   # localhost only; host port from .env (local Django, DBeaver/psql)
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
       interval: 5s
@@ -41,7 +43,7 @@ services:
     volumes:
       - tsdata:/var/lib/postgresql/data
     ports:
-      - "5433:5432"         # different host port so it doesn't clash with db
+      - "127.0.0.1:5433:5432"   # localhost only; different host port so it doesn't clash with db
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U ${TS_USER} -d telemetry"]
       interval: 5s
@@ -56,8 +58,8 @@ services:
     volumes:
       - miniodata:/data
     ports:
-      - "9090:9000"         # S3 API
-      - "9091:9091"         # web console
+      - "127.0.0.1:9090:9000"   # S3 API (localhost only)
+      - "127.0.0.1:9091:9091"   # web console (localhost only)
 
 volumes:
   pgdata:
