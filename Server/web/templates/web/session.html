@@ -86,10 +86,24 @@
         </section>
 
     </div>
+    <div class="talk-timeline">
+        <div class="talk-timeline-head">
+            <span class="talk-timeline-label">
+                {% heroicon_outline "microphone" size=20 aria_hidden="true" %}
+                Talk timeline
+            </span>
+            <span class="talk-time">
+                <span id="talk-time"></span>
+                <span class="talk-time-total" id="talk-time-total"></span>
+            </span>
+        </div>
+        <input class="talk-slider" id="talk-slider" type="range" min="0" max="{{ stability_config.x.max }}" step="0.5" value="{{ stability_config.time }}" aria-label="Position in the talk">
+    </div>
 </section>
 {% endblock %}
 
 {% block scripts %}
 <script src="{% static 'web/js/timeline-chart.js' %}"></script>
 <script src="{% static 'web/js/score-ring.js' %}"></script>
+<script src="{% static 'web/js/session.js' %}"></script>
 {% endblock %}

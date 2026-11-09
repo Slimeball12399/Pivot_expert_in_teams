@@ -54,6 +54,17 @@ document.addEventListener("DOMContentLoaded", function () {
             });
         }
 
+        // The x axis shows one window of the talk at a time (config.x.window, e.g. 60 s):
+        // the window the playhead is in, 0:00-1:00, 1:00-2:00, ... The last one ends at
+        // the end of the recording. Without a window the whole talk is shown.
+        function xRange(t) {
+            var size = config.x.window || (config.x.max - config.x.min);
+            var lastStart = config.x.min + Math.floor((config.x.max - config.x.min - 0.001) / size) * size;
+            var start = config.x.min + Math.floor(((t === null ? config.x.min : t) - config.x.min) / size) * size;
+            start = Math.max(config.x.min, Math.min(start, lastStart));
+            return [start, Math.min(start + size, config.x.max)];
+        }
+
         // markLine (vertical line) and markPoint (dot on the line) for the playhead at time t.
         function playhead(t) {
             if (t === null || points.length === 0) {
@@ -103,6 +114,7 @@ document.addEventListener("DOMContentLoaded", function () {
         // again when the theme switches (notMerge: replace everything).
         function draw() {
             color = config.measure === "speech" ? colors.speech : colors.stability;
+            var range = xRange(currentTime);
 
             var lineSeries = Object.assign({
                 type: "line",
@@ -126,8 +138,8 @@ document.addEventListener("DOMContentLoaded", function () {
                 grid: { left: 8, right: 16, top: 24, bottom: 8, containLabel: true },
                 xAxis: {
                     type: "value",
-                    min: config.x.min,
-                    max: config.x.max,
+                    min: range[0],
+                    max: range[1],
                     interval: config.x.interval,
                     // Only the inner grid: no axis line, no ticks, no grid line at the edges.
                     axisLine: { show: false },
@@ -137,6 +149,10 @@ document.addEventListener("DOMContentLoaded", function () {
                         fontSize: 12,
                         lineHeight: 12,   // same as the playhead pill's text, so they line up
                         margin: 8,
+                        hideOverlap: true,
+                        // The end label only when it is a regular tick: the last window
+                        // ends at 2:42, so it would crowd 2:40.
+                        showMaxLabel: (range[1] - config.x.min) % config.x.interval === 0,
                         formatter: function (s) {
                             return Math.floor(s / 60) + ":" + String(s % 60).padStart(2, "0");
                         }
@@ -199,8 +215,14 @@ document.addEventListener("DOMContentLoaded", function () {
             redraw: draw,
             setTime: function (t) {
                 currentTime = t;
+                var range = xRange(t);   // switches to the next minute when the playhead crosses into it
                 chart.setOption({
-                    xAxis: { axisPointer: { show: t !== null, status: t === null ? "hide" : "show", value: t } },
+                    xAxis: {
+                        min: range[0],
+                        max: range[1],
+                        axisLabel: { showMaxLabel: (range[1] - config.x.min) % config.x.interval === 0 },
+                        axisPointer: { show: t !== null, status: t === null ? "hide" : "show", value: t }
+                    },
                     series: [playhead(t)]   // merges into the line series only
                 });
             },

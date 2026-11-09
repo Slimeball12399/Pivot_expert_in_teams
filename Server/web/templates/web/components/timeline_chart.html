@@ -9,7 +9,9 @@ timeline-chart.css and timeline-chart.js once (see demo.html).
   id      unique id on the page (required)
   config  dict from the view:
             measure  "speech" or "stability" (sets the colour; stability is dashed)
-            x        {"min", "max", "interval"} in seconds
+            x        {"min", "max", "interval", "window"} in seconds: max is the talk length;
+                     window (optional) is how much is shown at a time, e.g. 60 = one minute,
+                     switching when the playhead crosses into the next one
             y        {"min", "max", "interval"}, optional, default 0 to 100
             target   {"low", "high"}, optional, the target band
             points   [[seconds, value], ...]

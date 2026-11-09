@@ -10,16 +10,19 @@ from django.shortcuts import render
 @login_required
 def demo(request):
     """Session page with fake stability and voice data (until the real analysis is wired in)."""
-    # Fake stability values: one every 0.5 s for a 60 s talk.
+    # Fake talk of 2:42 (162 s); the graphs show one minute of it at a time.
+    duration = 162
+
+    # Fake stability values: one every 0.5 s for the whole talk.
     points = []
-    for step in range(121):
+    for step in range(duration * 2 + 1):
         seconds = step * 0.5
         points.append(
             [seconds, round(60 + 15 * math.sin(seconds / 5) + random.random() * 6)])
 
     stability_config = {
         "measure": "stability",
-        "x": {"min": 0, "max": 60, "interval": 10},
+        "x": {"min": 0, "max": duration, "interval": 10, "window": 60},  # window: seconds shown at a time
         "y": {"min": 0, "max": 100, "interval": 20},
         "target": {"low": 50, "high": 60},
         "points": points,
@@ -29,14 +32,14 @@ def demo(request):
     }
     # Fake voice dynamics values: one every 0.5 s for the same talk.
     voice_points = []
-    for step in range(121):
+    for step in range(duration * 2 + 1):
         seconds = step * 0.5
         voice_points.append(
             [seconds, round(65 + 18 * math.sin(seconds / 3) + random.random() * 8)])
 
     voice_config = {
         "measure": "speech",
-        "x": {"min": 0, "max": 60, "interval": 10},
+        "x": {"min": 0, "max": duration, "interval": 10, "window": 60},  # window: seconds shown at a time
         "y": {"min": 0, "max": 100, "interval": 20},
         "target": {"low": 55, "high": 75},
         "points": voice_points,

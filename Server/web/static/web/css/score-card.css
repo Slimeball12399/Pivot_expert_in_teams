@@ -202,3 +202,103 @@
     font-weight: 400;
     color: var(--text-muted);
 }
+
+/* Talk timeline: the time with a microphone icon, and a full-width slider that
+   moves the playhead of every chart (js/session.js). The design system has no
+   slider, so it is built from its parts: the meter track (6px, rounded, --line),
+   ink focus ring its controls use. */
+.talk-timeline {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+/* Above the slider: microphone icon and label on the left, the time on the right. */
+.talk-timeline-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+}
+
+.talk-timeline-label {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-family: "Jost", sans-serif;
+    font-size: 16px;
+    font-weight: 600;
+    text-transform: uppercase;   /* like the card headings */
+    color: var(--text);
+}
+
+.talk-time {
+    display: inline-flex;
+    align-items: baseline;
+    gap: 0.25rem;
+    font-family: "Jost", sans-serif;
+    font-size: 18px;
+    font-weight: 600;
+    font-variant-numeric: tabular-nums;
+    color: var(--text);
+}
+
+.talk-time-total {
+    font-weight: 500;
+    color: var(--text-muted);
+}
+
+.talk-slider {
+    --progress: 0%;
+    -webkit-appearance: none;
+    appearance: none;
+    width: 100%;
+    height: 24px;   /* bigger than the track, so it is easy to grab */
+    margin: 0;
+    background: transparent;
+    cursor: pointer;
+}
+
+.talk-slider::-webkit-slider-runnable-track {
+    height: 6px;
+    border-radius: 3px;
+    background: linear-gradient(to right, var(--text) var(--progress), var(--line) var(--progress));
+}
+
+.talk-slider::-moz-range-track {
+    height: 6px;
+    border-radius: 3px;
+    background: var(--line);
+}
+
+.talk-slider::-moz-range-progress {
+    height: 6px;
+    border-radius: 3px;
+    background: var(--text);
+}
+
+.talk-slider::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    box-sizing: border-box;
+    width: 20px;
+    height: 20px;
+    margin-top: -7px;   /* centres the 20px handle on the 6px track */
+    border: 3px solid var(--background-raised);
+    border-radius: 50%;
+    background: var(--text);
+}
+
+.talk-slider::-moz-range-thumb {
+    box-sizing: border-box;
+    width: 20px;
+    height: 20px;
+    border: 3px solid var(--background-raised);
+    border-radius: 50%;
+    background: var(--text);
+}
+
+.talk-slider:focus-visible {
+    outline: 3px solid var(--text);
+    outline-offset: 2px;
+    border-radius: 4px;
+}
