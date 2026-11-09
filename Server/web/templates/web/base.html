@@ -33,6 +33,7 @@
         </a>
         <nav class="site-nav" aria-label="Main">{% block nav %}{% endblock %}</nav>
         {% include "web/components/theme_toggle.html" %}
+        {% if user.is_authenticated %}{% include "web/components/logout_button.html" %}{% endif %}
     </header>
     {% endblock %}
 

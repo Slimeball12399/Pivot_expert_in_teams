@@ -2,6 +2,7 @@ import base64
 import json
 
 from django.urls import reverse
+from django.utils import timezone
 from rest_framework import status
 from rest_framework.test import APITestCase
 
@@ -22,7 +23,8 @@ def claims(token):
 
 def make_user(email, role):
     return User.objects.create_user(
-        email, PASSWORD, first_name="Test", last_name="User", role=role)
+        email, PASSWORD, first_name="Test", last_name="User", role=role,
+        email_verified_at=timezone.now())
 
 
 class JwtAuthTests(APITestCase):
@@ -209,6 +211,11 @@ class JwtAuthTests(APITestCase):
             ("/api/auth/login/", "post", False),
             ("/api/auth/refresh/", "post", False),
             ("/api/auth/logout/", "post", True),
+            ("/api/auth/verify-email/", "post", False),
+            ("/api/auth/verify-email/", "put", False),
+            ("/api/auth/password-reset/", "post", False),
+            ("/api/auth/password-reset/verify/", "post", False),
+            ("/api/auth/password-reset/confirm/", "put", False),
             ("/api/me/", "get", True),
             ("/api/me/", "patch", True),
         ]

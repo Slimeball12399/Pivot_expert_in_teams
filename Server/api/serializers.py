@@ -56,13 +56,52 @@ class SpeakerRegistrationSerializer(UserBaseSerializer, SpeakerProfileBaseSerial
         return RegisteredUserSerializer(user).data
 
 
-class MeUpdateBaseSerializer(UserEditableSerializer):
+class EmailSerializer(serializers.Serializer):
+    """Input for the endpoints that only need an email (resend, forgot password)."""
+
+    email = serializers.EmailField()
+
+
+class LoginSerializer(EmailSerializer):
+    """Input for POST /api/auth/login/. The rules run in login_user()."""
+
+    password = serializers.CharField(write_only=True, trim_whitespace=False)
+
+
+class EmailCodeSerializer(EmailSerializer):
+    """Input for the endpoints that check a code from an email."""
+
+    # Spaces are allowed, so "1234 5678" copied from the email works.
+    code = serializers.CharField(max_length=32)
+
+
+class PasswordResetTokenSerializer(serializers.Serializer):
+    """Proof of a right reset code: returned by POST /api/auth/password-reset/verify/
+    and sent back to PUT /api/auth/password-reset/confirm/."""
+
+    uid = serializers.CharField()
+    reset_token = serializers.CharField()
+
+
+class PasswordResetConfirmSerializer(PasswordResetTokenSerializer):
+    """Input for PUT /api/auth/password-reset/confirm/. Password strength is
+    checked inside reset_password(), with the AUTH_PASSWORD_VALIDATORS."""
+
+    new_password = serializers.CharField(write_only=True, trim_whitespace=False)
+
+
+class MeUpdateBaseSerializer(UserBaseSerializer):
     """Shared part of the PATCH /api/me/ input: the user's own details.
 
-    Send only the fields to change. Email and role can't be changed here;
+    Send only the fields to change. A new email also needs current_password;
+    it becomes pending_email and is switched only after the code sent to it
+    is entered (PUT /api/auth/verify-email/). Role can't be changed here;
     fields a serializer doesn't declare are ignored. The rules (Danish
-    phone, age, height) run inside update_profile().
+    phone, age, height, password, email taken) run inside update_profile().
     """
+
+    current_password = serializers.CharField(
+        write_only=True, required=False, trim_whitespace=False)
 
     def update(self, user, validated_data):
         try:
@@ -119,13 +158,20 @@ class AdminProfileSerializer(serializers.Serializer):
     id = serializers.UUIDField()
 
 
-class SpeakerMeSerializer(RegisteredUserSerializer):
+class MeBaseSerializer(RegisteredUserSerializer):
+    """Shared part of GET /api/me/: the user, plus a new email waiting for
+    its code ("" when there is none)."""
+
+    pending_email = serializers.CharField()
+
+
+class SpeakerMeSerializer(MeBaseSerializer):
     """GET /api/me/ for a speaker: the user plus their speaker profile."""
 
     profile = SpeakerProfileSerializer(source="speaker_profile", allow_null=True)
 
 
-class AdminMeSerializer(RegisteredUserSerializer):
+class AdminMeSerializer(MeBaseSerializer):
     """GET /api/me/ for an admin: the user plus their admin profile."""
 
     profile = AdminProfileSerializer(source="admin_profile", allow_null=True)
@@ -137,6 +183,26 @@ ME_SERIALIZERS = {"speaker": SpeakerMeSerializer, "admin": AdminMeSerializer}
 def me_data(user):
     """The GET /api/me/ body for `user`, shaped by their role."""
     return ME_SERIALIZERS[user.role](user).data
+
+
+class TokenPairSerializer(serializers.Serializer):
+    """Response of POST /api/auth/login/."""
+
+    access = serializers.CharField()
+    refresh = serializers.CharField()
+
+
+class DetailSerializer(serializers.Serializer):
+    """A plain message, e.g. "If that account exists, we sent a code."."""
+
+    detail = serializers.CharField()
+
+
+class CodedErrorSerializer(DetailSerializer):
+    """Errors the app reacts to by `code`: email_not_verified, invalid_code,
+    invalid_token. `detail` is a message that can be shown as it is."""
+
+    code = serializers.CharField()
 
 
 class HealthSerializer(serializers.Serializer):
