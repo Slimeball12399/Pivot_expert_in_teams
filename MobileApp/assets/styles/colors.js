@@ -22,6 +22,7 @@ export const dark = {
   border: '#2c4a68',
   placeholder: '#6f8aa0',
   danger: feedback.error,
+  success: feedback.success,
   accent: rose,
 };
 
@@ -35,5 +36,6 @@ export const light = {
   border: '#d4d4d4',
   placeholder: '#8a8a8a',
   danger: feedback.error,
+  success: feedback.success,
   accent: rose,
 };

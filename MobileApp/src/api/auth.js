@@ -54,8 +54,7 @@ export function verifyPasswordResetCode(email, code) {
   return publicRequest('/auth/password-reset/verify/', { method: 'POST', body: { email, code } });
 }
 
-// PUT /api/auth/password-reset/confirm/ — uid + reset_token (from verify)
-// + new_password in.
+// PUT /api/auth/password-reset/confirm/
 export function confirmPasswordReset(uid, resetToken, newPassword) {
   return publicRequest('/auth/password-reset/confirm/', {
     method: 'PUT',
@@ -76,4 +75,9 @@ export function logout(refreshToken) {
 // GET /api/me/ — the logged-in user plus their role-specific profile.
 export function me() {
   return apiRequest('/me/');
+}
+
+// PATCH /api/me/ — change some of the logged-in user's own details
+export function updateMe(payload) {
+  return apiRequest('/me/', { method: 'PATCH', body: payload });
 }

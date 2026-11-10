@@ -40,6 +40,11 @@ export function validateBirthDate(value) {
   return null;
 }
 
+export function ageFromBirthDate(value) {
+  const birthDate = parseDateOnly(value);
+  return birthDate ? ageOn(birthDate, new Date()) : null;
+}
+
 // DD/MM/YYYY (what the field shows) -> YYYY-MM-DD (what the backend's
 // DateField expects on the wire). null when `value` isn't a valid date;
 export function toIsoBirthDate(value) {
@@ -47,6 +52,11 @@ export function toIsoBirthDate(value) {
   if (!date) return null;
   const pad = (n) => String(n).padStart(2, '0');
   return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}`;
+}
+
+export function fromIsoBirthDate(value) {
+  const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(value || '');
+  return match ? `${match[3]}/${match[2]}/${match[1]}` : '';
 }
 
 export function validateHeight(heightCm) {

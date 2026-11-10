@@ -60,6 +60,11 @@ export function AuthProvider({ children }) {
     setPasswordReset(null);
   }
 
+  // Called after PATCH /api/me/ succeeds, with the response's fresh user data.
+  function updateUser(nextUser) {
+    setUser(nextUser);
+  }
+
   async function logout() {
     const { refreshToken } = await getTokens();
     if (refreshToken) {
@@ -70,7 +75,7 @@ export function AuthProvider({ children }) {
   }
 
   const value = {
-    user, isLoading, isAuthenticated: !!user, login, register, logout,
+    user, isLoading, isAuthenticated: !!user, login, register, logout, updateUser,
     pendingVerification, needsVerification, clearVerification,
     passwordReset, startPasswordReset, setPasswordResetToken, clearPasswordReset,
   };

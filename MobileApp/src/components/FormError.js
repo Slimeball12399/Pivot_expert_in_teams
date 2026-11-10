@@ -2,16 +2,14 @@ import { StyleSheet, Text, View } from 'react-native';
 
 import { useTheme } from '../providers/ThemeProvider';
 
-// Top-of-form error banner — for errors that aren't about one specific field
-// (e.g. "Wrong email or password" from the login endpoint). Field-specific errors
-// go on the TextInput's own `error` prop instead, next to the field they're about.
-export function FormError({ message }) {
+export function FormError({ message, tone = 'error' }) {
   const { theme } = useTheme();
   if (!message) return null;
+  const color = tone === 'success' ? theme.colors.success : theme.colors.danger;
 
   return (
-    <View style={[styles.wrapper, { backgroundColor: theme.colors.danger + '1A', borderColor: theme.colors.danger }]}>
-      <Text style={[styles.text, { color: theme.colors.danger }]}>{message}</Text>
+    <View style={[styles.wrapper, { backgroundColor: color + '1A', borderColor: color }]}>
+      <Text style={[styles.text, { color }]}>{message}</Text>
     </View>
   );
 }

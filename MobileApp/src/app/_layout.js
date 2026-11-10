@@ -32,7 +32,9 @@ export default function RootLayout() {
     <AppProviders>
       <Stack>
         <Stack.Screen name="index" options={{ title: 'Home' }} />
+        <Stack.Screen name="profile" options={{ title: 'Profile' }} />
         <Stack.Screen name="change-password" options={{ title: 'Change password' }} />
+        <Stack.Screen name="user/[id]" options={{ title: 'User profile' }} />
         <Stack.Screen name="(auth)" options={{ headerShown: false }} />
       </Stack>
       <StatusBar style="auto" />
