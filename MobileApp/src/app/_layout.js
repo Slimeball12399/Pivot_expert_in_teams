@@ -30,13 +30,12 @@ export default function RootLayout() {
 
   return (
     <AppProviders>
-      <Stack>
-        <Stack.Screen name="index" options={{ title: 'Home' }} />
-        <Stack.Screen name="profile" options={{ title: 'Profile' }} />
-        <Stack.Screen name="invitations" options={{ title: 'Invitations' }} />
-        <Stack.Screen name="change-password" options={{ title: 'Change password' }} />
-        <Stack.Screen name="user/[id]" options={{ title: 'User profile' }} />
-        <Stack.Screen name="(auth)" options={{ headerShown: false }} />
+      <Stack screenOptions={{ headerShown: false }}>
+        <Stack.Screen name="(tabs)" />
+        <Stack.Screen name="invitations" />
+        <Stack.Screen name="change-password" />
+        <Stack.Screen name="user/[id]" />
+        <Stack.Screen name="(auth)" />
       </Stack>
       <StatusBar style="auto" />
     </AppProviders>
