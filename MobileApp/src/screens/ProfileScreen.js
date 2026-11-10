@@ -81,7 +81,17 @@ export function ProfileScreen() {
 
   return (
     <ScreenContainer scroll>
-      <Text style={theme.styles.text.title}>Profile</Text>
+      <View style={styles.titleRow}>
+        <Text style={theme.styles.text.title}>Profile</Text>
+        {isSpeaker && (
+          <Pressable
+            onPress={() => router.push('/invitations')}
+            style={[styles.iconButton, { borderColor: theme.colors.primary }]}
+          >
+            <Feather name="mail" size={22} color={theme.colors.primary} />
+          </Pressable>
+        )}
+      </View>
 
       <View style={styles.identityRow}>
         <View style={[styles.avatar, { backgroundColor: theme.colors.accent }]}>
@@ -193,6 +203,8 @@ export function ProfileScreen() {
 }
 
 const styles = StyleSheet.create({
+  titleRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
+  iconButton: { width: 44, height: 44, borderRadius: 22, borderWidth: 1, alignItems: 'center', justifyContent: 'center' },
   identityRow: { flexDirection: 'row', alignItems: 'center', gap: 14, marginTop: 20, marginBottom: 20 },
   avatar: { width: 56, height: 56, borderRadius: 28, alignItems: 'center', justifyContent: 'center' },
   avatarText: { fontSize: 18, fontWeight: '700' },
