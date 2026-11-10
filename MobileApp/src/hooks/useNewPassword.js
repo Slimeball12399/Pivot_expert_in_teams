@@ -8,7 +8,7 @@ import { validatePassword } from '../utils/validators';
 
 // sets the new password with the uid/reset_token
 export function useNewPassword() {
-  const { passwordReset, clearPasswordReset } = useAuth();
+  const { passwordReset, clearPasswordReset, logout } = useAuth();
   const [password, setPassword] = useState('');
   const [fieldErrors, setFieldErrors] = useState({});
   const [formError, setFormError] = useState(null);
@@ -31,6 +31,7 @@ export function useNewPassword() {
     setSubmitting(true);
     try {
       await confirmPasswordReset(passwordReset.uid, passwordReset.resetToken, password);
+      await logout().catch(() => {});
       completingRef.current = true;
       router.replace('/(auth)/login');
       clearPasswordReset();

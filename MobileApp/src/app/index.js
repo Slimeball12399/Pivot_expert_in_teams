@@ -1,4 +1,4 @@
-import { Redirect } from 'expo-router';
+import { Redirect, router } from 'expo-router';
 import { useState } from 'react';
 import { ActivityIndicator, StyleSheet, Text, View } from 'react-native';
 
@@ -39,6 +39,12 @@ export default function HomeScreen() {
   return (
     <View style={[styles.container, { backgroundColor: theme.colors.background }]}>
       <Text style={theme.styles.text.title}>Home</Text>
+      <Button
+        title="Change password"
+        variant="outline"
+        onPress={() => router.push('/change-password')}
+        style={styles.logout}
+      />
       <Button title="Log out" variant="outline" onPress={handleLogout} loading={loggingOut} style={styles.logout} />
     </View>
   );
