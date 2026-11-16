@@ -217,6 +217,17 @@ STORAGES = {
 }
 
 
+# Voice analysis
+# The tool core.services.VoiceAnalysis runs (the mock for now, the real
+# extractor later), and the Python that runs it, e.g. a separate venv when the
+# tool has its own packages. A relative script path is relative to Server/.
+# Empty: the mock next to Server, and this Python.
+
+VOICE_ANALYSIS_SCRIPT = str(BASE_DIR / (
+    os.environ.get("VOICE_ANALYSIS_SCRIPT", "").strip() or "../VoiceMock/FeatureExtractor.py"))
+VOICE_ANALYSIS_PYTHON = os.environ.get("VOICE_ANALYSIS_PYTHON", "").strip() or sys.executable
+
+
 # Email
 # https://docs.djangoproject.com/en/6.1/topics/email/#topic-email-configuration
 # SEND_EMAILS in .env:
