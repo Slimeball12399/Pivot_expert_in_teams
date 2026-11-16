@@ -3,6 +3,8 @@ from datetime import timedelta
 from django.db import models
 from django.db.models import F, Q
 
+from core.validators import validate_scheduled_at
+
 from .core import File, UUIDModel
 
 
@@ -39,7 +41,7 @@ class Session(UUIDModel):
     display = models.CharField(max_length=8, choices=Display.choices, default=Display.WEB)
 
     # Null when the session is started on the spot without scheduling.
-    scheduled_at = models.DateTimeField(null=True, blank=True)
+    scheduled_at = models.DateTimeField(null=True, blank=True, validators=[validate_scheduled_at])
     started_at = models.DateTimeField(null=True, blank=True)
     # Set for finished and aborted sessions.
     ended_at = models.DateTimeField(null=True, blank=True)
@@ -66,6 +68,7 @@ class Session(UUIDModel):
 class Talk(UUIDModel):
     class Status(models.TextChoices):
         RECORDING = "RECORDING", "Recording"
+        PAUSED = "PAUSED", "Paused"  # each pause is a TalkPause row
         PROCESSING = "PROCESSING", "Processing"  # audio uploaded, STT/analysis running
         COMPLETED = "COMPLETED", "Completed"
         FAILED = "FAILED", "Failed"  # upload lost or analysis crashed
@@ -95,7 +98,42 @@ class Talk(UUIDModel):
                 condition=Q(duration__isnull=True) | Q(duration__gte=timedelta(0)),
                 name="talk_duration_not_negative",
             ),
+            # One talk at a time per session: at most one RECORDING or PAUSED.
+            models.UniqueConstraint(
+                fields=["session"],
+                condition=Q(status__in=["RECORDING", "PAUSED"]),
+                name="one_open_talk_per_session",
+            ),
         ]
 
     def __str__(self):
         return f"Talk {self.id} {self.status}"
+
+
+class TalkPause(UUIDModel):
+    """One pause in a talk. Kept as intervals (not just a total), so the
+    audio, which has no pauses in it, can be mapped back to real time and
+    lined up with the stability data."""
+
+    talk = models.ForeignKey(Talk, on_delete=models.CASCADE, related_name="pauses")
+    paused_at = models.DateTimeField()
+    # Null while the pause is going on.
+    resumed_at = models.DateTimeField(null=True, blank=True)
+
+    class Meta:
+        ordering = ["paused_at"]
+        constraints = [
+            # At most one pause going on per talk.
+            models.UniqueConstraint(
+                fields=["talk"],
+                condition=Q(resumed_at__isnull=True),
+                name="one_open_pause_per_talk",
+            ),
+            models.CheckConstraint(
+                condition=Q(resumed_at__isnull=True) | Q(resumed_at__gte=F("paused_at")),
+                name="pause_resumes_after_it_starts",
+            ),
+        ]
+
+    def __str__(self):
+        return f"Pause of talk {self.talk_id} at {self.paused_at}"

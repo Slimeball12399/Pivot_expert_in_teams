@@ -37,7 +37,6 @@ class FilesService:
     def create(
         self,
         uploaded: DjangoFile,
-        *,
         kind: File.Kind,
         content_type: str,
         session_id: uuid.UUID,
@@ -96,7 +95,7 @@ class FilesService:
 
     # --- Update ---
 
-    def update(self, file: File, uploaded: DjangoFile, *, content_type: str | None = None) -> File:
+    def update(self, file: File, uploaded: DjangoFile, content_type: str | None = None) -> File:
         """Replaces the content of `file`: stores the new bytes under a new key
         in the same folder, points the row at them, then deletes the old
         object. The row never points at missing or half-written bytes.

@@ -3,7 +3,7 @@ finds every model. Add new model modules here."""
 
 from .core import File, UUIDModel
 from .results import FullVoiceResult, PartialVoiceResult
-from .sessions import Session, Talk
+from .sessions import Session, Talk, TalkPause
 
 __all__ = [
     "File",
@@ -11,5 +11,6 @@ __all__ = [
     "PartialVoiceResult",
     "Session",
     "Talk",
+    "TalkPause",
     "UUIDModel",
 ]

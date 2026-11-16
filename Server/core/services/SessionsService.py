@@ -23,8 +23,6 @@ from core.models import Session
 # Error codes (ValidationError.code) the web views and the API react to.
 SPEAKER_NOT_YOURS = "speaker_not_yours"
 SPEAKER_INACTIVE = "speaker_inactive"
-INVALID_DISPLAY = "invalid_display"
-INVALID_SCHEDULE = "invalid_schedule"
 NOT_ADMIN = "not_admin"
 SESSION_NOT_YOURS = "session_not_yours"
 INVALID_TRANSITION = "invalid_transition"
@@ -40,8 +38,8 @@ INVALID_PAGE = "invalid_page"
 
 # --- Create ---
 
+@transaction.atomic
 def create_session(
-    *,
     trainer: User,
     speaker_id: uuid.UUID,
     display: Session.Display = Session.Display.WEB,
@@ -64,30 +62,22 @@ def create_session(
     if not speaker.user.is_active:
         raise ValidationError("This speaker's account is deactivated.", code=SPEAKER_INACTIVE)
 
-    if display not in Session.Display.values:
-        raise ValidationError(
-            f"Display must be one of {', '.join(Session.Display.values)}.",
-            code=INVALID_DISPLAY)
-
-    if scheduled_at is not None:
-        if timezone.is_naive(scheduled_at):
-            raise ValidationError(
-                "The scheduled time needs a time zone.", code=INVALID_SCHEDULE)
-        if scheduled_at <= timezone.now():
-            raise ValidationError(
-                "The scheduled time must be in the future.", code=INVALID_SCHEDULE)
-
-    return Session.objects.create(
+    session = Session(
         trainer=speaker.admin,
         speaker=speaker,
         display=display,
         scheduled_at=scheduled_at,
     )
+    # The model's validators: display is one of the choices, scheduled_at has
+    # a time zone and is in the future. Raises one ValidationError with every
+    # field error found.
+    session.full_clean()
+    session.save()
+    return session
 
 # --- Read ---
 
 def list_sessions(
-    *,
     user: User,
     statuses: Iterable[str] | None = None,
     speaker_id: uuid.UUID | None = None,
@@ -129,7 +119,7 @@ def list_sessions(
 
 # --- Update ---
 
-def get_session(*, user: User, session_id: uuid.UUID) -> Session:
+def get_session(user: User, session_id: uuid.UUID) -> Session:
     """Returns the session if `user` may access it; raises otherwise, so the
     caller stops right there.
     - admin: the sessions they are the trainer of
@@ -149,8 +139,8 @@ def get_session(*, user: User, session_id: uuid.UUID) -> Session:
     return session
 
 
+@transaction.atomic
 def update_session(
-    *,
     trainer: User,
     session_id: uuid.UUID,
     display: Session.Display | object = UNCHANGED,
@@ -173,31 +163,26 @@ def update_session(
 
     changes = {}
     if display is not UNCHANGED:
-        if display not in Session.Display.values:
-            raise ValidationError(
-                f"Display must be one of {', '.join(Session.Display.values)}.",
-                code=INVALID_DISPLAY)
         changes["display"] = display
     if scheduled_at is not UNCHANGED:
-        if scheduled_at is not None:
-            if timezone.is_naive(scheduled_at):
-                raise ValidationError(
-                    "The scheduled time needs a time zone.", code=INVALID_SCHEDULE)
-            if scheduled_at <= timezone.now():
-                raise ValidationError(
-                    "The scheduled time must be in the future.", code=INVALID_SCHEDULE)
         changes["scheduled_at"] = scheduled_at
+    if not changes:
+        return session
 
     for name, value in changes.items():
         setattr(session, name, value)
-    if changes:
-        session.save(update_fields=list(changes))
+    # Only the changed fields are validated, so a schedule that has passed in
+    # the meantime doesn't block changing the display.
+    session.full_clean(exclude=[field.name for field in Session._meta.concrete_fields
+                                if field.name not in changes])
+    session.save(update_fields=list(changes))
     return session
 
 
 # --- State machine events ---
 
-def start_session(*, trainer: User, session_id: uuid.UUID) -> Session:
+@transaction.atomic
+def start_session(trainer: User, session_id: uuid.UUID) -> Session:
     """Starts a session (NOT_STARTED -> LIVE), sets started_at and returns it.
     Refused if the speaker already has a LIVE session."""
     if trainer.role != User.Role.ADMIN:
@@ -212,9 +197,7 @@ def start_session(*, trainer: User, session_id: uuid.UUID) -> Session:
     session.status = Session.Status.LIVE
     session.started_at = timezone.now()
     try:
-        # Savepoint, so the constraint error doesn't break a caller's transaction.
-        with transaction.atomic():
-            session.save(update_fields=["status", "started_at"])
+        session.save(update_fields=["status", "started_at"])
     except IntegrityError as exc:
         if "one_live_session_per_speaker" in str(exc):
             raise ValidationError(
@@ -223,7 +206,8 @@ def start_session(*, trainer: User, session_id: uuid.UUID) -> Session:
     return session
 
 
-def end_session(*, trainer: User, session_id: uuid.UUID) -> Session:
+@transaction.atomic
+def end_session(trainer: User, session_id: uuid.UUID) -> Session:
     """Ends a live session (LIVE -> FINISHED), sets ended_at and returns it."""
     if trainer.role != User.Role.ADMIN:
         raise ValidationError("Only admins can manage sessions.", code=NOT_ADMIN)
@@ -240,7 +224,8 @@ def end_session(*, trainer: User, session_id: uuid.UUID) -> Session:
     return session
 
 
-def cancel_session(*, trainer: User, session_id: uuid.UUID) -> Session:
+@transaction.atomic
+def cancel_session(trainer: User, session_id: uuid.UUID) -> Session:
     """Cancels a session that hasn't started (NOT_STARTED -> CANCELLED) and
     returns it. Takes the place of deleting: the row stays, so a cancelled
     session doesn't just vanish for the speaker. Started sessions end or
