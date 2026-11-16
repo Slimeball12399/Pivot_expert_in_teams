@@ -15,9 +15,7 @@ urlpatterns = [
     path("users/invites/<uuid:invite_id>/cancel/",
          users.invite_cancel, name="invite_cancel"),
     path("login/", auth.login, name="login"),
-    path("", views.home, name="home"),
-    path("login/", views.login, name="login"),
-    path("logout/", views.logout, name="logout"),
+    path("logout/", auth.logout, name="logout"),
     # Password reset: email -> code -> new password.
     path("forgot-password/", auth.forgot_password, name="forgot_password"),
     path("verify-code/", auth.verify_code, name="verify_code"),

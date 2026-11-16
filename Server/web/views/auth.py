@@ -5,12 +5,11 @@ from django.conf import settings
 from django.contrib import messages
 from django.contrib.auth import login as auth_login
 from django.contrib.auth import logout as auth_logout
-from django.contrib.auth.decorators import login_not_required, login_required
+from django.contrib.auth.decorators import login_not_required
 from django.core.exceptions import ValidationError
 from django.shortcuts import redirect, render, resolve_url
 from django.utils.http import url_has_allowed_host_and_scheme
 from django.views.decorators.debug import sensitive_post_parameters
-from django.views.decorators.http import require_POST
 from django.views.decorators.http import require_POST
 
 from accounts.emails import code_lifetime_minutes

@@ -6,7 +6,9 @@ from django.test import TestCase
 from django.utils import timezone
 
 from accounts.models import User, EmailCode
-from accounts.services.accounts import register_speaker, update_profile
+from accounts.services.accounts import register_speaker, update_profile, verify_email
+
+from .utils import code_in
 
 
 PASSWORD = "Str0ng-test-pass!"

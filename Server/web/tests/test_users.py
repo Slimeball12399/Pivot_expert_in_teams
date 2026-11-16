@@ -144,6 +144,9 @@ class InviteRowActionTests(TestCase):
         self.assertEqual(self.invite.status, UserInvite.Status.REVOKED)
 
         with self.subTest("cancelling it again: an error message, nothing changes"):
+            # Load the page the first redirect lands on, like a browser would: it
+            # shows (and clears) the success toast, so only the new message is left.
+            self.client.get(URL)
             response = self.client.post(url, {"next": URL})
             self.assertEqual([m.level_tag for m in get_messages(response.wsgi_request)], ["error"])
 
