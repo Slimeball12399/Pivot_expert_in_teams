@@ -5,6 +5,7 @@ services:
     environment:
       POSTGRES_HOST: db
       POSTGRES_PORT: "5432"   # containers talk to db on its internal port
+      LOG_TO_FILE: false
     ports:
       - "127.0.0.1:8000:8000"   # HTTP / API (only via NGINX on the VPS)
       - "9000:9000/udp"     # live board telemetry (SCRUM-178)
