@@ -9,6 +9,7 @@ from django.utils import timezone
 
 from accounts.models import User, UserInvite
 from accounts.services.invites import (
+    HAS_TRAINER,
     INVITE_NOT_FOUND,
     SUGGEST_LIMIT,
     accept_invite,
@@ -70,6 +71,22 @@ class CreateInviteTests(TestCase):
                     create_invite(self.trainer, email)
                 self.assertIn("email", ctx.exception.message_dict)
         self.assertEqual(UserInvite.objects.count(), 0)
+
+
+    def test_another_trainers_speaker_needs_confirming(self):
+        bo = make_trainer("bo@example.com")
+        User.objects.filter(pk=bo.user_id).update(first_name="Bo", last_name="Larsen")
+        make_speaker("mikkel@example.com", bo)
+        with self.assertRaises(ValidationError) as ctx:
+            create_invite(self.trainer, "mikkel@example.com")
+        self.assertEqual(ctx.exception.code, HAS_TRAINER)
+        self.assertIn("Bo Larsen", ctx.exception.messages[0])
+        self.assertEqual(UserInvite.objects.count(), 0)
+
+        with self.subTest("confirmed: sent"):
+            invite, registered = create_invite(self.trainer, "mikkel@example.com", True)
+            self.assertTrue(registered)
+            self.assertEqual(invite.status, UserInvite.Status.PENDING)
 
 
 class RevokeInviteTests(TestCase):
@@ -200,6 +217,16 @@ class PendingInvitesForTests(TestCase):
             User.objects.filter(pk=speaker.pk).update(email_verified_at=None)
             speaker.refresh_from_db()
             self.assertEqual(list(pending_invites_for(speaker)), [])
+
+
+    def test_replaces_trainer(self):
+        current = make_trainer("bo@example.com")
+        speaker = make_speaker("mikkel@example.com", current)
+        from_other = make_invite(make_trainer("anne@example.com"), "mikkel@example.com")
+        from_current = make_invite(current, "mikkel@example.com", days_old=1)
+        invites = {invite.pk: invite for invite in pending_invites_for(speaker)}
+        self.assertEqual(invites[from_other.pk].replaces_trainer, current)
+        self.assertIsNone(invites[from_current.pk].replaces_trainer)
 
 
 class SuggestInviteEmailsTests(TestCase):

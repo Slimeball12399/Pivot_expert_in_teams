@@ -21,6 +21,8 @@ from ..models import AdminProfile, SpeakerProfile, User, UserInvite
 
 INVITE_NOT_FOUND = "invite_not_found"
 INVITE_NOT_FOUND_MESSAGE = "This invitation doesn't exist or is no longer open."
+# create_invite(): the email is a speaker who already has another trainer.
+HAS_TRAINER = "has_trainer"
 
 # The filters of the trainer's user list (get_users): which TrainerUser.state
 # values each one shows. None shows everything in the view.
@@ -40,7 +42,7 @@ SUGGEST_LIMIT = 5
 
 
 @transaction.atomic
-def create_invite(trainer, email) -> tuple[UserInvite, bool]:
+def create_invite(trainer, email, replace_confirmed=False) -> tuple[UserInvite, bool]:
     """Invite `email` to train with `trainer` (an AdminProfile) and email them.
 
     Inviting an email this trainer already invited is the resend: the older
@@ -49,7 +51,10 @@ def create_invite(trainer, email) -> tuple[UserInvite, bool]:
     confirmation ("they'll see it in the app" or "they'll get an email").
 
     Raises ValidationError({"email": [...]}) when the email is already one of
-    the trainer's speakers, or belongs to a trainer account.
+    the trainer's speakers, or belongs to a trainer account. A speaker who
+    already has another trainer raises ValidationError(code=HAS_TRAINER),
+    naming that trainer, unless replace_confirmed: the trainer has seen that
+    warning and sends anyway (accepting replaces the other trainer).
     """
     email = User.objects.normalize_email(email.strip())
     existing = User.objects.filter(email__iexact=email, is_active=True).first()
@@ -57,6 +62,12 @@ def create_invite(trainer, email) -> tuple[UserInvite, bool]:
         raise ValidationError({"email": ["This email belongs to a trainer account."]})
     if existing is not None and existing.speaker_profile.admin_id == trainer.pk:
         raise ValidationError({"email": ["This person is already one of your users."]})
+    current_trainer = existing.speaker_profile.admin if existing is not None else None
+    if current_trainer is not None and not replace_confirmed:
+        raise ValidationError(
+            f"{email} already trains with {current_trainer.user.get_full_name()}. "
+            "If they accept, you'll replace that trainer.",
+            code=HAS_TRAINER)
 
     now = timezone.now()
     UserInvite.objects.pending().filter(
@@ -126,14 +137,25 @@ def accept_invite(user, invite_id) -> tuple[UserInvite, AdminProfile | None]:
     return invite, AdminProfile.objects.get(pk=previous_admin_id)
 
 
-def pending_invites_for(user):
+def pending_invites_for(user) -> list[UserInvite]:
     """Open invites sent to the user's verified email, newest first, with the
     trainer loaded: the invitations screen in the app. Empty for trainers and
-    for unverified accounts, since only a verified email proves they're theirs."""
+    for unverified accounts, since only a verified email proves they're theirs.
+
+    Each invite also gets `replaces_trainer`: the speaker's current trainer
+    (an AdminProfile) when accepting it would replace them, else None, so the
+    app can warn before the speaker accepts.
+    """
     if user.role != User.Role.SPEAKER or user.email_verified_at is None:
-        return UserInvite.objects.none()
-    return (UserInvite.objects.pending().filter(email__iexact=user.email)
-            .select_related("invited_by__user"))
+        return []
+    current_trainer = (AdminProfile.objects.select_related("user")
+                       .filter(speakers__user=user).first())
+    invites = list(UserInvite.objects.pending().filter(email__iexact=user.email)
+                   .select_related("invited_by__user"))
+    for invite in invites:
+        replaces = current_trainer is not None and current_trainer.pk != invite.invited_by_id
+        invite.replaces_trainer = current_trainer if replaces else None
+    return invites
 
 
 def get_users(trainer, status="speakers", query=""):

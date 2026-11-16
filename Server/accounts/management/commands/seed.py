@@ -7,6 +7,8 @@ Reads from .env (see .env.example):
     SEED_SPEAKER_EMAIL   a speaker linked to that trainer
     SEED_INVITE_EMAIL    an email the trainer has invited, not a Pivot user yet
     SEED_PASSWORD        the password of the trainer and the speaker
+    SEED_SECOND_ADMIN_EMAIL  optional: a second trainer ("Second Trainer")
+                         who invites the speaker, to try switching trainers
 
 The trainer and the speaker are marked verified, so they can log in straight
 away and no verification codes are emailed. The invite goes through
@@ -15,6 +17,8 @@ create_invite(), so its email is printed (SEND_EMAILS=False) or really sent
 
 Running it again changes nothing that is already there: existing accounts
 keep their password, and an invite that is still open isn't sent again.
+A speaker who accepted the second trainer's invite is moved back to the
+first trainer and invited again, so the switch can be tried again.
 Only runs with DJANGO_DEBUG=True, unless --force is given.
 """
 
@@ -60,26 +64,39 @@ class Command(BaseCommand):
         missing = [name for name, value in values.items() if not value]
         if missing:
             raise CommandError(f"Set {', '.join(missing)} in .env (see .env.example).")
+        second_admin_email = os.environ.get("SEED_SECOND_ADMIN_EMAIL", "").strip()
 
         try:
             # No verification codes: the seeded accounts are verified below.
             with transaction.atomic(), mock.patch(
                     "accounts.services.accounts.send_verification_code"):
-                trainer = self.trainer(values["SEED_ADMIN_EMAIL"], values["SEED_PASSWORD"])
+                trainer = self.trainer(values["SEED_ADMIN_EMAIL"], values["SEED_PASSWORD"], "Test")
                 self.speaker(values["SEED_SPEAKER_EMAIL"], values["SEED_PASSWORD"], trainer)
-            # Outside the patch: the invite email is sent as usual.
+                second_trainer = None
+                if second_admin_email:
+                    second_trainer = self.trainer(
+                        second_admin_email, values["SEED_PASSWORD"], "Second")
+            if User.objects.filter(email__iexact=values["SEED_INVITE_EMAIL"]).exists():
+                raise CommandError(
+                    f"{values['SEED_INVITE_EMAIL']} already has a Pivot account; "
+                    "SEED_INVITE_EMAIL must not.")
+            # Outside the patch: the invite emails are sent as usual.
             with transaction.atomic():
                 self.invite(trainer, values["SEED_INVITE_EMAIL"])
+            # Accepting this one in the app replaces the first trainer.
+            if second_trainer is not None:
+                with transaction.atomic():
+                    self.invite(second_trainer, values["SEED_SPEAKER_EMAIL"])
         except ValidationError as error:
             raise CommandError(f"Seeding failed: {error}") from error
 
         self.stdout.write(self.style.SUCCESS("Seeded. Log in with SEED_PASSWORD."))
 
-    def trainer(self, email, password):
+    def trainer(self, email, password, first_name):
         user = User.objects.filter(email__iexact=email).first()
         if user is None:
             user = User.objects.create_superuser(
-                email, password, first_name="Test", last_name="Trainer")
+                email, password, first_name=first_name, last_name="Trainer")
             self.stdout.write(f"Trainer {email}: created")
         elif user.role != User.Role.ADMIN:
             raise CommandError(f"{email} already exists and is not a trainer.")
@@ -107,13 +124,11 @@ class Command(BaseCommand):
             self.stdout.write(f"Speaker {email}: linked to {trainer.user.email}")
 
     def invite(self, trainer, email):
-        if User.objects.filter(email__iexact=email).exists():
-            raise CommandError(
-                f"{email} already has a Pivot account; SEED_INVITE_EMAIL must not.")
         if UserInvite.objects.pending().filter(invited_by=trainer, email__iexact=email).exists():
             self.stdout.write(f"Invite to {email}: already open")
             return
-        create_invite(trainer, email)
+        # Confirmed: the second trainer's invite is meant to replace the first.
+        create_invite(trainer, email, True)
         self.stdout.write(f"Invite to {email}: sent")
 
     def verify(self, user):

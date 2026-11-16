@@ -5,7 +5,7 @@ from django.test import TestCase
 from django.urls import reverse
 from django.utils.timezone import now
 
-from accounts.models import UserInvite
+from accounts.models import User, UserInvite
 from accounts.tests.utils import make_invite, make_speaker, make_trainer
 
 URL = reverse("web:users")
@@ -109,6 +109,24 @@ class InviteCreateViewTests(TestCase):
 
         with self.subTest("only POST"):
             self.assertEqual(self.client.get(CREATE_URL).status_code, 405)
+
+
+    def test_another_trainers_speaker_needs_confirming(self):
+        bo = make_trainer("bo@example.com")
+        User.objects.filter(pk=bo.user_id).update(first_name="Bo", last_name="Larsen")
+        make_speaker("mikkel@example.com", trainer=bo)
+        response = self.client.post(CREATE_URL, {"email": "mikkel@example.com"})
+        self.assertEqual(response.status_code, 409)
+        self.assertEqual(response.json(), {"confirm": (
+            "mikkel@example.com already trains with Bo Larsen. "
+            "If they accept, you'll replace that trainer.")})
+        self.assertFalse(UserInvite.objects.exists())
+
+        with self.subTest("sent once confirmed"):
+            response = self.client.post(
+                CREATE_URL, {"email": "mikkel@example.com", "replace_confirmed": "1"})
+            self.assertEqual(response.status_code, 201)
+            self.assertEqual(UserInvite.objects.get().email, "mikkel@example.com")
 
 
 class InviteRowActionTests(TestCase):

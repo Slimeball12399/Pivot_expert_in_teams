@@ -2,7 +2,7 @@ from django.urls import reverse
 from rest_framework import status
 from rest_framework.test import APITestCase
 
-from accounts.models import UserInvite
+from accounts.models import SpeakerProfile, User, UserInvite
 from accounts.tests.utils import make_invite, make_speaker, make_trainer
 
 LIST_URL = reverse("api:invites")
@@ -16,6 +16,7 @@ class InviteEndpointTests(APITestCase):
         self.trainer = make_trainer("anne@example.com")
         self.speaker = make_speaker("mikkel@example.com")
         self.invite = make_invite(self.trainer, "mikkel@example.com")
+        self.trainer_body = {"id": str(self.trainer.pk), **TRAINER}
         self.accept_url = reverse("api:invite-accept", args=[self.invite.pk])
         self.decline_url = reverse("api:invite-decline", args=[self.invite.pk])
 
@@ -38,9 +39,19 @@ class InviteEndpointTests(APITestCase):
         response = self.client.get(LIST_URL)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         [item] = response.json()
-        self.assertEqual(set(item), {"id", "trainer", "created_at", "expires_at"})
+        self.assertEqual(set(item), {"id", "trainer", "replaces_trainer", "created_at", "expires_at"})
         self.assertEqual(item["id"], str(self.invite.pk))
-        self.assertEqual(item["trainer"], TRAINER)
+        self.assertEqual(item["trainer"], self.trainer_body)
+        self.assertIsNone(item["replaces_trainer"])  # no trainer yet
+
+        with self.subTest("a speaker with another trainer: names them"):
+            current = make_trainer("bo@example.com")
+            User.objects.filter(pk=current.user_id).update(first_name="Bo", last_name="Larsen")
+            SpeakerProfile.objects.filter(user=self.speaker).update(admin=current)
+            [item] = self.client.get(LIST_URL).json()
+            self.assertEqual(item["trainer"], self.trainer_body)
+            self.assertEqual(item["replaces_trainer"],
+                             {"id": str(current.pk), "first_name": "Bo", "last_name": "Larsen"})
 
     def test_accept(self):
         self.client.force_authenticate(self.speaker)
@@ -48,7 +59,7 @@ class InviteEndpointTests(APITestCase):
         self.assertEqual(response.status_code, status.HTTP_200_OK, response.content)
         body = response.json()
         self.assertEqual(set(body), {"detail", "trainer", "previous_trainer"})
-        self.assertEqual(body["trainer"], TRAINER)
+        self.assertEqual(body["trainer"], self.trainer_body)
         self.assertIsNone(body["previous_trainer"])
         self.speaker.speaker_profile.refresh_from_db()
         self.assertEqual(self.speaker.speaker_profile.admin, self.trainer)
@@ -62,7 +73,7 @@ class InviteEndpointTests(APITestCase):
             invite = make_invite(make_trainer("bo@example.com"), "mikkel@example.com")
             response = self.client.post(reverse("api:invite-accept", args=[invite.pk]))
             self.assertEqual(response.status_code, status.HTTP_200_OK, response.content)
-            self.assertEqual(response.json()["previous_trainer"], TRAINER)
+            self.assertEqual(response.json()["previous_trainer"], self.trainer_body)
 
     def test_decline(self):
         self.client.force_authenticate(self.speaker)

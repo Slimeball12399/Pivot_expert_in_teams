@@ -146,10 +146,22 @@ class RegisteredUserSerializer(UserBaseSerializer):
     role = serializers.CharField()
 
 
-class SpeakerProfileSerializer(SpeakerProfileBaseSerializer):
-    """The "profile" part of GET /api/me/ for a speaker."""
+class InviteTrainerSerializer(serializers.Serializer):
+    """A trainer (an AdminProfile): their id and name. Who an invitation is
+    from, the trainer an accepted one replaced, or a speaker's current
+    trainer in /api/me/."""
 
     id = serializers.UUIDField()
+    first_name = serializers.CharField(source="user.first_name")
+    last_name = serializers.CharField(source="user.last_name")
+
+
+class SpeakerProfileSerializer(SpeakerProfileBaseSerializer):
+    """The "profile" part of GET /api/me/ for a speaker, with their current
+    trainer (null when they have none)."""
+
+    id = serializers.UUIDField()
+    trainer = InviteTrainerSerializer(source="admin", allow_null=True)
 
 
 class AdminProfileSerializer(serializers.Serializer):
@@ -215,18 +227,14 @@ class HealthSerializer(serializers.Serializer):
 # Invites
 
 
-class InviteTrainerSerializer(serializers.Serializer):
-    """Who an invitation is from: the trainer's name (an AdminProfile)."""
-
-    first_name = serializers.CharField(source="user.first_name")
-    last_name = serializers.CharField(source="user.last_name")
-
-
 class InviteSerializer(serializers.Serializer):
-    """An open invitation in GET /api/invites/."""
+    """An open invitation in GET /api/invites/. replaces_trainer is the
+    speaker's current trainer when accepting would replace them (the app
+    warns "this will replace ..." before accepting), else null."""
 
     id = serializers.UUIDField()
     trainer = InviteTrainerSerializer(source="invited_by")
+    replaces_trainer = InviteTrainerSerializer(allow_null=True)
     created_at = serializers.DateTimeField()
     expires_at = serializers.DateTimeField()
 
