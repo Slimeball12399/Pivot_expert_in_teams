@@ -1,0 +1,112 @@
+/* Voice measure (web/components/voice_measure.html): one live voice score as
+   a small card. Several sit in a row and share the width equally. */
+.voice-measure {
+    --line-color: var(--speech);
+    box-sizing: border-box;
+    flex: 1 1 0;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    padding: 12px 14px;
+    border: 1px solid var(--line);
+    border-radius: 12px;
+    background: var(--background-raised);
+}
+
+/* The line it has on the voice graph: solid in the speech colour (pace) or
+   dashed in the text colour (pitch variation). */
+.voice-measure.dashed {
+    --line-color: var(--text);
+}
+
+/* Name: capitals, with the line swatch in front of it. */
+.voice-measure-name {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.8px;
+    text-transform: uppercase;
+}
+
+.voice-measure-name::before {
+    content: "";
+    flex: none;
+    width: 22px;
+    border-top: 3px solid var(--line-color);
+}
+
+.voice-measure.dashed .voice-measure-name::before {
+    border-top-style: dashed;
+}
+
+/* Score, large, with the raw value small and muted next to it. */
+.voice-measure-value {
+    display: flex;
+    align-items: baseline;
+    gap: 8px;
+}
+
+.voice-measure-score {
+    font-family: "Jost", sans-serif;
+    font-size: 1.5rem;
+    font-weight: 600;
+    line-height: 1.1;
+    font-variant-numeric: tabular-nums;
+}
+
+.voice-measure-raw {
+    font-size: 12px;
+    color: var(--text-muted);
+}
+
+/* Bar from -10 (left) to +10 (right): the track, the optimal band from -5 to
+   +5 (25% to 75%) in light green, a thin tick at 0 (::before) and a dot at the
+   score (::after). The dot's position comes from --score: -10 is 0%, +10 is
+   100%, and a score outside that stays at the edge. */
+.voice-measure-bar {
+    position: relative;
+    display: block;
+    height: 10px;
+    border-radius: 5px;
+    background:
+        linear-gradient(to right,
+            transparent 25%,
+            color-mix(in srgb, var(--green) 20%, var(--background-raised)) 25% 75%,
+            transparent 75%),
+        color-mix(in srgb, var(--line) 50%, var(--background-raised));
+}
+
+.voice-measure-bar::before {
+    content: "";
+    position: absolute;
+    left: 50%;
+    top: -2px;
+    bottom: -2px;
+    width: 1px;
+    background: var(--line);
+}
+
+.voice-measure-bar::after {
+    content: "";
+    position: absolute;
+    top: 50%;
+    left: clamp(0%, calc((var(--score) + 10) * 5%), 100%);
+    box-sizing: border-box;
+    width: 14px;
+    height: 14px;
+    border: 2px solid var(--background-raised);
+    border-radius: 7px;
+    background: var(--line-color);
+    transform: translate(-50%, -50%);
+}
+
+/* -10, 0 and +10 under the bar. */
+.voice-measure-axis {
+    display: flex;
+    justify-content: space-between;
+    font-size: 10px;
+    color: var(--text-muted);
+}

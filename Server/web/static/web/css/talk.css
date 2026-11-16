@@ -1,0 +1,164 @@
+/* Talk page (talk.html): the live console. Page layout and the "Stability now"
+   card. The card surface itself is in score-card.css, the polar chart in
+   polar-chart.css. */
+
+/* Page layout, like the session page: the two cards sit next to each other
+   whenever both fit at their base width, otherwise the voice card wraps under
+   the stability card. Side by side they share the free space, the stability
+   card up to 600px; stacked, each takes the full width. Cards in the same row
+   get the same height. */
+.talk-graphs > .charts {
+    display: flex;
+    flex-direction: row;
+    flex-wrap: wrap;
+    gap: 1.5rem;
+    align-items: stretch;
+}
+
+.talk-graphs > .charts > .stability-now {
+    /* polar chart 360px + padding 2 x 1.5rem + border 2px */
+    flex: 1 1 calc(360px + 3rem + 2px);
+    max-width: 600px;
+}
+
+.talk-graphs > .charts > .live-talk {
+    flex: 1 1 400px;
+}
+
+/* Stacked (the voice card wrapped under it): the stability card may use the full width too. */
+@media (max-width: 900px) {
+    .talk-graphs > .charts > .stability-now {
+        max-width: none;
+    }
+}
+
+/* Cards on this page stack their parts in a column. */
+.talk-graphs .score-card {
+    display: flex;
+    flex-direction: column;
+    gap: 0.875rem;
+    min-width: 0;
+}
+
+/* The voice card uses the speech colour. */
+.talk-graphs .score-card.live-talk {
+    --card-accent: var(--speech);
+}
+
+
+/* Stability now: the head row. The big score with its small heading on the
+   left, the status and session numbers next to it, both sitting on the same
+   bottom line. */
+.stability-now-head {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: flex-end;
+    gap: 0.5rem 1rem;
+}
+
+.stability-now-score-block {
+    display: flex;
+    flex-direction: column;
+}
+
+/* Card headings ("Stability now", "Voice"): small capitals, muted, the same
+   on both cards. */
+.talk-graphs .score-card h2 {
+    margin: 0;
+    font-family: "Outfit", sans-serif;
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 1.2px;
+    text-transform: uppercase;
+    color: var(--text-muted);
+}
+
+.stability-now-score {
+    font-family: "Jost", sans-serif;
+    font-size: 4.5rem;
+    font-weight: 600;
+    line-height: 0.95;
+    font-variant-numeric: tabular-nums;   /* the number does not jump in width as it changes */
+}
+
+.stability-now-summary {
+    flex: 1 1 auto;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    padding-bottom: 6px;
+}
+
+.stability-now-meta {
+    font-size: 14px;
+    color: var(--text-muted);
+}
+
+/* Status in words with a coloured dot, used by both cards ("In target range",
+   "On pace"): green and bold for "good", a yellow dot for "warn". */
+.live-status {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 14px;
+    font-weight: 700;
+    color: var(--success-text);
+}
+
+.live-status::before {
+    content: "";
+    flex: none;
+    width: 10px;
+    height: 10px;
+    border-radius: 5px;
+    background: var(--green);
+}
+
+.live-status.warn {
+    color: var(--text);
+}
+
+.live-status.warn::before {
+    background: var(--yellow);
+}
+
+/* The voice measure cards (voice-measure.css) side by side. */
+.voice-measures {
+    display: flex;
+    gap: 12px;
+}
+
+/* Voice: the heading on the left and when the voice scores were last
+   updated on the right, on the same line. */
+.voice-head {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 1rem;
+}
+
+.voice-updated {
+    font-size: 12px;
+    color: var(--text-muted);
+    font-variant-numeric: tabular-nums;
+}
+
+/* The polar chart, centred in whatever height the card has left. */
+.stability-now-plot {
+    flex: 1 1 auto;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 0;
+}
+
+
+/* The tiles under the chart: 3 in a row, the same size as the session page
+   tiles (score-card.css), in a light tint of the stability colour. */
+.stability-now .data-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.stability-now .data {
+    background: color-mix(in srgb, var(--stability) 14%, var(--background-raised));
+}

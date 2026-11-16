@@ -6,7 +6,7 @@ app_name = "web"
 
 urlpatterns = [
     path("", pages.home, name="home"),
-    path("demo/", sessions.demo, name="demo"),
+    path("demo/", sessions.talk_demo, name="demo"),
     path("users/", users.user_list, name="users"),
     path("users/invite/", users.invite_create, name="invite_create"),
     path("users/invite/suggestions/", users.invite_suggestions, name="invite_suggestions"),
