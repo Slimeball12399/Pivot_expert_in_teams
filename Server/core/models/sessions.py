@@ -77,6 +77,8 @@ class Talk(UUIDModel):
     started_at = models.DateTimeField()
     # Null while recording, set when recording stops.
     duration = models.DurationField(null=True, blank=True)
+    # Automatic retries of the current processing step; FAILED after the limit.
+    analysis_attempts = models.PositiveSmallIntegerField(default=0)
     # SET_NULL: the File row goes away only together with its MinIO object.
     audio = models.OneToOneField(
         File,

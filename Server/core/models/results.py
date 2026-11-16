@@ -5,34 +5,25 @@ from .sessions import Talk
 
 
 class VoiceMeasures(UUIDModel):
-    """Raw voice measures that are reliable on a 30 s window. Shared by the
-    partial (window) and full (whole talk) results. Comments give the key in
-    the extractor output and the unit. Null when the extractor gives no value."""
+    """The voice parameters that are scored. These follow the scoring set, not
+    the extractor output: a separate adapter translates the extractor output
+    into these fields. Null when a value could not be produced.
 
-    # --- F0 (pitch) ---
-    mean_f0 = models.FloatField(null=True, blank=True)  # meanF0, Hz
-    f0_q10 = models.FloatField(null=True, blank=True)  # F0q10, Hz
-    f0_q90 = models.FloatField(null=True, blank=True)  # F0q90, Hz
-    f0_std = models.FloatField(null=True, blank=True)  # F0std, Hz
+    Which parameters live here (scored live and on the full talk) and which
+    only on FullVoiceResult is provisional until Oliver's feedback."""
 
-    # --- Formants ---
-    mean_f1 = models.FloatField(null=True, blank=True)  # meanF1, Hz
-    mean_f2 = models.FloatField(null=True, blank=True)  # meanF2, Hz
-    mean_f3 = models.FloatField(null=True, blank=True)  # meanF3, Hz
+    mean_f0 = models.FloatField(null=True, blank=True)  # Hz
+    # F0 range as Q90 - Q10, not max - min.
+    f0_range_q90_q10 = models.FloatField(null=True, blank=True)  # Hz
+    mean_f1 = models.FloatField(null=True, blank=True)  # Hz
+    mean_f2 = models.FloatField(null=True, blank=True)  # Hz
+    mean_f3 = models.FloatField(null=True, blank=True)  # Hz
+    # Formant-corrected spectral tilt (H1*-H2*, H1*-A3*).
+    h1_h2_corrected = models.FloatField(null=True, blank=True)  # dB
+    h1_a3_corrected = models.FloatField(null=True, blank=True)  # dB
 
-    # --- Spectral tilt ---
-    h1_h2 = models.FloatField(null=True, blank=True)  # H1-H2, dB
-    h1_a1 = models.FloatField(null=True, blank=True)  # H1-A1, dB
-    h1_a2 = models.FloatField(null=True, blank=True)  # H1-A2, dB
-    h1_a3 = models.FloatField(null=True, blank=True)  # H1-A3, dB
-
-    # --- Rate and pauses ---
-    mean_speaking_rate = models.FloatField(null=True, blank=True)  # meanSpeakingRate, syllables/s
-    mean_pause_duration = models.FloatField(null=True, blank=True)  # meanPauseDuration, s
-
-    # --- Intensity ---
-    rms_mean = models.FloatField(null=True, blank=True)  # RMSmean, 0..1 full scale
-    rms_std = models.FloatField(null=True, blank=True)  # RMSstd, 0..1 full scale
+    mean_speaking_rate = models.FloatField(
+        null=True, blank=True)  # syllables/s
 
     # Calculated from the measures above; null until scored.
     voice_score = models.FloatField(null=True, blank=True)
@@ -47,7 +38,8 @@ class PartialVoiceResult(VoiceMeasures):
     """Measures for one window of a talk (e.g. 30 s window, 5 s step), for the
     live graph and lining voice up against stability."""
 
-    talk = models.ForeignKey(Talk, on_delete=models.CASCADE, related_name="partial_voice_results")
+    talk = models.ForeignKey(
+        Talk, on_delete=models.CASCADE, related_name="partial_voice_results")
     # Absolute UTC time the window starts, same time base as the stability data.
     start_at = models.DateTimeField()
     window_length = models.DurationField()
@@ -69,20 +61,17 @@ class PartialVoiceResult(VoiceMeasures):
 
 
 class FullVoiceResult(VoiceMeasures):
-    """Measures for a whole talk. Adds the ones that only hold up on the full
-    recording."""
+    """Measures for a whole talk. Adds the parameters that are only scored on
+    the full recording (provisional, see VoiceMeasures)."""
 
-    talk = models.OneToOneField(Talk, on_delete=models.CASCADE, related_name="full_voice_result")
+    talk = models.OneToOneField(
+        Talk, on_delete=models.CASCADE, related_name="full_voice_result")
 
-    min_f0 = models.FloatField(null=True, blank=True)  # minF0, Hz
-    max_f0 = models.FloatField(null=True, blank=True)  # maxF0, Hz
-    f0_range = models.FloatField(null=True, blank=True)  # F0range, semitones
-    mean_f2_f3 = models.FloatField(null=True, blank=True)  # meanF2+3, Hz
-    h1_h2_std = models.FloatField(null=True, blank=True)  # H1-H2std, dB
-    h1_a1_std = models.FloatField(null=True, blank=True)  # H1-A1std, dB
-    h1_a2_std = models.FloatField(null=True, blank=True)  # H1-A2std, dB
-    h1_a3_std = models.FloatField(null=True, blank=True)  # H1-A3std, dB
-    pause_count = models.PositiveIntegerField(null=True, blank=True)  # pauseCount
+    mean_pause_duration = models.FloatField(null=True, blank=True)  # s
+    pause_frequency = models.FloatField(null=True, blank=True)  # pauses/min
+    # Derived from RMS as 20*log10(rms). Relative to full scale, not calibrated
+    # dB SPL, so only comparable within the same recording setup.
+    spl_dbfs = models.FloatField(null=True, blank=True)  # dBFS
 
     def __str__(self):
         return f"Full voice {self.talk_id}"
