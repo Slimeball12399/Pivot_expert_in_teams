@@ -1,4 +1,4 @@
-import { EmptyProvider } from './EmptyProvider';
+import { AuthProvider } from './AuthProvider';
 import { ThemeProvider } from './ThemeProvider';
 
 // Every app-wide provider is composed here, so the root layout stays small.
@@ -6,7 +6,7 @@ import { ThemeProvider } from './ThemeProvider';
 export function AppProviders({ children }) {
   return (
     <ThemeProvider>
-      <EmptyProvider>{children}</EmptyProvider>
+      <AuthProvider>{children}</AuthProvider>
     </ThemeProvider>
   );
 }

@@ -4,11 +4,13 @@ verification and password reset."""
 from django.conf import settings
 from django.contrib import messages
 from django.contrib.auth import login as auth_login
-from django.contrib.auth.decorators import login_not_required
+from django.contrib.auth import logout as auth_logout
+from django.contrib.auth.decorators import login_not_required, login_required
 from django.core.exceptions import ValidationError
 from django.shortcuts import redirect, render, resolve_url
 from django.utils.http import url_has_allowed_host_and_scheme
 from django.views.decorators.debug import sensitive_post_parameters
+from django.views.decorators.http import require_POST
 from django.views.decorators.http import require_POST
 
 from accounts.emails import code_lifetime_minutes
@@ -26,6 +28,14 @@ CODE_FLOW = "code_flow"
 RESET = "password_reset"
 
 SENT_NEW_CODE = "If that account needs a code, we sent a new one."
+
+
+@login_not_required
+@require_POST  # a GET logout could be triggered by any link, image or prefetch
+def logout(request):
+    """End the session and go to the login page. Sent by the logout button in the header."""
+    auth_logout(request)
+    return redirect(settings.LOGIN_URL)
 
 
 @login_not_required
@@ -53,7 +63,7 @@ def login(request):
         })
     try:
         user = account_services.login_user(request, form.cleaned_data["email"],
-                                   form.cleaned_data["password"], role=User.Role.ADMIN)
+                                           form.cleaned_data["password"], role=User.Role.ADMIN)
     except ValidationError as e:
         if getattr(e, "code", None) == account_services.EMAIL_NOT_VERIFIED:
             # Only reached with the right password. The code page reads who it's
@@ -90,7 +100,8 @@ def forgot_password(request):
         email = form.cleaned_data["email"]
         # The same next step whether or not the email has an account.
         account_services.request_password_reset(email)
-        request.session[CODE_FLOW] = {"purpose": EmailCode.Purpose.RESET_PASSWORD, "email": email}
+        request.session[CODE_FLOW] = {
+            "purpose": EmailCode.Purpose.RESET_PASSWORD, "email": email}
         return redirect("web:verify_code")
     return render(request, "web/forgot_password.html", {
         "email": request.POST.get("email", ""),
@@ -125,14 +136,16 @@ def verify_code(request):
                 return redirect("web:password_reset")
         else:
             try:
-                user = account_services.verify_email(flow["email"], form.cleaned_data["code"])
+                user = account_services.verify_email(
+                    flow["email"], form.cleaned_data["code"])
             except ValidationError as e:
                 error = e.messages[0]
             else:
                 del request.session[CODE_FLOW]
                 if user.role != User.Role.ADMIN:
                     # Only admins log in here. Verified now, so the mobile app works.
-                    messages.success(request, "Your email is verified. Log in in the Pivot app.")
+                    messages.success(
+                        request, "Your email is verified. Log in in the Pivot app.")
                     return redirect("web:login")
                 # The password was checked in this session before the code
                 # page opened (login above), so the right code completes the login.
@@ -196,7 +209,8 @@ def password_reset(request):
                 errors = e.message_dict  # weak password; the token still works
             else:
                 del request.session[RESET]
-                messages.success(request, "Your password is changed. Log in with your new password.")
+                messages.success(
+                    request, "Your password is changed. Log in with your new password.")
                 return redirect("web:login")
         else:
             errors = form.errors

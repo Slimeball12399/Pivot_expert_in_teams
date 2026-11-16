@@ -1,0 +1,27 @@
+(kicad_symbol_lib
+  (version 20231120)
+  (generator "kicad_symbol_editor")
+  (generator_version "8.0")
+  (symbol "LoadCell_Phidgets_3135_0_50kg"
+    (pin_names (offset 1.016))
+    (exclude_from_sim no) (in_bom yes) (on_board yes)
+    (property "Reference" "LC" (at -15.24 6.35 0) (effects (font (size 1.27 1.27)) (justify left bottom)))
+    (property "Value" "Phidgets 3135_0 50kg" (at -15.24 -3.81 0) (effects (font (size 1.27 1.27)) (justify left top)))
+    (property "Footprint" "" (at 0 0 0) (effects (font (size 1.27 1.27)) hide))
+    (property "Datasheet" "https://let-elektronik.dk/download-pdf?file=3135_0_Mechanical.pdf&p=3401886" (at 0 0 0) (effects (font (size 1.27 1.27)) hide))
+    (property "Description" "Phidgets 3135_0 single-point load cell, 50 kg, 1 mV/V, 1 kOhm, max 5 V excitation, 550 mm cable. Wire colours per Phidgets/LET-elektronik: red=E+, black=E-, green=S+, white=S-. 4-wire Wheatstone bridge: needs bridge amplifier (HX711 / NAU7802)." (at 0 0 0) (effects (font (size 1.27 1.27)) hide))
+    (property "ki_keywords" "load cell strain gauge wheatstone bridge weight" (at 0 0 0) (effects (font (size 1.27 1.27)) hide))
+    (property "Manufacturer" "Phidgets" (at 0 0 0) (effects (font (size 1.27 1.27)) hide))
+    (property "MPN" "3135_0" (at 0 0 0) (effects (font (size 1.27 1.27)) hide))
+    (property "Supplier" "let-elektronik.dk 400196" (at 0 0 0) (effects (font (size 1.27 1.27)) hide))
+    (symbol "LoadCell_Phidgets_3135_0_50kg_0_1"
+      (rectangle (start -15.24 5.08) (end 15.24 -2.54) (stroke (width 0.254) (type default)) (fill (type background)))
+    )
+    (symbol "LoadCell_Phidgets_3135_0_50kg_1_1"
+      (pin passive line (at -17.78 2.54 0) (length 2.54) (name "E+ (red)" (effects (font (size 1.27 1.27)))) (number "1" (effects (font (size 1.27 1.27)))))
+      (pin passive line (at -17.78 0 0) (length 2.54) (name "E- (black)" (effects (font (size 1.27 1.27)))) (number "2" (effects (font (size 1.27 1.27)))))
+      (pin passive line (at 17.78 2.54 180) (length 2.54) (name "S+ (green)" (effects (font (size 1.27 1.27)))) (number "3" (effects (font (size 1.27 1.27)))))
+      (pin passive line (at 17.78 0 180) (length 2.54) (name "S- (white)" (effects (font (size 1.27 1.27)))) (number "4" (effects (font (size 1.27 1.27)))))
+    )
+  )
+)
