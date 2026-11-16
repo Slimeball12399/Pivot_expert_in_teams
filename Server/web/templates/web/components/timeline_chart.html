@@ -1,6 +1,6 @@
 {% comment %}
-Timeline chart: one measure over time (speech or stability) with the target
-band, marker dots and a playhead. Drawn by web/js/timeline-chart.js with
+Timeline chart: one measure over time (speech or stability), optionally with
+a second one on the same axes, with the target band, marker dots and a playhead. Drawn by web/js/timeline-chart.js with
 ECharts; styles in web/css/timeline-chart.css. The page loads ECharts,
 timeline-chart.css and timeline-chart.js once (see demo.html).
 
@@ -16,6 +16,12 @@ timeline-chart.css and timeline-chart.js once (see demo.html).
             target   {"low", "high"}, optional, the target band
             points   [[seconds, value], ...]
             markers  [[seconds, value], ...], optional, dots on the line
+            live     true, optional: data written while the talk goes on. The x axis
+                     shows the window the newest point is in and moves to the next
+                     one when the data gets there; x.max isn't needed
+            second_points  [[seconds, value], ...], optional, a second measure on the
+                     same axes, dashed in the text colour (the talk page: pitch
+                     variation next to pace)
             time     playhead position in seconds, optional
 
 Other code moves the playhead with

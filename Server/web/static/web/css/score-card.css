@@ -114,6 +114,20 @@
     background: color-mix(in srgb, var(--green) 14%, var(--background));
 }
 
+/* A line on the chart: a short line swatch, solid in the speech colour or
+   dashed in the text colour, like on the voice graph and its measure cards
+   (pace and pitch variation). */
+.score-scale-line::before {
+    width: 22px;
+    height: 0;
+    border-top: 3px solid var(--speech);
+    border-radius: 0;
+}
+
+.score-scale-dashed::before {
+    border-top: 3px dashed var(--text);
+}
+
 .score-scale-below::before {
     background: var(--yellow);
 }

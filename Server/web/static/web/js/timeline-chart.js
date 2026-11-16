@@ -1,9 +1,12 @@
-// Timeline chart (web/components/timeline_chart.html): one measure over time
-// with the target band, marker dots and a playhead, drawn with ECharts.
+// Timeline chart (web/components/timeline_chart.html): one measure over time,
+// optionally with a second one on the same axes (config.second_points, a dashed
+// line in the text colour), with the target band, marker dots and a playhead,
+// drawn with ECharts.
 // Each [data-timeline-chart] div names the JSON script holding its config.
 // After setup the div gets controls for other code (slider, transcript, live data):
 //   div.timeline.setTime(seconds)          move the playhead line and dot
-//   div.timeline.setData(points, markers)  replace the data (markers optional)
+//   div.timeline.setData(points, markers, secondPoints)
+//                                          replace the data (markers and secondPoints optional)
 // Colours come from the CSS variables in base.css. They are read again and the
 // chart redrawn whenever the theme switches (data-theme on <html>, see theme.js).
 document.addEventListener("DOMContentLoaded", function () {
@@ -36,6 +39,7 @@ document.addEventListener("DOMContentLoaded", function () {
         var y = config.y || { min: 0, max: 100, interval: 20 };
         var points = config.points || [];
         var markers = config.markers || [];
+        var secondPoints = config.second_points || [];
         var currentTime = config.time === undefined ? null : config.time;
         var color;
         var chart = echarts.init(container);
@@ -57,8 +61,15 @@ document.addEventListener("DOMContentLoaded", function () {
         // The x axis shows one window of the talk at a time (config.x.window, e.g. 60 s):
         // the window the playhead is in, 0:00-1:00, 1:00-2:00, ... The last one ends at
         // the end of the recording. Without a window the whole talk is shown.
+        // Live (config.live): the window the newest point is in instead, a full
+        // window wide, so the line is written across it as the data comes in.
         function xRange(t) {
             var size = config.x.window || (config.x.max - config.x.min);
+            if (config.live) {
+                var newest = points.length ? points[points.length - 1][0] : config.x.min;
+                var liveStart = config.x.min + Math.floor((newest - config.x.min) / size) * size;
+                return [liveStart, liveStart + size];
+            }
             var lastStart = config.x.min + Math.floor((config.x.max - config.x.min - 0.001) / size) * size;
             var start = config.x.min + Math.floor(((t === null ? config.x.min : t) - config.x.min) / size) * size;
             start = Math.max(config.x.min, Math.min(start, lastStart));
@@ -205,6 +216,14 @@ document.addEventListener("DOMContentLoaded", function () {
                     symbolSize: 8,
                     itemStyle: { color: color },
                     z: 3
+                }, {
+                    // The second measure: dashed in the text colour, under the main line.
+                    type: "line",
+                    symbol: "none",
+                    silent: true,
+                    data: secondPoints,
+                    lineStyle: { color: colors.text, width: 2, type: [7, 5] },
+                    z: 1
                 }]
             }, true);
         }
@@ -226,14 +245,29 @@ document.addEventListener("DOMContentLoaded", function () {
                     series: [playhead(t)]   // merges into the line series only
                 });
             },
-            setData: function (newPoints, newMarkers) {
+            setData: function (newPoints, newMarkers, newSecondPoints) {
                 points = newPoints;
-                var series = [Object.assign({ data: points }, playhead(currentTime))];
+                // Merged by position: the line, the markers, the second line.
+                // An empty object leaves that series as it is.
+                var series = [Object.assign({ data: points }, playhead(currentTime)), {}, {}];
                 if (newMarkers) {
                     markers = newMarkers;
-                    series.push({ data: markerData(markers) });
+                    series[1] = { data: markerData(markers) };
                 }
-                chart.setOption({ series: series });
+                if (newSecondPoints) {
+                    secondPoints = newSecondPoints;
+                    series[2] = { data: secondPoints };
+                }
+                // Live charts move to the next window when the data gets there.
+                var range = xRange(currentTime);
+                chart.setOption({
+                    xAxis: {
+                        min: range[0],
+                        max: range[1],
+                        axisLabel: { showMaxLabel: (range[1] - config.x.min) % config.x.interval === 0 }
+                    },
+                    series: series
+                });
             }
         };
 

@@ -47,12 +47,13 @@
 
 
 /* Stability now: the head row. The big score with its small heading on the
-   left, the status and session numbers next to it, both sitting on the same
+   left, the status and session numbers on the right, both sitting on the same
    bottom line. */
 .stability-now-head {
     display: flex;
     flex-wrap: wrap;
     align-items: flex-end;
+    justify-content: space-between;
     gap: 0.5rem 1rem;
 }
 
@@ -81,10 +82,12 @@
     font-variant-numeric: tabular-nums;   /* the number does not jump in width as it changes */
 }
 
+/* Right-aligned, so the status and the numbers line up on the right edge. */
 .stability-now-summary {
-    flex: 1 1 auto;
+    flex: none;
     display: flex;
     flex-direction: column;
+    align-items: flex-end;
     gap: 4px;
     padding-bottom: 6px;
 }
@@ -120,6 +123,29 @@
 
 .live-status.warn::before {
     background: var(--yellow);
+}
+
+/* The voice card's body: the measure cards, the voice graph and its legend,
+   stacked. It takes the card's free height, and the graph grows into it, so
+   the card lines up with the stability card next to it. */
+.live-talk .scores {
+    flex: 1 1 auto;
+    display: flex;
+    flex-direction: column;
+    gap: 0.875rem;
+    min-height: 0;
+}
+
+/* The voice graph: a framed plot like the session page's graphs. */
+.voice-plot {
+    flex: 1 1 auto;
+    box-sizing: border-box;
+    min-height: 220px;
+    padding: 0.5rem;
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    background: var(--background);
+    overflow: hidden;   /* while the window shrinks, the chart can't poke out before it redraws */
 }
 
 /* The voice measure cards (voice-measure.css) side by side. */

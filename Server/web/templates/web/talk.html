@@ -13,7 +13,6 @@
 {% endblock %}
 
 {% block content %}
-<h1>Talk</h1>
 <section class="talk-graphs">
     <div class="charts">
         <section class="score-card stability stability-now" aria-labelledby="stability-now-title">
@@ -55,10 +54,14 @@
                     {% include "web/components/voice_measure.html" with id="pace" name="Pace" line="solid" score=1.6 raw="4.8 syl/s" status="On pace" level="good" %}
                     {% include "web/components/voice_measure.html" with id="pitch" name="Pitch variation" line="dashed" score=3.5 raw="6 st" status="Lively" level="good" %}
                 </div>
+                <div class="voice-plot">
+                    {% include "web/components/timeline_chart.html" with id="voice-chart" config=voice_config %}
+                </div>
+                {# The graph's legend: the same line swatches as the cards, and the band. #}
                 <div class="score-scale">
-                    <span class="score-scale-level pace">Your usual range</span>
-                    <span class="score-scale-level pitch variation">Below usual</span>
-                    <span class="score-scale-level optimal">Optimal -5 to 5</span>
+                    <span class="score-scale-level score-scale-line">Pace</span>
+                    <span class="score-scale-level score-scale-line score-scale-dashed">Pitch variation</span>
+                    <span class="score-scale-level score-scale-range">Optimal -5 to 5</span>
                 </div>
             </div>
         </section>
