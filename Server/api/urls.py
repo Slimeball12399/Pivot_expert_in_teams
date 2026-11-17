@@ -1,7 +1,7 @@
 from django.urls import path
 from drf_spectacular.views import SpectacularAPIView, SpectacularSwaggerView
 
-from .views import (
+from .views.auth import (
     LoginView,
     LogoutView,
     MeView,
@@ -11,8 +11,9 @@ from .views import (
     RefreshView,
     RegisterView,
     VerifyEmailView,
-    health,
 )
+from .views.invites import InviteAcceptView, InviteDeclineView, InviteListView
+from .views.system import health
 
 app_name = "api"
 
@@ -30,6 +31,9 @@ urlpatterns = [
     path("auth/password-reset/confirm/", PasswordResetConfirmView.as_view(),
          name="password-reset-confirm"),
     path("me/", MeView.as_view(), name="me"),
+    path("invites/", InviteListView.as_view(), name="invites"),
+    path("invites/<uuid:invite_id>/accept/", InviteAcceptView.as_view(), name="invite-accept"),
+    path("invites/<uuid:invite_id>/decline/", InviteDeclineView.as_view(), name="invite-decline"),
 
     # API docs: raw OpenAPI schema and Swagger UI
     path("schema/", SpectacularAPIView.as_view(), name="schema"),

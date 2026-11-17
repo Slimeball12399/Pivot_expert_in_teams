@@ -48,6 +48,8 @@ def make_user(email, role):
 
 
 class RoleRequiredTests(APITestCase):
+    """api.decorators.role_required on class and function views."""
+
     @classmethod
     def setUpTestData(cls):
         cls.admin = make_user("admin@example.com", User.Role.ADMIN)

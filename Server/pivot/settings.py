@@ -157,6 +157,8 @@ EMAIL_CODE_RESEND_COOLDOWN = timedelta(seconds=60)
 # Seconds the password reset token works, from entering the right reset code
 # to saving the new password. Used by Django's PasswordResetTokenGenerator.
 PASSWORD_RESET_TIMEOUT = int(timedelta(minutes=10).total_seconds())
+# How long a trainer's invite can be accepted; the invite email says this too.
+INVITE_LIFETIME = timedelta(days=7)
 
 
 # Internationalization
@@ -184,7 +186,8 @@ STATIC_ROOT = BASE_DIR / 'staticfiles'
 # SEND_EMAILS in .env:
 #   True: really sent, through Resend's SMTP server. Needs RESEND_API_KEY, and
 #         DEFAULT_FROM_EMAIL must be on a domain verified in Resend.
-#   False (default): only logged to the terminal running the server.
+#   False (default): the text version is printed in the terminal running the
+#         server.
 #   Anything other than "true" counts as False.
 # Tests always use Django's in-memory backend instead (django.core.mail.outbox).
 
@@ -209,9 +212,10 @@ if SEND_EMAILS:
         },
     }
 else:
+    # Prints only the text version (see accounts/mail_backends.py).
     MAILERS = {
         "default": {
-            "BACKEND": "django.core.mail.backends.console.EmailBackend",
+            "BACKEND": "accounts.mail_backends.EmailBackend",
         },
     }
 

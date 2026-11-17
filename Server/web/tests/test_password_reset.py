@@ -7,7 +7,7 @@ from django.urls import reverse
 from django.utils import timezone
 
 from accounts.models import EmailCode, User
-from accounts.services import send_verification_code
+from accounts.services.accounts import send_verification_code
 from accounts.tests.utils import code_in
 
 PASSWORD = "Str0ng-test-pass!"

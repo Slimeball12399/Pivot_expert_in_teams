@@ -19,6 +19,12 @@
     cursor: pointer;
 }
 
+.button svg {
+    flex: none;
+    width: 20px;
+    height: 20px;
+}
+
 .button:focus-visible {
     outline: 3px solid var(--text);
     outline-offset: 2px;
@@ -46,6 +52,17 @@
 
 .button-primary:hover:not(:disabled) {
     filter: brightness(1.15);
+}
+
+/* Quiet: outlined, for the second choice next to a primary button (Cancel). */
+.button-quiet {
+    background: transparent;
+    color: var(--text);
+    border-color: var(--text-muted);
+}
+
+.button-quiet:hover:not(:disabled) {
+    background: var(--background);
 }
 
 /* Text button: looks like a link, same height as other buttons only when padded. */

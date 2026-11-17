@@ -5,6 +5,7 @@ from django.urls import reverse
 from django.utils import timezone
 
 from accounts.models import User
+
 URL = reverse("web:login")
 PASSWORD = "Str0ng-test-pass!"
 LOGIN_FAILED = "Wrong email or password."
@@ -12,6 +13,8 @@ LOGIN_MISSING_FIELDS = "Enter your email and password."
 
 
 class LoginViewTests(TestCase):
+    """The HTTP layer of the web login. The rules are tested in accounts/tests/test_login_user.py."""
+
     def setUp(self):
         self.admin = User.objects.create_user(
             "admin@example.com", PASSWORD, first_name="Anna", last_name="Hansen",
