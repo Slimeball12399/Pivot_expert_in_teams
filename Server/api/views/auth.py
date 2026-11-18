@@ -1,12 +1,13 @@
+"""Account endpoints for the mobile app (tag "auth"): register, login,
+tokens, email verification, password reset and the user's own profile."""
+
 from django.contrib.auth.models import update_last_login
 from django.core.exceptions import ValidationError as DjangoValidationError
-from django.db import connection
 from drf_spectacular.utils import (
     PolymorphicProxySerializer,
     extend_schema,
     extend_schema_view,
 )
-from rest_framework.decorators import api_view, authentication_classes, permission_classes
 from rest_framework.exceptions import ValidationError
 from rest_framework.generics import CreateAPIView
 from rest_framework.permissions import AllowAny, IsAuthenticated
@@ -17,17 +18,16 @@ from rest_framework_simplejwt.settings import api_settings as jwt_settings
 from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework_simplejwt.views import TokenBlacklistView, TokenRefreshView
 
-from accounts import services
+from accounts.services import accounts as account_services
 
-from .exceptions import CodedError
-from .serializers import (
+from ..exceptions import CodedError
+from ..serializers import (
     ME_SERIALIZERS,
     ME_UPDATE_SERIALIZERS,
     CodedErrorSerializer,
     DetailSerializer,
     EmailCodeSerializer,
     EmailSerializer,
-    HealthSerializer,
     LoginSerializer,
     PasswordResetConfirmSerializer,
     PasswordResetTokenSerializer,
@@ -36,21 +36,6 @@ from .serializers import (
     TokenPairSerializer,
     me_data,
 )
-
-
-# auth=[]: no lock icon in Swagger UI (public endpoint).
-@extend_schema(tags=["system"], responses=HealthSerializer, auth=[])
-@api_view(["GET"])
-@permission_classes([AllowAny])  # public on purpose: used to check the server is up
-@authentication_classes([])  # never reads a token, so a bad one can't cause a 401
-def health(request):
-    """GET /api/health/ - is the server up and can it reach the database?"""
-    try:
-        connection.ensure_connection()
-        db = "ok"
-    except Exception:
-        db = "down"
-    return Response({"status": "ok", "database": db})
 
 
 @extend_schema_view(post=extend_schema(
@@ -106,9 +91,9 @@ class LoginView(PublicAPIView):
         serializer = LoginSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         try:
-            user = services.login_user(request, **serializer.validated_data)
+            user = account_services.login_user(request, **serializer.validated_data)
         except DjangoValidationError as e:
-            status_code = 403 if e.code == services.EMAIL_NOT_VERIFIED else 401
+            status_code = 403 if e.code == account_services.EMAIL_NOT_VERIFIED else 401
             raise CodedError(e.messages[0], e.code, status_code=status_code)
         if jwt_settings.UPDATE_LAST_LOGIN:
             update_last_login(None, user)
@@ -165,14 +150,14 @@ class VerifyEmailView(PublicAPIView):
     def post(self, request):
         serializer = EmailSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
-        services.resend_verification_code(serializer.validated_data["email"])
+        account_services.resend_verification_code(serializer.validated_data["email"])
         return Response({"detail": SENT_IF_EXISTS})
 
     def put(self, request):
         serializer = EmailCodeSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         try:
-            services.verify_email(**serializer.validated_data)
+            account_services.verify_email(**serializer.validated_data)
         except DjangoValidationError as e:
             raise CodedError(e.messages[0], e.code)
         return Response({"detail": EMAIL_VERIFIED})
@@ -190,7 +175,7 @@ class PasswordResetRequestView(PublicAPIView):
     def post(self, request):
         serializer = EmailSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
-        services.request_password_reset(serializer.validated_data["email"])
+        account_services.request_password_reset(serializer.validated_data["email"])
         return Response({"detail": SENT_IF_EXISTS})
 
 
@@ -209,7 +194,7 @@ class PasswordResetVerifyView(PublicAPIView):
         serializer = EmailCodeSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         try:
-            uid, token = services.verify_password_reset_code(**serializer.validated_data)
+            uid, token = account_services.verify_password_reset_code(**serializer.validated_data)
         except DjangoValidationError as e:
             raise CodedError(e.messages[0], e.code)
         return Response({"uid": uid, "reset_token": token})
@@ -234,7 +219,7 @@ class PasswordResetConfirmView(PublicAPIView):
         serializer.is_valid(raise_exception=True)
         data = serializer.validated_data
         try:
-            services.reset_password(data["uid"], data["reset_token"], data["new_password"])
+            account_services.reset_password(data["uid"], data["reset_token"], data["new_password"])
         except DjangoValidationError as e:
             if hasattr(e, "error_dict"):  # {"new_password": [...]}
                 raise ValidationError(e.message_dict)

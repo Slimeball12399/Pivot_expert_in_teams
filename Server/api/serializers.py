@@ -2,7 +2,7 @@ from django.core.exceptions import ValidationError as DjangoValidationError
 from rest_framework import serializers
 
 from accounts.models import Consent
-from accounts.services import register_speaker, update_profile
+from accounts.services.accounts import register_speaker, update_profile
 
 # Base serializers: each field is defined once here, and the input and output
 # serializers below extend them. Change a field here and every serializer that
@@ -146,10 +146,22 @@ class RegisteredUserSerializer(UserBaseSerializer):
     role = serializers.CharField()
 
 
-class SpeakerProfileSerializer(SpeakerProfileBaseSerializer):
-    """The "profile" part of GET /api/me/ for a speaker."""
+class InviteTrainerSerializer(serializers.Serializer):
+    """A trainer (an AdminProfile): their id and name. Who an invitation is
+    from, the trainer an accepted one replaced, or a speaker's current
+    trainer in /api/me/."""
 
     id = serializers.UUIDField()
+    first_name = serializers.CharField(source="user.first_name")
+    last_name = serializers.CharField(source="user.last_name")
+
+
+class SpeakerProfileSerializer(SpeakerProfileBaseSerializer):
+    """The "profile" part of GET /api/me/ for a speaker, with their current
+    trainer (null when they have none)."""
+
+    id = serializers.UUIDField()
+    trainer = InviteTrainerSerializer(source="admin", allow_null=True)
 
 
 class AdminProfileSerializer(serializers.Serializer):
@@ -210,3 +222,26 @@ class HealthSerializer(serializers.Serializer):
 
     status = serializers.CharField()
     database = serializers.ChoiceField(choices=["ok", "down"])
+
+
+# Invites
+
+
+class InviteSerializer(serializers.Serializer):
+    """An open invitation in GET /api/invites/. replaces_trainer is the
+    speaker's current trainer when accepting would replace them (the app
+    warns "this will replace ..." before accepting), else null."""
+
+    id = serializers.UUIDField()
+    trainer = InviteTrainerSerializer(source="invited_by")
+    replaces_trainer = InviteTrainerSerializer(allow_null=True)
+    created_at = serializers.DateTimeField()
+    expires_at = serializers.DateTimeField()
+
+
+class InviteAcceptedSerializer(DetailSerializer):
+    """Response of POST /api/invites/<id>/accept/: the new trainer, and the
+    one they replaced (null when the speaker had none)."""
+
+    trainer = InviteTrainerSerializer()
+    previous_trainer = InviteTrainerSerializer(allow_null=True)

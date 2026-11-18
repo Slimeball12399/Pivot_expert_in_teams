@@ -2,6 +2,8 @@ from django.test import TestCase
 
 
 class NotFoundPageTests(TestCase):
+    """Pivot's own 404 page (handler404)."""
+
     # The test runner always runs with DEBUG off, so handler404 is used.
     def test_unknown_url_shows_pivot_404_page(self):
         response = self.client.get("/this-page-does-not-exist/")

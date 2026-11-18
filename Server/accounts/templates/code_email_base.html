@@ -39,11 +39,13 @@
             </td>
           </tr>
 
+          {% block highlight %}
           <tr>
             <td class="pv-pad" align="center" style="padding:40px 40px 32px 40px;">
               <span class="pv-code" style="display:inline-block; padding-bottom:8px; border-bottom:4px solid #E3B7CB; font-family:Jost, Futura, 'Century Gothic', 'Avenir Next', Arial, sans-serif; font-size:40px; line-height:1; font-weight:600; letter-spacing:6px; color:#123048; white-space:nowrap;">{{ code_display }}</span>
             </td>
           </tr>
+          {% endblock %}
 
           <tr>
             <td class="pv-pad" style="padding:0 40px 40px 40px; font-family:Outfit, Garet, 'Century Gothic', 'Avenir Next', Arial, sans-serif;">

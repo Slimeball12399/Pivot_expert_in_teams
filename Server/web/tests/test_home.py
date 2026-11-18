@@ -5,9 +5,12 @@ from django.urls import reverse
 from accounts.models import User
 
 URL = reverse("web:home")
+PASSWORD = "Str0ng-test-pass!"
 
 
 class HomeViewTests(TestCase):
+    """The placeholder home page."""
+
     def test_home_page(self):
         self.assertEqual(URL, "/")
 
@@ -18,7 +21,7 @@ class HomeViewTests(TestCase):
 
         with self.subTest("logged in: shows the page"):
             admin = User.objects.create_user(
-                "admin@example.com", "Str0ng-test-pass!", first_name="Anna", last_name="Hansen",
+                "admin@example.com", PASSWORD, first_name="Anna", last_name="Hansen",
                 role=User.Role.ADMIN)
             self.client.force_login(admin)
             response = self.client.get(URL)

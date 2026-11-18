@@ -5,6 +5,8 @@ from rest_framework.views import APIView
 
 
 class DefaultPermissionTests(APITestCase):
+    """The project's default API permission (REST_FRAMEWORK in settings)."""
+
     def test_endpoints_require_login_by_default(self):
         class UnprotectedLookingView(APIView):
             # No permission_classes set, so the project default applies.

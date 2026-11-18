@@ -66,6 +66,41 @@
     background: var(--red);
 }
 
+/* A warning to read before going on (the invite dialog's "already trains
+   with ..."): a box with a red border, tint and icon under the field, and a
+   red border on the input, like an error. The text stays in the text colour. */
+.input-field-warning .input {
+    border: 2px solid var(--red);
+}
+
+.input-callout {
+    display: flex;
+    align-items: flex-start;
+    gap: 8px;
+    margin: 4px 0 0;
+    padding: 10px 12px;
+    border: 1px solid var(--red);
+    border-left-width: 4px;
+    border-radius: 8px;
+    background: rgba(240, 63, 65, 0.12);  /* --red, tinted */
+    color: var(--text);
+    font-size: 14px;
+    line-height: 20px;
+}
+
+.input-callout[hidden] {
+    display: none;
+}
+
+.input-callout svg {
+    flex: none;
+    color: var(--error-text);
+}
+
+.input-callout-text {
+    margin: 0;
+}
+
 /* Show/hide password button, inside the right end of the input. */
 .input-control:has(.input-reveal) .input {
     padding-right: 48px;

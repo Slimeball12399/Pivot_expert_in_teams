@@ -5,7 +5,7 @@ from rest_framework import status
 from rest_framework.test import APITestCase
 
 from accounts.models import SpeakerProfile, User
-from accounts.services import register_speaker
+from accounts.services.accounts import register_speaker
 from api.serializers import (
     ME_UPDATE_SERIALIZERS,
     AdminMeUpdateSerializer,
@@ -27,6 +27,8 @@ def error_at(response, path):
 
 
 class MeEndpointTests(APITestCase):
+    """The HTTP layer of /api/me/. The rules are tested in accounts/tests/test_update_profile.py."""
+
     @classmethod
     def setUpTestData(cls):
         cls.speaker = register_speaker(
@@ -73,6 +75,7 @@ class MeEndpointTests(APITestCase):
                     "birth_date": "1996-01-01",
                     "height_cm": 180,
                     "improvement_goals": "Calmer pace",
+                    "trainer": None,
                 },
             })
             self.assertNotIn("password", response.json())
@@ -84,6 +87,15 @@ class MeEndpointTests(APITestCase):
             self.assertEqual(response.json()["role"], "admin")
             self.assertEqual(response.json()["profile"],
                              {"id": str(self.admin.admin_profile.id)})
+
+        with self.subTest("speaker with a trainer gets the trainer's name"):
+            profile = self.speaker.speaker_profile
+            profile.admin = self.admin.admin_profile
+            profile.save(update_fields=["admin"])
+            self.client.force_authenticate(self.speaker)
+            self.assertEqual(self.client.get(URL).json()["profile"]["trainer"],
+                             {"id": str(self.admin.admin_profile.id),
+                              "first_name": "Anne", "last_name": "Admin"})
 
         with self.subTest("missing profile row gives null"):
             bare = User.objects.create_user(
