@@ -45,7 +45,8 @@ CODE_EMAILS = {
 def _static_png(static_path) -> bytes:
     path = finders.find(static_path)
     if path is None:
-        raise FileNotFoundError(f"Email image not found in static files: {static_path}")
+        raise FileNotFoundError(
+            f"Email image not found in static files: {static_path}")
     return Path(path).read_bytes()
 
 
@@ -77,7 +78,8 @@ def build_email(*, to, subject, template, context) -> EmailMultiAlternatives:
     else:
         images, attachments = {}, []
         for name, path in LOGOS.items():
-            cid = email.utils.make_msgid(domain="pivot.email")  # "<...@pivot.email>"
+            cid = email.utils.make_msgid(
+                domain="pivot.email")  # "<...@pivot.email>"
             images[name] = f"cid:{cid[1:-1]}"
             part = MIMEPart()
             part.set_content(
@@ -100,7 +102,8 @@ def render_preview_html(template, context, *, to_email="you@example.com") -> str
         images = {name: _static_url(path) for name, path in LOGOS.items()}
     else:
         images = {
-            name: "data:image/png;base64," + base64.b64encode(_static_png(path)).decode()
+            name: "data:image/png;base64," +
+            base64.b64encode(_static_png(path)).decode()
             for name, path in LOGOS.items()
         }
     _, html = _render(template, context, images=images, to_email=to_email)
@@ -133,6 +136,20 @@ def send_verification_code_email(user, code, to=None):
         subject=CODE_EMAILS["verification_code"],
         template="verification_code",
         context=code_email_context(first_name=user.first_name, code=code),
+    ).send()
+
+
+def send_invite_email(invite):
+    """A trainer's invitation to register in the app with this email."""
+    build_email(
+        to=invite.email,
+        subject="You're invited to Pivot",
+        template="invite",
+        context={
+            "trainer_name": invite.invited_by.user.get_full_name(),
+            "email": invite.email,
+            "days": settings.INVITE_LIFETIME.days,
+        },
     ).send()
 
 

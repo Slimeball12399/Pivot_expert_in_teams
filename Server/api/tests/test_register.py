@@ -5,12 +5,13 @@ from rest_framework.test import APITestCase
 from accounts.models import SpeakerProfile, User
 
 URL = reverse("api:register")
+PASSWORD = "Str0ng-test-pass!"
 
 
 def payload(**overrides):
     data = {
         "email": "speaker@example.com",
-        "password": "Str0ng-test-pass!",
+        "password": PASSWORD,
         "first_name": "Mikkel",
         "last_name": "Jensen",
         "phone_number": "20 12 34 56",

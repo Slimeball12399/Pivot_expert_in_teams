@@ -4,6 +4,8 @@ from rest_framework.test import APITestCase
 
 
 class ApiDocsTests(APITestCase):
+    """The API docs: the OpenAPI schema and Swagger UI (drf-spectacular)."""
+
     def test_docs_are_served(self):
         with self.subTest("OpenAPI schema lists our endpoints"):
             response = self.client.get(reverse("api:schema"), {"format": "json"})

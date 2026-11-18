@@ -1,5 +1,7 @@
 /* Auth pages (web/auth.html): intro and form side by side, 6:4. */
-
+main {
+    padding: 0;
+}
 .auth {
     display: flex;
     min-height: 100vh;
