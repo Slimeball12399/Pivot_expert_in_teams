@@ -96,6 +96,12 @@
             <p class="input-message" id="invite-email-hint">Speakers already in Pivot show up as you type.</p>
             {# Filled by invite-dialog.js when the server says no. #}
             <p class="input-message input-message-error" id="invite-email-error" hidden></p>
+            {# "Already trains with ..." from the server; the next Send confirms it. #}
+            <div class="input-callout input-callout-warning" id="invite-email-warning" role="alert" hidden>
+                {% heroicon_outline "exclamation-triangle" size=20 aria_hidden="true" %}
+                <p class="input-callout-text" id="invite-email-warning-text"></p>
+            </div>
+            <input type="hidden" name="replace_confirmed" id="invite-replace-confirmed" value="">
         </div>
 
         <div class="dialog-actions">

@@ -2,10 +2,12 @@
    The nav runs the full height of the bar, so the current page's line sits on its bottom edge. */
 
 .site-header {
-    position: relative;  /* the narrow-screen menu opens below it */
+    position: relative;
+    /* the narrow-screen menu opens below it */
     display: flex;
     align-items: stretch;
-    min-height: 61px;  /* 72px less 15% */
+    min-height: 61px;
+    /* 72px less 15% */
     padding: 0 1rem;
     /* One step up from the page background, in both themes. */
     background: var(--background-raised);
@@ -14,7 +16,8 @@
 
 .site-header-logo,
 .site-header-user,
-.site-header > .theme-toggle {
+.site-header>.theme-toggle,
+.site-header>.logout-button-form {
     align-self: center;
 }
 
@@ -86,11 +89,12 @@
 }
 
 /* Pushes the logged-in user (or, when logged out, the theme toggle) to the right edge. */
-.site-header > .site-header-user {
+.site-header>.site-header-user {
     margin-left: auto;
 }
 
-.site-header > .theme-toggle {
+.site-header>.theme-toggle,
+.site-header>.logout-button-form {
     margin-left: 0.5rem;
 }
 
@@ -159,6 +163,7 @@
     }
 
     .site-header > .theme-toggle,
+    .site-header > .logout-button-form,
     .site-nav-toggle {
         margin-left: 0;
     }
@@ -214,4 +219,39 @@
     .site-nav svg {
         display: block;
     }
+}
+
+/* Logout button: icon only, same look as the theme toggle it sits next to. */
+.logout-button-form {
+    display: inline-flex;
+    margin: 0;
+}
+
+.logout-button {
+    display: inline-grid;
+    place-items: center;
+    width: 36px;
+    height: 36px;
+    padding: 0;
+    border: 1px solid transparent;
+    border-radius: 8px;
+    background: transparent;
+    color: var(--text);
+    cursor: pointer;
+}
+
+.logout-button:hover {
+    background: var(--rose);
+    color: var(--navy);
+}
+
+.logout-button:focus-visible {
+    outline: 2px solid var(--text);
+    outline-offset: 2px;
+}
+
+.logout-button svg {
+    display: block;
+    width: 20px;
+    height: 20px;
 }

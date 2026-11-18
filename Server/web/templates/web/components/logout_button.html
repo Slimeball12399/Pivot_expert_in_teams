@@ -1,0 +1,8 @@
+{# Logout button: icon only, next to the theme toggle. POST with a CSRF token, as logout should be. #}
+{# Styles in web/css/header.css. #}
+<form class="logout-button-form" method="post" action="{% url 'web:logout' %}">
+    {% csrf_token %}
+    <button type="submit" class="logout-button" aria-label="Log out" title="Log out">
+        {% heroicon_outline "arrow-right-start-on-rectangle" size=20 aria_hidden="true" %}
+    </button>
+</form>

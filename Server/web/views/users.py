@@ -17,6 +17,7 @@ from django.views.decorators.http import require_POST
 
 from accounts.models import User, UserInvite
 from accounts.services.invites import (
+    HAS_TRAINER,
     USER_FILTERS,
     create_invite,
     get_users,
@@ -94,15 +95,21 @@ def invite_create(request):
 
     201 {"message": ...}: sent; the message also waits as a toast for the
     reload that shows the new row. 400 {"errors": {"email": [...]}}: shown
-    under the email field, and the dialog stays open."""
+    under the email field, and the dialog stays open. 409 {"confirm": ...}:
+    the speaker already trains with another trainer; nothing is sent, the
+    dialog shows the warning and the next Send posts replace_confirmed=1."""
     email = request.POST.get("email", "").strip()
+    replace_confirmed = request.POST.get("replace_confirmed") == "1"
     try:
         validate_email(email)
     except ValidationError:
         return JsonResponse({"errors": {"email": ["Enter a valid email address."]}}, status=400)
     try:
-        invite, _ = create_invite(request.user.admin_profile, email)
+        invite, _ = create_invite(request.user.admin_profile, email, replace_confirmed)
     except ValidationError as error:
+        # A field error (from a dict) has no code.
+        if getattr(error, "code", None) == HAS_TRAINER:
+            return JsonResponse({"confirm": error.messages[0]}, status=409)
         return JsonResponse({"errors": error.message_dict}, status=400)
     message = f"Invite sent to {invite.email}."
     messages.success(request, message)
@@ -119,7 +126,9 @@ def invite_resend(request, invite_id):
     if invite is None:
         raise Http404
     try:
-        create_invite(trainer, invite.email)
+        # Confirmed already: the trainer saw any "already trains with" warning
+        # when they first sent it.
+        create_invite(trainer, invite.email, True)
     except ValidationError as error:
         messages.error(request, " ".join(error.messages))
     else:

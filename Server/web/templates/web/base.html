@@ -56,6 +56,7 @@
             <span class="site-nav-toggle-open">{% heroicon_outline "bars-3" size=20 aria_hidden="true" %}</span>
             <span class="site-nav-toggle-close">{% heroicon_outline "x-mark" size=20 aria_hidden="true" %}</span>
         </button>
+        {% if user.is_authenticated %}{% include "web/components/logout_button.html" %}{% endif %}
     </header>
     {% endblock %}
 

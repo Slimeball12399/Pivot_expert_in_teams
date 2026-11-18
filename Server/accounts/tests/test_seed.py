@@ -13,6 +13,7 @@ ENV = {
     "SEED_SPEAKER_EMAIL": "speaker@example.com",
     "SEED_INVITE_EMAIL": "invited@example.com",
     "SEED_PASSWORD": "Str0ng-test-pass!",
+    "SEED_SECOND_ADMIN_EMAIL": "",
 }
 
 
@@ -51,6 +52,17 @@ class SeedCommandTests(TestCase):
             self.assertEqual(User.objects.count(), 2)
             self.assertEqual(UserInvite.objects.count(), 1)
             self.assertEqual(len(mail.outbox), 1)
+
+    def test_second_trainer_invites_the_speaker(self):
+        self.seed(SEED_SECOND_ADMIN_EMAIL="second@example.com")
+        second = User.objects.get(email="second@example.com")
+        speaker = User.objects.get(email="speaker@example.com")
+        self.assertEqual(second.role, User.Role.ADMIN)
+        self.assertEqual(second.get_full_name(), "Second Trainer")
+        self.assertEqual(speaker.speaker_profile.admin.user.email, "trainer@example.com")
+        invite = UserInvite.objects.get(invited_by=second.admin_profile)
+        self.assertEqual(invite.email, "speaker@example.com")
+        self.assertEqual(invite.status, UserInvite.Status.PENDING)
 
     def test_rejects(self):
         cases = [

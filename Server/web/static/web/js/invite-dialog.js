@@ -4,6 +4,10 @@
 // a click on the backdrop. Send invite posts the form to web:invite_create:
 // on success the page reloads (showing the new row and a toast); on an error
 // the message shows under the email field and the dialog stays open.
+// A speaker who already has another trainer gets a warning first (409
+// {"confirm": ...}): it shows under the field, the button becomes
+// "Send anyway", and that next Send posts replace_confirmed=1. Changing the
+// email drops the confirmation.
 // The email field is a combobox: from 3 characters it
 // asks the server (data-suggestions-url, web:invite_suggestions) for speaker
 // emails that start with what you typed, 200ms after the last keystroke, and
@@ -20,6 +24,10 @@ document.addEventListener("DOMContentLoaded", function () {
     var field = document.getElementById("invite-email-field");
     var error = document.getElementById("invite-email-error");
     var send = document.getElementById("invite-send");
+    var sendText = send.textContent.trim();
+    var warning = document.getElementById("invite-email-warning");
+    var warningText = document.getElementById("invite-email-warning-text");
+    var replaceConfirmed = document.getElementById("invite-replace-confirmed");
     var list = document.getElementById("invite-suggestions");
     var suggestionsUrl = dialog.dataset.suggestionsUrl;
     var MIN_LENGTH = 3;  // the server answers nothing shorter (SUGGEST_MIN_LENGTH)
@@ -158,6 +166,23 @@ document.addEventListener("DOMContentLoaded", function () {
         input.setAttribute("aria-describedby", "invite-email-hint");
     }
 
+    function showWarning(message) {
+        warningText.textContent = message;
+        warning.hidden = false;
+        field.classList.add("input-field-warning");
+        replaceConfirmed.value = "1";
+        send.textContent = "Send anyway";
+        input.setAttribute("aria-describedby", "invite-email-warning-text");
+    }
+
+    function clearWarning() {
+        warning.hidden = true;
+        warningText.textContent = "";
+        field.classList.remove("input-field-warning");
+        replaceConfirmed.value = "";
+        send.textContent = sendText;
+    }
+
     form.addEventListener("submit", function (event) {
         event.preventDefault();
         closeList();
@@ -170,12 +195,17 @@ document.addEventListener("DOMContentLoaded", function () {
         })
             .then(function (response) {
                 return response.json().then(function (data) {
-                    return {ok: response.ok, data: data};
+                    return {ok: response.ok, status: response.status, data: data};
                 });
             })
             .then(function (result) {
                 if (result.ok) {
                     window.location.reload();
+                    return;
+                }
+                if (result.status === 409) {
+                    showWarning(result.data.confirm);
+                    send.disabled = false;
                     return;
                 }
                 var errors = result.data.errors || {};
@@ -195,6 +225,7 @@ document.addEventListener("DOMContentLoaded", function () {
     });
 
     input.addEventListener("input", clearError);
+    input.addEventListener("input", clearWarning);
 
     opener.addEventListener("click", function () {
         dialog.showModal();
@@ -212,6 +243,7 @@ document.addEventListener("DOMContentLoaded", function () {
         input.value = "";
         closeList();
         clearError();
+        clearWarning();
         send.disabled = false;
     });
 
