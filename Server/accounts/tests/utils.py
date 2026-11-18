@@ -51,7 +51,7 @@ def make_speaker(email, trainer=None, **user_fields):
     from django.utils.timezone import now
 
     from accounts.models import User
-    from accounts.services import register_speaker
+    from accounts.services.accounts import register_speaker
 
     user = register_speaker(
         email=email, password=PASSWORD, first_name="Mikkel", last_name="Jensen",
@@ -63,3 +63,21 @@ def make_speaker(email, trainer=None, **user_fields):
         user.speaker_profile.save(update_fields=["admin"])
     user.refresh_from_db()
     return user
+
+
+def make_invite(trainer, email, *, days_old=0, **fields):
+    """An invite from `trainer` sent `days_old` days ago, expiring 7 days
+    after that (so days_old=10 is expired). fields: e.g. declined_at=now()."""
+    from datetime import timedelta
+
+    from django.utils.timezone import now
+
+    from accounts.models import UserInvite
+
+    sent = now() - timedelta(days=days_old)
+    invite = UserInvite.objects.create(
+        invited_by=trainer, email=email, expires_at=sent + timedelta(days=7), **fields)
+    # created_at is auto_now_add, so it can only be moved back afterwards.
+    UserInvite.objects.filter(pk=invite.pk).update(created_at=sent)
+    invite.refresh_from_db()
+    return invite

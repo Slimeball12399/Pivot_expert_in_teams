@@ -1,3 +1,6 @@
+"""Account services: registration, login, profile changes, email
+verification and password reset."""
+
 from functools import partial
 
 from django.conf import settings
@@ -13,8 +16,8 @@ from django.utils.encoding import force_bytes, force_str
 from django.utils.http import urlsafe_base64_decode, urlsafe_base64_encode
 from django.views.decorators.debug import sensitive_variables
 
-from . import emails, verification
-from .models import Consent, EmailCode, SpeakerProfile, User
+from .. import emails, verification
+from ..models import Consent, EmailCode, SpeakerProfile, User
 
 # Error codes (ValidationError.code) the web views and the API react to.
 INVALID_LOGIN = "invalid_login"

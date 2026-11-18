@@ -1,0 +1,29 @@
+{% comment %}
+Score: a number out of 100 with its change over the last month next to it
+(green +14, red -23, muted 0). Styles in web/css/user-table.css.
+
+  {% include "web/components/score.html" with value=78 change=14 measure="speech" %}
+
+  value     0 to 100, or None for no score yet (shows a dash)
+  change    points up or down over the last month, or None to leave it out
+  measure   "speech" or "stability"
+{% endcomment %}
+{% if value is None %}
+<span class="score score-none" aria-label="No {{ measure }} score yet">&ndash;</span>
+{% else %}
+<span class="score score-{{ measure }}">
+    {# Read out instead of the number below, which is hidden from screen readers. #}
+    <span class="visually-hidden">
+        {{ measure|capfirst }} score {{ value }} of 100
+        {% if change is not None %}, {{ change|stringformat:"+d" }} this month{% endif %}
+    </span>
+    <span class="score-row" aria-hidden="true">
+        <span class="score-num">{{ value }}</span>
+        {% if change is not None %}
+        <span class="score-change{% if change > 0 %} score-up{% elif change < 0 %} score-down{% endif %}">
+            {% if change == 0 %}0{% else %}{{ change|stringformat:"+d" }}{% endif %}
+        </span>
+        {% endif %}
+    </span>
+</span>
+{% endif %}

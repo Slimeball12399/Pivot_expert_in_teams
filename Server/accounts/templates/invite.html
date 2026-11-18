@@ -1,0 +1,15 @@
+{% extends "code_email_base.html" %}
+
+{% block title %}You're invited to Pivot{% endblock %}
+{% block preheader %}{{ trainer_name }} invited you to train with Pivot.{% endblock %}
+{% block heading %}You're invited to Pivot{% endblock %}
+{% block intro %}Hi, {{ trainer_name }} has invited you to Pivot, so you can train your voice and balance together. Download the Pivot app and register with the email address below within {{ days }} days, then accept the invitation in the app.{% endblock %}
+{% block highlight %}
+          <tr>
+            <td class="pv-pad" align="center" style="padding:32px 40px 32px 40px; font-family:Outfit, Garet, 'Century Gothic', 'Avenir Next', Arial, sans-serif;">
+              <p style="margin:0 0 8px 0; font-size:14px; line-height:1.5; color:#546A7B;">Register with</p>
+              <span style="display:inline-block; padding-bottom:8px; border-bottom:4px solid #E3B7CB; font-family:Jost, Futura, 'Century Gothic', 'Avenir Next', Arial, sans-serif; font-size:22px; line-height:1.3; font-weight:600; color:#123048; word-break:break-all;">{{ email }}</span>
+            </td>
+          </tr>
+{% endblock %}
+{% block warning %}Don't know {{ trainer_name }}? You can ignore this email. Nothing happens unless you accept the invitation in the app.{% endblock %}

@@ -1,0 +1,109 @@
+/* Dialog: a native <dialog> opened with showModal(), styled like the design
+   system's Dialog (icon tile, title, text, actions at the bottom right). */
+
+.dialog {
+    box-sizing: border-box;
+    width: min(460px, calc(100% - 2rem));
+    padding: 0;
+    border: 1px solid var(--line);
+    border-radius: 20px;
+    background: var(--background-raised);
+    color: var(--text);
+    box-shadow: var(--shadow-dialog);
+    overflow: visible;  /* so a dropdown inside can reach past the bottom edge */
+}
+
+.dialog::backdrop {
+    background: rgba(18, 48, 72, 0.6);
+    backdrop-filter: blur(4px);
+}
+
+.dialog-panel {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    margin: 0;
+    padding: 32px;
+}
+
+.dialog-close {
+    position: absolute;
+    top: 24px;
+    right: 24px;
+    display: inline-grid;
+    place-items: center;
+    width: 36px;
+    height: 36px;
+    padding: 0;
+    border: 0;
+    border-radius: 18px;
+    background: transparent;
+    color: var(--text-muted);
+    cursor: pointer;
+}
+
+.dialog-close:hover {
+    background: var(--background);
+    color: var(--text);
+}
+
+.dialog-close:focus-visible {
+    outline: 3px solid var(--text);
+}
+
+.dialog-close svg {
+    display: block;
+}
+
+.dialog-icon {
+    display: inline-grid;
+    place-items: center;
+    width: 56px;
+    height: 56px;
+    margin-bottom: 24px;
+    border-radius: 16px;
+    background: var(--rose);
+    color: var(--navy);
+}
+
+.dialog-title {
+    margin: 0;
+    font-size: 26px;
+    line-height: 32px;
+    font-weight: 700;
+}
+
+.dialog-body {
+    margin: 8px 0 0;
+    line-height: 24px;
+    color: var(--text-muted);
+}
+
+.dialog-field {
+    align-self: stretch;
+    margin-top: 24px;
+}
+
+.dialog-actions {
+    align-self: stretch;
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+    gap: 8px;
+    margin-top: 32px;
+}
+
+@media (max-width: 599px) {
+    .dialog-panel {
+        padding: 24px;
+    }
+
+    .dialog-actions {
+        flex-direction: column-reverse;
+    }
+
+    .dialog-actions .button {
+        width: 100%;
+    }
+}

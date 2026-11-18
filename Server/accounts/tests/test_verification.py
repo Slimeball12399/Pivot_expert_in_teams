@@ -7,6 +7,8 @@ from django.utils import timezone
 from accounts.models import EmailCode, User
 from accounts.verification import create_code, validate_code
 
+PASSWORD = "Str0ng-test-pass!"
+
 VERIFY = EmailCode.Purpose.VERIFY_EMAIL
 RESET = EmailCode.Purpose.RESET_PASSWORD
 
@@ -23,7 +25,7 @@ def let_cooldown_pass():
 class EmailCodeTests(TestCase):
     def setUp(self):
         self.user = User.objects.create_user(
-            "anna@example.com", "Str0ng-test-pass!", first_name="Anna", last_name="Hansen")
+            "anna@example.com", PASSWORD, first_name="Anna", last_name="Hansen")
 
     @override_settings(EMAIL_CODE_RESEND_COOLDOWN=timedelta(seconds=60))
     def test_create_code(self):
@@ -54,7 +56,7 @@ class EmailCodeTests(TestCase):
     def test_validate_code(self):
         code = create_code(self.user, VERIFY)
         other = User.objects.create_user(
-            "other@example.com", "Str0ng-test-pass!", first_name="O", last_name="T")
+            "other@example.com", PASSWORD, first_name="O", last_name="T")
 
         cases = [
             ("wrong code", self.user, VERIFY, wrong(code)),

@@ -5,11 +5,13 @@ from django.core.exceptions import ValidationError
 from django.test import TestCase, override_settings
 from django.utils import timezone
 
-from accounts.models import Consent, EmailCode, SpeakerProfile, User
-from accounts.services import register_speaker, update_profile
+from accounts.models import Consent, SpeakerProfile, User, EmailCode
+from accounts.services.accounts import register_speaker, update_profile
 from accounts.validators import MAX_HEIGHT_CM, MIN_AGE, MIN_HEIGHT_CM
 
 from .utils import FIXED_NOW, frozen_now
+
+PASSWORD = "Str0ng-test-pass!"
 
 # The validators themselves are tested in test_validators.py.
 # This file checks what register_speaker adds on top: creating both models,
@@ -19,7 +21,7 @@ from .utils import FIXED_NOW, frozen_now
 def speaker_data(**overrides):
     data = {
         "email": "speaker@example.com",
-        "password": "Str0ng-test-pass!",
+        "password": PASSWORD,
         "first_name": "Mikkel",
         "last_name": "Jensen",
         "phone_number": "+4520123456",
@@ -53,7 +55,7 @@ class RegisterSpeakerTests(TestCase):
         user = register_speaker(**speaker_data())
 
         self.assertEqual(user.role, User.Role.SPEAKER)
-        self.assertTrue(user.check_password("Str0ng-test-pass!"))
+        self.assertTrue(user.check_password(PASSWORD))
         self.assertFalse(user.is_staff)
         self.assertFalse(user.is_superuser)
 
@@ -64,7 +66,8 @@ class RegisterSpeakerTests(TestCase):
 
         consent = user.consents.get()
         self.assertEqual(consent.purpose, Consent.Purpose.PRIVACY_NOTICE)
-        self.assertEqual(consent.notice_version, Consent.current_version("privacy_notice"))
+        self.assertEqual(consent.notice_version,
+                         Consent.current_version("privacy_notice"))
         self.assertIsNone(consent.withdrawn_at)
 
     @override_settings(CONSENT_VERSIONS={
@@ -89,32 +92,40 @@ class RegisterSpeakerTests(TestCase):
 
         for height in [MIN_HEIGHT_CM, MAX_HEIGHT_CM]:
             with self.subTest("height limits are accepted", height_cm=height):
-                user = register_speaker(**speaker_data(email=f"h{height}@example.com", height_cm=height))
+                user = register_speaker(
+                    **speaker_data(email=f"h{height}@example.com", height_cm=height))
                 self.assertEqual(user.speaker_profile.height_cm, height)
 
         for i, number in enumerate(["20 12 34 56", "+45 20 12 34 56"]):
             with self.subTest("Danish number is stored with country code", number=number):
-                user = register_speaker(**speaker_data(email=f"s{i}@example.com", phone_number=number))
+                user = register_speaker(
+                    **speaker_data(email=f"s{i}@example.com", phone_number=number))
                 self.assertEqual(user.phone_number.as_e164, "+4520123456")
 
     def test_rejects_invalid_input(self):
-        too_young = date(FIXED_NOW.year - MIN_AGE, FIXED_NOW.month, FIXED_NOW.day + 1)
+        too_young = date(FIXED_NOW.year - MIN_AGE,
+                         FIXED_NOW.month, FIXED_NOW.day + 1)
         cases = [
             ("email", {"email": "not-an-email"}),
             ("first_name", {"first_name": ""}),
             ("last_name", {"last_name": ""}),
             ("password", {"password": "Ab1!"}),                  # too short
             ("password", {"password": "password"}),              # too common
-            ("password", {"password": "speaker@example.com"}),   # same as email
+            # same as email
+            ("password", {"password": "speaker@example.com"}),
             ("phone_number", {"phone_number": ""}),
             ("phone_number", {"phone_number": "123"}),
-            ("phone_number", {"phone_number": "+36 20 123 4567"}),  # not Danish
+            # not Danish
+            ("phone_number", {"phone_number": "+36 20 123 4567"}),
             ("birth_date", {"birth_date": too_young}),
             ("height_cm", {"height_cm": MIN_HEIGHT_CM - 1}),
             ("height_cm", {"height_cm": MAX_HEIGHT_CM + 1}),
-            ("consents", {"consents": []}),                         # privacy notice missing
-            ("consents", {"consents": ["research"]}),               # privacy notice missing
-            ("consents", {"consents": ["privacy_notice", "spam"]}),  # unknown purpose
+            # privacy notice missing
+            ("consents", {"consents": []}),
+            # privacy notice missing
+            ("consents", {"consents": ["research"]}),
+            # unknown purpose
+            ("consents", {"consents": ["privacy_notice", "spam"]}),
         ]
         for field, overrides in cases:
             with self.subTest(field=field, **overrides):
@@ -165,7 +176,8 @@ class RegisterSpeakerTests(TestCase):
             self.assertIn("email", ctx.exception.message_dict)
 
         with self.subTest("a pending email whose code expired is free, and is cleared"):
-            EmailCode.objects.update(expires_at=timezone.now() - timedelta(minutes=1))
+            EmailCode.objects.update(
+                expires_at=timezone.now() - timedelta(minutes=1))
             register_speaker(**speaker_data(email="wanted@example.com"))
             existing.refresh_from_db()
             self.assertEqual(existing.pending_email, "")
