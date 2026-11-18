@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 
+import { me } from '../api/auth';
 import { acceptInvite, fetchInvites } from '../api/invites';
 
 export function useInvitations() {
@@ -8,17 +9,16 @@ export function useInvitations() {
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState(null);
   const [acceptingId, setAcceptingId] = useState(null);
-  const [acceptError, setAcceptError] = useState(null);
-  const [successMessage, setSuccessMessage] = useState(null);
 
   useEffect(() => {
     (async () => {
       setLoading(true);
       setLoadError(null);
       try {
-        const data = await fetchInvites();
-        setInvites(data.invites);
-        setCurrentTrainer(data.currentTrainer);
+        const [invitesData, meData] = await Promise.all([fetchInvites(), me()]);
+        setInvites(invitesData);
+        const trainer = meData.profile?.trainer;
+        setCurrentTrainer(trainer ? `${trainer.first_name} ${trainer.last_name}`.trim() : null);
       } catch {
         setLoadError('Could not load invitations. Try again.');
       } finally {
@@ -27,30 +27,20 @@ export function useInvitations() {
     })();
   }, []);
 
-  // Returns whether it succeeded, so the sheet knows whether to close itself.
+  // Returns { ok, message }, so the screen can alert the result either way.
   async function accept(invite) {
     setAcceptingId(invite.id);
-    setAcceptError(null);
     try {
-      await acceptInvite(invite.id);
+      const result = await acceptInvite(invite.id);
       setInvites((prev) => prev.filter((item) => item.id !== invite.id));
-      setCurrentTrainer(invite.trainerName);
-      setSuccessMessage(`You're now linked to ${invite.trainerName}.`);
-      return true;
+      setCurrentTrainer(result.trainerName);
+      return { ok: true, message: `You're now linked to ${result.trainerName}.` };
     } catch {
-      setAcceptError('Could not accept this invitation. Try again.');
-      return false;
+      return { ok: false, message: 'Check your connection and try again.' };
     } finally {
       setAcceptingId(null);
     }
   }
 
-  function clearAcceptError() {
-    setAcceptError(null);
-  }
-
-  return {
-    invites, currentTrainer, loading, loadError,
-    acceptingId, acceptError, successMessage, accept, clearAcceptError,
-  };
+  return { invites, currentTrainer, loading, loadError, acceptingId, accept };
 }

@@ -1,8 +1,7 @@
 import { Feather } from '@expo/vector-icons';
 import { useState } from 'react';
-import { ActivityIndicator, Modal, Pressable, StyleSheet, Text, View } from 'react-native';
+import { ActivityIndicator, Alert, Modal, Pressable, StyleSheet, Text, View } from 'react-native';
 
-import { FormError } from '../components/FormError';
 import { ScreenContainer } from '../components/ScreenContainer';
 import { useInvitations } from '../hooks/useInvitations';
 import { useTheme } from '../providers/ThemeProvider';
@@ -21,20 +20,21 @@ function trainerInitials(name) {
 
 export function InvitationsScreen() {
   const { theme } = useTheme();
-  const {
-    invites, currentTrainer, loading, loadError,
-    acceptingId, acceptError, successMessage, accept, clearAcceptError,
-  } = useInvitations();
+  const { invites, currentTrainer, loading, loadError, acceptingId, accept } = useInvitations();
   const [selectedInvite, setSelectedInvite] = useState(null);
 
   function openInvite(invite) {
-    clearAcceptError();
     setSelectedInvite(invite);
   }
 
   async function handleAccept() {
-    const ok = await accept(selectedInvite);
-    if (ok) setSelectedInvite(null);
+    const { ok, message } = await accept(selectedInvite);
+    if (ok) {
+      setSelectedInvite(null);
+      Alert.alert('Trainer updated', message);
+    } else {
+      Alert.alert('Could not accept invitation', message);
+    }
   }
 
   return (
@@ -46,10 +46,12 @@ export function InvitationsScreen() {
         </Text>
       )}
 
-      <FormError message={loadError} />
-      <FormError message={!selectedInvite ? successMessage : null} tone="success" />
-
-      {loading ? (
+      {loadError ? (
+        <View style={styles.errorState}>
+          <Feather name="wifi-off" size={96} color={theme.colors.textSecondary} style={styles.errorIcon} />
+          <Text style={[styles.errorText, { color: theme.colors.textSecondary }]}>{loadError}</Text>
+        </View>
+      ) : loading ? (
         <ActivityIndicator color={theme.colors.primary} style={styles.spinner} />
       ) : invites.length === 0 ? (
         <View style={[styles.card, { backgroundColor: theme.colors.surface }]}>
@@ -116,24 +118,25 @@ export function InvitationsScreen() {
                     {formatExpiry(selectedInvite.expiresAt)}
                   </Text>
                 </View>
-                {currentTrainer && (
+                {selectedInvite.replacesTrainerName && (
                   <View style={[styles.infoRow, styles.infoRowLast]}>
                     <Text style={[styles.infoLabel, { color: theme.colors.textSecondary }]}>Current trainer</Text>
-                    <Text style={[styles.infoValue, { color: theme.colors.text }]}>{currentTrainer}</Text>
+                    <Text style={[styles.infoValue, { color: theme.colors.text }]}>
+                      {selectedInvite.replacesTrainerName}
+                    </Text>
                   </View>
                 )}
               </View>
 
               <Text style={[styles.sheetBody, { color: theme.colors.textSecondary }]}>
-                {currentTrainer
-                  ? `Accepting will replace ${currentTrainer} as your trainer.`
+                {selectedInvite.replacesTrainerName
+                  ? `Accepting will replace ${selectedInvite.replacesTrainerName} with `
+                    + `${selectedInvite.trainerName} as your trainer.`
                   : `Accepting makes ${selectedInvite.trainerName} your trainer.`}
               </Text>
 
-              <FormError message={acceptError} />
-
               <Button
-                title={currentTrainer ? 'Replace and accept' : 'Accept invitation'}
+                title={selectedInvite.replacesTrainerName ? 'Replace and accept' : 'Accept invitation'}
                 onPress={handleAccept}
                 loading={acceptingId === selectedInvite.id}
               />
@@ -151,6 +154,9 @@ export function InvitationsScreen() {
 const styles = StyleSheet.create({
   subtitle: { fontSize: 14, marginTop: 8 },
   spinner: { marginTop: 24 },
+  errorState: { flex: 1, alignItems: 'center', justifyContent: 'center' },
+  errorIcon: { opacity: 0.35, marginBottom: 16 },
+  errorText: { fontSize: 14, textAlign: 'center' },
   card: { borderRadius: 20, padding: 20, marginTop: 20 },
   row: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
   emptyText: { fontSize: 14, textAlign: 'center' },

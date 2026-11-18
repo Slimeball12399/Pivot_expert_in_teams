@@ -1,25 +1,31 @@
-// MOCK — SCRUM-57's backend doesn't exist yet
+import { apiRequest } from './client';
 
-let mockInvites = [
-  { id: '1', trainerName: 'Jonas Berg', expiresAt: '2026-11-24' },
-  { id: '2', trainerName: 'Mette Lund', expiresAt: '2026-11-30' },
-];
-let mockCurrentTrainer = 'Anna Pedersen';
-
-function delay(ms = 500) {
-  return new Promise((resolve) => setTimeout(resolve, ms));
+function fullName(person) {
+  return person ? `${person.first_name} ${person.last_name}`.trim() : null;
 }
 
+function mapInvite(raw) {
+  return {
+    id: raw.id,
+    trainerName: fullName(raw.trainer),
+    expiresAt: raw.expires_at,
+    replacesTrainerName: fullName(raw.replaces_trainer),
+  };
+}
+
+// GET /api/invites/ — the speaker's open invitations, newest first.
 export async function fetchInvites() {
-  await delay();
-  return { invites: mockInvites, currentTrainer: mockCurrentTrainer };
+  const data = await apiRequest('/invites/');
+  return data.map(mapInvite);
 }
 
+// POST /api/invites/<id>/accept/
 export async function acceptInvite(id) {
-  await delay();
-  const invite = mockInvites.find((item) => item.id === id);
-  if (!invite) throw new Error('Invite not found');
-  mockCurrentTrainer = invite.trainerName;
-  mockInvites = mockInvites.filter((item) => item.id !== id);
-  return { trainerName: invite.trainerName };
+  const data = await apiRequest(`/invites/${id}/accept/`, { method: 'POST' });
+  return { trainerName: fullName(data.trainer), previousTrainerName: fullName(data.previous_trainer) };
+}
+
+// POST /api/invites/<id>/decline/
+export function declineInvite(id) {
+  return apiRequest(`/invites/${id}/decline/`, { method: 'POST' });
 }

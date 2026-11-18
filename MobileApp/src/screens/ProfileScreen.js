@@ -1,8 +1,9 @@
 import { Feather } from '@expo/vector-icons';
-import { router } from 'expo-router';
-import { useState } from 'react';
+import { router, useFocusEffect } from 'expo-router';
+import { useCallback, useState } from 'react';
 import { Alert, Pressable, StyleSheet, Text, View } from 'react-native';
 
+import { fetchInvites } from '../api/invites';
 import { FormError } from '../components/FormError';
 import { ScreenContainer } from '../components/ScreenContainer';
 import { useProfileForm } from '../hooks/useProfileForm';
@@ -46,6 +47,7 @@ export function ProfileScreen() {
   const { theme } = useTheme();
   const { logout } = useAuth();
   const [loggingOut, setLoggingOut] = useState(false);
+  const [hasPendingInvites, setHasPendingInvites] = useState(false);
   const {
     user,
     isSpeaker,
@@ -75,6 +77,22 @@ export function ProfileScreen() {
     Alert.alert('Coming soon', "This feature isn't available yet.");
   }
 
+  useFocusEffect(
+    useCallback(() => {
+      if (!isSpeaker) return undefined;
+      let cancelled = false;
+      (async () => {
+        try {
+          const invites = await fetchInvites();
+          if (!cancelled) setHasPendingInvites(invites.length > 0);
+        } catch {
+         
+        }
+      })();
+      return () => { cancelled = true; };
+    }, [isSpeaker]),
+  );
+
   if (!user) return null;
 
   const age = isSpeaker ? ageFromBirthDate(fields.birthDate) : null;
@@ -89,6 +107,9 @@ export function ProfileScreen() {
             style={[styles.iconButton, { borderColor: theme.colors.primary }]}
           >
             <Feather name="mail" size={22} color={theme.colors.primary} />
+            {hasPendingInvites && (
+              <View style={[styles.badge, { backgroundColor: theme.colors.danger, borderColor: theme.colors.surface }]} />
+            )}
           </Pressable>
         )}
       </View>
@@ -205,6 +226,7 @@ export function ProfileScreen() {
 const styles = StyleSheet.create({
   titleRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
   iconButton: { width: 44, height: 44, borderRadius: 22, borderWidth: 1, alignItems: 'center', justifyContent: 'center' },
+  badge: { position: 'absolute', top: -2, right: -2, width: 12, height: 12, borderRadius: 6, borderWidth: 2 },
   identityRow: { flexDirection: 'row', alignItems: 'center', gap: 14, marginTop: 20, marginBottom: 20 },
   avatar: { width: 56, height: 56, borderRadius: 28, alignItems: 'center', justifyContent: 'center' },
   avatarText: { fontSize: 18, fontWeight: '700' },
