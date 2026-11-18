@@ -32,6 +32,7 @@ export default function RootLayout() {
     <AppProviders>
       <Stack screenOptions={{ headerShown: false }}>
         <Stack.Screen name="(tabs)" />
+        <Stack.Screen name="(admin)" />
         <Stack.Screen name="invitations" />
         <Stack.Screen name="change-password" />
         <Stack.Screen name="user/[id]" />

@@ -4,8 +4,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { useTheme } from '../providers/ThemeProvider';
 
-// Gap left between the focused field and the top of the keyboard.
-const FOCUSED_FIELD_GAP = 16;
+const FOCUSED_FIELD_GAP = 90;
 
 // Shared screen wrapper: safe-area + themed background + padding
 export function ScreenContainer({ children, scroll = false }) {

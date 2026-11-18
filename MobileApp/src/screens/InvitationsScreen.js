@@ -1,8 +1,10 @@
 import { Feather } from '@expo/vector-icons';
 import { useState } from 'react';
-import { ActivityIndicator, Alert, Modal, Pressable, StyleSheet, Text, View } from 'react-native';
+import { Alert, Modal, Pressable, StyleSheet, Text, View } from 'react-native';
 
+import { LoadErrorState } from '../components/LoadErrorState';
 import { ScreenContainer } from '../components/ScreenContainer';
+import { Skeleton } from '../components/Skeleton';
 import { useInvitations } from '../hooks/useInvitations';
 import { useTheme } from '../providers/ThemeProvider';
 import { Button } from '../ui/Button';
@@ -16,6 +18,19 @@ function formatExpiry(iso) {
 
 function trainerInitials(name) {
   return (name || '').split(' ').map((part) => part[0]).join('').slice(0, 2).toUpperCase();
+}
+
+function InviteRowSkeleton() {
+  const { theme } = useTheme();
+  return (
+    <View style={[styles.card, styles.row, { backgroundColor: theme.colors.surface }]}>
+      <View>
+        <Skeleton width={140} height={18} style={styles.skeletonGap} />
+        <Skeleton width={110} height={13} />
+      </View>
+      <Skeleton width={20} height={20} borderRadius={10} />
+    </View>
+  );
 }
 
 export function InvitationsScreen() {
@@ -47,12 +62,13 @@ export function InvitationsScreen() {
       )}
 
       {loadError ? (
-        <View style={styles.errorState}>
-          <Feather name="wifi-off" size={96} color={theme.colors.textSecondary} style={styles.errorIcon} />
-          <Text style={[styles.errorText, { color: theme.colors.textSecondary }]}>{loadError}</Text>
-        </View>
+        <LoadErrorState message={loadError} />
       ) : loading ? (
-        <ActivityIndicator color={theme.colors.primary} style={styles.spinner} />
+        <>
+          <InviteRowSkeleton />
+          <InviteRowSkeleton />
+          <InviteRowSkeleton />
+        </>
       ) : invites.length === 0 ? (
         <View style={[styles.card, { backgroundColor: theme.colors.surface }]}>
           <Text style={[styles.emptyText, { color: theme.colors.textSecondary }]}>
@@ -153,10 +169,7 @@ export function InvitationsScreen() {
 
 const styles = StyleSheet.create({
   subtitle: { fontSize: 14, marginTop: 8 },
-  spinner: { marginTop: 24 },
-  errorState: { flex: 1, alignItems: 'center', justifyContent: 'center' },
-  errorIcon: { opacity: 0.35, marginBottom: 16 },
-  errorText: { fontSize: 14, textAlign: 'center' },
+  skeletonGap: { marginBottom: 6 },
   card: { borderRadius: 20, padding: 20, marginTop: 20 },
   row: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
   emptyText: { fontSize: 14, textAlign: 'center' },

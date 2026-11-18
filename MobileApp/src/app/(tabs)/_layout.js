@@ -7,7 +7,7 @@ import { useTheme } from '../../providers/ThemeProvider';
 
 export default function TabsLayout() {
   const { theme } = useTheme();
-  const { isAuthenticated, isLoading } = useAuth();
+  const { user, isAuthenticated, isLoading } = useAuth();
 
   if (isLoading) {
     return (
@@ -19,6 +19,11 @@ export default function TabsLayout() {
 
   if (!isAuthenticated) {
     return <Redirect href="/(auth)/login" />;
+  }
+
+  // These tabs are speaker-only; an admin account lands on the boards stack instead.
+  if (user.role === 'admin') {
+    return <Redirect href="/(admin)/boards" />;
   }
 
   return (

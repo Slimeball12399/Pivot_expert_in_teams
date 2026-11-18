@@ -5,7 +5,7 @@ import { useAuth } from '../providers/AuthProvider';
 import { useTheme } from '../providers/ThemeProvider';
 
 export default function Index() {
-  const { isAuthenticated, isLoading } = useAuth();
+  const { isAuthenticated, isLoading, user } = useAuth();
   const { theme } = useTheme();
 
   if (isLoading) {
@@ -16,7 +16,8 @@ export default function Index() {
     );
   }
 
-  return <Redirect href={isAuthenticated ? '/progress' : '/(auth)/login'} />;
+  if (!isAuthenticated) return <Redirect href="/(auth)/login" />;
+  return <Redirect href={user.role === 'admin' ? '/(admin)/boards' : '/progress'} />;
 }
 
 const styles = StyleSheet.create({
