@@ -66,7 +66,7 @@ export function CalibrateBoardScreen({ boardId, location }) {
                 <Text style={[styles.stepCardKicker, { color: theme.colors.textSecondary }]}>
                   NOW · {DIRECTIONS.indexOf(currentDirection) + 1} OF 4
                 </Text>
-                <Text style={[styles.stepCardTitle, { color: theme.colors.text }]}>
+                <Text style={[theme.styles.text.heading, styles.stepCardTitle, { color: theme.colors.text }]}>
                   {DIRECTION_PROMPT[currentDirection]}
                 </Text>
                 <Text style={[styles.stepCardHelper, { color: theme.colors.textSecondary }]}>
@@ -179,8 +179,6 @@ const styles = StyleSheet.create({
     marginBottom: 4,
   },
   stepCardTitle: {
-    fontSize: 18,
-    fontWeight: '700',
     marginBottom: 4,
   },
   stepCardHelper: {

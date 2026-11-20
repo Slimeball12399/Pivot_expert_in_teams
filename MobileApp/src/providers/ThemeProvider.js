@@ -12,19 +12,22 @@ function buildTheme(colors) {
     colors,
     sizes: {
       icon: {
-        small: 16,
-        standard: 24,
-        medium: 32,
+        inline: 18,
+        chevron: 20,
+        inContainer: 22,
       },
     },
-    // Fonts match the web app's design system: Jost for headings, Outfit
-    // for body (Server/web/templates/web/base.html).
+    // Fonts match the web app's design system
     styles: {
       text: {
         title: {
           fontFamily: 'Jost_700Bold',
           fontSize: 24,
           color: colors.text,
+        },
+        heading: {
+          fontSize: 18,
+          fontWeight: '700',
         },
         body: {
           fontFamily: 'Outfit_400Regular',

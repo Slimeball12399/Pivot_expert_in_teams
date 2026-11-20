@@ -12,6 +12,7 @@ import { useBoards } from '../hooks/useBoards';
 import { useAuth } from '../providers/AuthProvider';
 import { useTheme } from '../providers/ThemeProvider';
 import { Button } from '../ui/Button';
+import { onDanger } from '../../assets/styles/colors';
 
 export function BoardsScreen() {
   const { theme } = useTheme();
@@ -81,7 +82,7 @@ export function BoardsScreen() {
       <BottomSheet visible={!!selectedBoard} onClose={() => setSelectedBoard(null)}>
         {selectedBoard && (
           <>
-            <Text style={[styles.sheetTitle, { color: theme.colors.text }]}>
+            <Text style={[theme.styles.text.heading, styles.sheetTitle, { color: theme.colors.text }]}>
               {selectedBoard.id} · {selectedBoard.location}
             </Text>
 
@@ -93,7 +94,7 @@ export function BoardsScreen() {
               }}
               style={[styles.sheetAction, { borderColor: theme.colors.border }]}
             >
-              <Feather name="wifi" size={18} color={theme.colors.text} />
+              <Feather name="wifi" size={theme.sizes.icon.inline} color={theme.colors.text} />
               <Text style={[styles.sheetActionText, { color: theme.colors.text }]}>Change Wi-Fi</Text>
             </Pressable>
 
@@ -105,7 +106,7 @@ export function BoardsScreen() {
               }}
               style={[styles.sheetAction, { borderColor: theme.colors.border }]}
             >
-              <Feather name="target" size={18} color={theme.colors.text} />
+              <Feather name="target" size={theme.sizes.icon.inline} color={theme.colors.text} />
               <Text style={[styles.sheetActionText, { color: theme.colors.text }]}>Calibrate</Text>
             </Pressable>
 
@@ -114,8 +115,8 @@ export function BoardsScreen() {
               onPress={() => confirmRemove(selectedBoard)}
               style={[styles.sheetAction, styles.sheetActionDanger, { backgroundColor: theme.colors.danger }]}
             >
-              <Feather name="trash-2" size={18} color="#ffffff" />
-              <Text style={[styles.sheetActionText, { color: '#ffffff' }]}>Remove board</Text>
+              <Feather name="trash-2" size={theme.sizes.icon.inline} color={onDanger} />
+              <Text style={[styles.sheetActionText, { color: onDanger }]}>Remove board</Text>
             </Pressable>
 
             <Pressable onPress={() => setSelectedBoard(null)} style={styles.cancel}>
@@ -169,8 +170,6 @@ const styles = StyleSheet.create({
   },
 
   sheetTitle: {
-    fontSize: 18,
-    fontWeight: '700',
     marginBottom: 16,
   },
   sheetAction: {

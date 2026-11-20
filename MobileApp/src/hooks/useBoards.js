@@ -41,5 +41,11 @@ export function useBoards() {
     }
   }
 
-  return { boards, loading, loadError, removingId, remove };
+  return {
+    boards,
+    loading,
+    loadError,
+    removingId,
+    remove,
+  };
 }

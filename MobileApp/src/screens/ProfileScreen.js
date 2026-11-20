@@ -13,8 +13,7 @@ import { useTheme } from '../providers/ThemeProvider';
 import { Button } from '../ui/Button';
 import { TextInput } from '../ui/TextInput';
 import { ageFromBirthDate } from '../utils/validators';
-
-const AVATAR_TEXT_COLOR = '#123048';
+import { navy } from '../../assets/styles/colors';
 
 function initials(user) {
   return `${user.first_name?.[0] ?? ''}${user.last_name?.[0] ?? ''}`.toUpperCase();
@@ -67,7 +66,7 @@ export function ProfileScreen() {
             onPress={() => router.push('/invitations')}
             style={[styles.iconButton, { borderColor: theme.colors.primary }]}
           >
-            <Feather name="mail" size={22} color={theme.colors.primary} />
+            <Feather name="mail" size={theme.sizes.icon.inContainer} color={theme.colors.primary} />
             {hasPendingInvites && (
               <View style={[styles.badge, { backgroundColor: theme.colors.danger, borderColor: theme.colors.surface }]} />
             )}
@@ -77,10 +76,10 @@ export function ProfileScreen() {
 
       <View style={styles.identityRow}>
         <View style={[styles.avatar, { backgroundColor: theme.colors.accent }]}>
-          <Text style={[styles.avatarText, { color: AVATAR_TEXT_COLOR }]}>{initials(user)}</Text>
+          <Text style={[theme.styles.text.heading, { color: navy }]}>{initials(user)}</Text>
         </View>
         <View>
-          <Text style={[styles.name, { color: theme.colors.text }]}>
+          <Text style={[theme.styles.text.heading, { color: theme.colors.text }]}>
             {user.first_name} {user.last_name}
           </Text>
           {isSpeaker && (
@@ -152,7 +151,7 @@ export function ProfileScreen() {
       </View>
 
       <View style={[styles.card, { backgroundColor: theme.colors.surface }]}>
-        <Text style={[styles.cardHeading, { color: theme.colors.text }]}>Account</Text>
+        <Text style={[theme.styles.text.heading, styles.cardHeading, { color: theme.colors.text }]}>Account</Text>
         <Button
           title="Change password"
           variant="outline"
@@ -163,7 +162,7 @@ export function ProfileScreen() {
       </View>
 
       <View style={[styles.card, { backgroundColor: theme.colors.surface }]}>
-        <Text style={[styles.cardHeading, { color: theme.colors.text }]}>Your data</Text>
+        <Text style={[theme.styles.text.heading, styles.cardHeading, { color: theme.colors.text }]}>Your data</Text>
         <Text style={[styles.cardSubtitle, { color: theme.colors.textSecondary }]}>
           You decide what Pivot keeps. Each action asks you to confirm first.
         </Text>
@@ -228,14 +227,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  avatarText: {
-    fontSize: 18,
-    fontWeight: '700',
-  },
-  name: {
-    fontSize: 18,
-    fontWeight: '700',
-  },
   trainerLine: {
     fontSize: 12,
     marginTop: 2,
@@ -246,8 +237,6 @@ const styles = StyleSheet.create({
     marginBottom: 20,
   },
   cardHeading: {
-    fontSize: 18,
-    fontWeight: '700',
     marginBottom: 8,
   },
   cardSubtitle: {

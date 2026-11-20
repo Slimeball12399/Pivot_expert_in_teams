@@ -22,7 +22,10 @@ export async function fetchInvites() {
 // POST /api/invites/<id>/accept/
 export async function acceptInvite(id) {
   const data = await apiRequest(`/invites/${id}/accept/`, { method: 'POST' });
-  return { trainerName: fullName(data.trainer), previousTrainerName: fullName(data.previous_trainer) };
+  return {
+    trainerName: fullName(data.trainer),
+    previousTrainerName: fullName(data.previous_trainer),
+  };
 }
 
 // POST /api/invites/<id>/decline/

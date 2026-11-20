@@ -2,10 +2,11 @@ import { Feather } from '@expo/vector-icons';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { useTheme } from '../providers/ThemeProvider';
+import { onDanger } from '../../assets/styles/colors';
 
 export function DataActionRow({ icon, title, subtitle, onPress, danger }) {
   const { theme } = useTheme();
-  const textColor = danger ? '#ffffff' : theme.colors.text;
+  const textColor = danger ? onDanger : theme.colors.text;
   const subtitleColor = danger ? 'rgba(255,255,255,0.85)' : theme.colors.textSecondary;
 
   return (

@@ -41,5 +41,14 @@ export function useLoginForm() {
     }
   }
 
-  return { email, setEmail, password, setPassword, fieldErrors, formError, submitting, handleSubmit };
+  return {
+    email,
+    setEmail,
+    password,
+    setPassword,
+    fieldErrors,
+    formError,
+    submitting,
+    handleSubmit,
+  };
 }

@@ -56,5 +56,12 @@ export function useNewPassword() {
     }
   }
 
-  return { password, setPassword, fieldErrors, formError, submitting, handleSubmit };
+  return {
+    password,
+    setPassword,
+    fieldErrors,
+    formError,
+    submitting,
+    handleSubmit,
+  };
 }

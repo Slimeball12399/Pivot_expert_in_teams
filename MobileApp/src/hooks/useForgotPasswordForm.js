@@ -34,5 +34,12 @@ export function useForgotPasswordForm() {
     }
   }
 
-  return { email, setEmail, fieldErrors, formError, submitting, handleSubmit };
+  return {
+    email,
+    setEmail,
+    fieldErrors,
+    formError,
+    submitting,
+    handleSubmit,
+  };
 }

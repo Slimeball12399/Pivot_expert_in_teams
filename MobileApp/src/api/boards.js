@@ -42,7 +42,10 @@ export async function fetchWifiNetworks() {
 // Step 2: send the chosen network + password to the board over Bluetooth.
 export async function sendWifiToBoard(boardId, ssid) {
   await delay(1400);
-  return { boardId, ssid };
+  return {
+    boardId,
+    ssid,
+  };
 }
 
 // Step 3: the board's own post-setup checklist.
@@ -77,10 +80,16 @@ export async function removeBoard(boardId) {
 export async function measureCalibrationStep(boardId, direction) {
   await delay(1600);
   const angles = { left: 12.4, right: 12.1, front: 34.8, back: 33.9 };
-  return { direction, stopAngle: angles[direction] };
+  return {
+    direction,
+    stopAngle: angles[direction],
+  };
 }
 
 export async function saveCalibration(boardId) {
   await delay(600);
-  return { boardId, calibratedAt: new Date().toISOString() };
+  return {
+    boardId,
+    calibratedAt: new Date().toISOString(),
+  };
 }

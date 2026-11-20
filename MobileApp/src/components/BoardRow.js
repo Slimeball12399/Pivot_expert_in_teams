@@ -21,7 +21,7 @@ export function BoardRow({ board, onPress }) {
       style={[styles.row, { backgroundColor: theme.colors.surface }]}
     >
       <View style={[styles.iconBox, { backgroundColor: theme.colors.background }]}>
-        <Feather name="cpu" size={22} color={theme.colors.primary} />
+        <Feather name="cpu" size={theme.sizes.icon.inContainer} color={theme.colors.primary} />
       </View>
       <View style={styles.rowText}>
         <Text style={[styles.boardId, { color: theme.colors.text }]}>
@@ -35,7 +35,7 @@ export function BoardRow({ board, onPress }) {
         </View>
         <Text style={[styles.subtitle, { color: theme.colors.textSecondary }]}>{subtitle}</Text>
       </View>
-      <Feather name="chevron-right" size={20} color={theme.colors.textSecondary} />
+      <Feather name="chevron-right" size={theme.sizes.icon.chevron} color={theme.colors.textSecondary} />
     </Pressable>
   );
 }

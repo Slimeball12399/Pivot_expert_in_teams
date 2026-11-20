@@ -1,6 +1,6 @@
 // Color tokens shared with the web app's design system
 
-const navy = '#123048';
+export const navy = '#123048';
 const rose = '#e3b7cb';
 const paper = '#f0f0f0';
 
@@ -11,6 +11,9 @@ export const feedback = {
   info: '#183b89',
   unassigned: '#824299', // not assigned to anything yet, per the design system
 };
+
+// A color that is used for text on a danger-colored background.
+export const onDanger = '#ffffff';
 
 export const dark = {
   background: navy,

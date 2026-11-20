@@ -52,7 +52,7 @@ export function AddBoardScreen() {
             <View style={[styles.bluetoothIcon, { backgroundColor: theme.colors.primary + '33' }]}>
               <Feather name="bluetooth" size={28} color={theme.colors.primary} />
             </View>
-            <Text style={[styles.scanTitle, { color: theme.colors.text }]}>
+            <Text style={[theme.styles.text.heading, styles.scanTitle, { color: theme.colors.text }]}>
               {scanning ? 'Looking for boards nearby' : 'Scan complete'}
             </Text>
             <Text style={[styles.scanHelper, { color: theme.colors.textSecondary }]}>
@@ -231,8 +231,6 @@ const styles = StyleSheet.create({
     marginBottom: 16,
   },
   scanTitle: {
-    fontSize: 18,
-    fontWeight: '700',
     marginBottom: 8,
   },
   scanHelper: {

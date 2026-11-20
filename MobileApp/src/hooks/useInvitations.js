@@ -40,14 +40,28 @@ export function useInvitations() {
         // Accept already succeeded — don't fail the whole thing over this.
         updateUser(await me());
       } catch {
+        // Profile's cached trainer stays stale until next login; not worth surfacing.
       }
-      return { ok: true, message: `You're now linked to ${result.trainerName}.` };
+      return {
+        ok: true,
+        message: `You're now linked to ${result.trainerName}.`,
+      };
     } catch {
-      return { ok: false, message: 'Check your connection and try again.' };
+      return {
+        ok: false,
+        message: 'Check your connection and try again.',
+      };
     } finally {
       setAcceptingId(null);
     }
   }
 
-  return { invites, currentTrainer, loading, loadError, acceptingId, accept };
+  return {
+    invites,
+    currentTrainer,
+    loading,
+    loadError,
+    acceptingId,
+    accept,
+  };
 }

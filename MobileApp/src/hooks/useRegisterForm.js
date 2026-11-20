@@ -101,5 +101,14 @@ export function useRegisterForm() {
     }
   }
 
-  return { fields, setField, consents, toggleConsent, fieldErrors, formError, submitting, handleSubmit };
+  return {
+    fields,
+    setField,
+    consents,
+    toggleConsent,
+    fieldErrors,
+    formError,
+    submitting,
+    handleSubmit,
+  };
 }

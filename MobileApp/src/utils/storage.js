@@ -8,7 +8,10 @@ export async function getTokens() {
     SecureStore.getItemAsync(ACCESS_TOKEN_KEY),
     SecureStore.getItemAsync(REFRESH_TOKEN_KEY),
   ]);
-  return { accessToken, refreshToken };
+  return {
+    accessToken,
+    refreshToken,
+  };
 }
 
 export async function saveTokens({ access, refresh }) {

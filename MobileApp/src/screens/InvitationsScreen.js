@@ -10,9 +10,7 @@ import { useInvitations } from '../hooks/useInvitations';
 import { useTheme } from '../providers/ThemeProvider';
 import { Button } from '../ui/Button';
 import { formatExpiry, initialsFromName } from '../utils/format';
-
-// Navy, fixed regardless of theme — same reasoning as ProfileScreen's avatar.
-const AVATAR_TEXT_COLOR = '#123048';
+import { navy } from '../../assets/styles/colors';
 
 export function InvitationsScreen() {
   const { theme } = useTheme();
@@ -67,12 +65,12 @@ export function InvitationsScreen() {
           <>
             <View style={styles.sheetHeader}>
               <View style={[styles.avatar, { backgroundColor: theme.colors.accent }]}>
-                <Text style={[styles.avatarText, { color: AVATAR_TEXT_COLOR }]}>
+                <Text style={[styles.avatarText, { color: navy }]}>
                   {initialsFromName(selectedInvite.trainerName)}
                 </Text>
               </View>
               <View style={styles.sheetHeaderText}>
-                <Text style={[styles.sheetTitle, { color: theme.colors.text }]}>
+                <Text style={[theme.styles.text.heading, { color: theme.colors.text }]}>
                   {selectedInvite.trainerName} invited you
                 </Text>
                 <Text style={[styles.sheetSubtitle, { color: theme.colors.textSecondary }]}>
@@ -160,10 +158,6 @@ const styles = StyleSheet.create({
   },
   sheetHeaderText: {
     flex: 1,
-  },
-  sheetTitle: {
-    fontSize: 18,
-    fontWeight: '700',
   },
   sheetSubtitle: {
     fontSize: 13,

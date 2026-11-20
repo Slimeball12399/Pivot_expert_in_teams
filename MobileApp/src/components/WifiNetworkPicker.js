@@ -39,7 +39,7 @@ export function WifiNetworkPicker({ networks, selectedSsid, onSelect, password, 
                 {network.security}{!network.disabled && ` · ${network.signal}`}
               </Text>
             </View>
-            <Feather name="wifi" size={18} color={theme.colors.textSecondary} />
+            <Feather name="wifi" size={theme.sizes.icon.inline} color={theme.colors.textSecondary} />
           </Pressable>
         ))}
       </View>

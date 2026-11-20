@@ -26,5 +26,10 @@ export function useChangePasswordForm() {
     }
   }
 
-  return { email: user?.email ?? '', formError, submitting, handleSendCode };
+  return {
+    email: user?.email ?? '',
+    formError,
+    submitting,
+    handleSendCode,
+  };
 }
