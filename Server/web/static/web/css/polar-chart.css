@@ -1,0 +1,11 @@
+/* Polar chart (web/components/polar_chart.html). Always square: it takes the
+   width of its parent and the same height, so the rings stay round. The
+   maximum keeps it from taking over a wide card; the minimum keeps it
+   readable on a small screen. */
+.polar-chart {
+    width: 100%;
+    max-width: 360px;
+    min-width: 200px;
+    aspect-ratio: 1;
+    margin: 0 auto;
+}

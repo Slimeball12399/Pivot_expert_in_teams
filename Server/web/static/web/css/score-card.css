@@ -1,0 +1,141 @@
+/* Score card, shared by the session page (session.html) and the talk page
+   (talk.html): the card surface, its colour modifiers, the data tiles and the
+   legend. How the card is laid out inside is up to each page (session.css,
+   talk.css). */
+
+/* Card: the raised surface (white in light mode, raised navy in dark mode),
+   with a top border in the measure colour. */
+.score-card {
+    --card-accent: var(--stability);
+    box-sizing: border-box;
+    padding: 1.5rem;
+    border: 1px solid var(--line);
+    border-top: 4px solid var(--card-accent);
+    border-radius: 16px;
+    background: var(--background-raised);
+    color: var(--text);
+    box-shadow: var(--shadow-menu);
+}
+
+/* Colour modifiers: <section class="score-card stability"> or "score-card voice"
+   (voice uses the speech colour; "speech" works too). */
+.score-card.voice,
+.score-card.speech {
+    --card-accent: var(--speech);
+}
+
+.score-card.stability {
+    --card-accent: var(--stability);
+}
+
+
+/* Data tiles (Sway Area etc.) sit in a grid; each page sets the number of
+   columns (2 on the session page, 3 on the talk page). */
+.data-grid {
+    display: grid;
+    gap: 0.5rem;
+}
+
+/* Data boxes next to the score ring (Sway Area etc.): small tiles like the
+   design. "good" and "bad" tint them with a light green or light red, mixed
+   from --green and --red over the card colour (dark tints in dark mode). */
+.data {
+    padding: 0.5rem;
+    border-radius: 8px;
+}
+
+.data.good {
+    background: color-mix(in srgb, var(--green) 16%, var(--background-raised));
+}
+
+.data.bad {
+    background: color-mix(in srgb, var(--red) 12%, var(--background-raised));
+}
+
+.data h4 {
+    /* Label: capitals, same size as the unit but bold; 10px so "TIME CENTERED" fits on one line. */
+    margin: 0;
+    font-size: 10px;
+    line-height: 16px;
+    font-weight: 700;
+    text-transform: uppercase;
+    color: var(--text-muted);
+}
+
+.data h3 {
+    /* Value: same style as the card heading (an h3), with the unit next to it. */
+    display: inline;
+    margin: 0;
+}
+
+.data span {
+    /* Unit: same size as the label, but not bold. */
+    margin-left: 0.25rem;
+    font-size: 10px;
+    line-height: 16px;
+    font-weight: 400;
+    color: var(--text-muted);
+}
+
+
+/* Below usual / Good / Excellent: yellow, green and blue dots (base.css). */
+.score-scale {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+    font-size: 12px;
+    line-height: 16px;
+    font-weight: 500;
+    color: var(--text-muted);
+}
+
+.score-scale-level {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.score-scale-level::before {
+    content: "";
+    flex: none;
+    width: 8px;
+    height: 8px;
+    border-radius: 4px;
+}
+
+/* "Your usual range": a small box in the same tint as the band on the chart,
+   with a green border so it stands out from the light background. */
+.score-scale-range::before {
+    box-sizing: border-box;
+    width: 18px;
+    height: 10px;
+    border: 1px solid var(--green);
+    border-radius: 3px;
+    background: color-mix(in srgb, var(--green) 14%, var(--background));
+}
+
+/* A line on the chart: a short line swatch, solid in the speech colour or
+   dashed in the text colour, like on the voice graph and its measure cards
+   (pace and pitch variation). */
+.score-scale-line::before {
+    width: 22px;
+    height: 0;
+    border-top: 3px solid var(--speech);
+    border-radius: 0;
+}
+
+.score-scale-dashed::before {
+    border-top: 3px dashed var(--text);
+}
+
+.score-scale-below::before {
+    background: var(--yellow);
+}
+
+.score-scale-good::before {
+    background: var(--green);
+}
+
+.score-scale-excellent::before {
+    background: var(--blue);
+}

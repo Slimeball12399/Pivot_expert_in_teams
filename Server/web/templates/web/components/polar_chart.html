@@ -1,0 +1,22 @@
+{% comment %}
+Polar chart: where the speaker leans, seen from above. Front is up, back is
+down, L and R are left and right. Three evenly spaced rings, the inner one
+filled green (the target). The newest point is a large green circle; the
+points before it are a dashed trail. Drawn by web/js/polar-chart.js (ECharts);
+size in web/css/polar-chart.css. The page loads ECharts, polar-chart.css and
+polar-chart.js once (see talk.html).
+
+  {% include "web/components/polar_chart.html" with id="balance-polar" max=10 trail=40 %}
+
+  id     unique id on the page (required)
+  max    value at the outer ring, in each direction (default 10, i.e. -10 to 10)
+  trail  how many points the trail keeps, the newest included (default 40)
+
+Points are [lr, fb]: lr is left (-) to right (+), fb is back (-) to front (+).
+A point further out than max is pulled in to the outer ring.
+Other code feeds it with
+  document.getElementById(id).polarChart.addPoint(lr, fb)      add the newest point
+  document.getElementById(id).polarChart.setData([[lr, fb], ...])  replace all points
+{% endcomment %}
+<div class="polar-chart" id="{{ id }}" data-polar-chart
+    data-max="{{ max|default:10 }}" data-trail="{{ trail|default:40 }}"></div>

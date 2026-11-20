@@ -1,0 +1,17 @@
+{% comment %}
+Score ring: a progress ring with the score in the middle and a label under it.
+Drawn by web/js/score-ring.js (ECharts); size in web/css/score-ring.css. The
+page loads ECharts, score-ring.css and score-ring.js once (see session.html).
+
+  {% include "web/components/score_ring.html" with id="stability-score" measure="stability" value=stability_score label="Stability" %}
+
+  id       unique id on the page (required)
+  measure  "speech" or "stability" (sets the ring colour)
+  value    the score, 0 to 100 (data, from the view)
+  label    text under the number, e.g. "Stability"
+
+Other code updates the score with
+document.getElementById(id).scoreRing.setValue(85).
+{% endcomment %}
+<div class="score-ring" id="{{ id }}" data-score-ring
+    data-measure="{{ measure }}" data-value="{{ value }}" data-label="{{ label }}"></div>
