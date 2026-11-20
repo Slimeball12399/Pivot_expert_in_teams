@@ -2,8 +2,10 @@ import { useEffect, useState } from 'react';
 
 import { me } from '../api/auth';
 import { acceptInvite, fetchInvites } from '../api/invites';
+import { useAuth } from '../providers/AuthProvider';
 
 export function useInvitations() {
+  const { updateUser } = useAuth();
   const [invites, setInvites] = useState([]);
   const [currentTrainer, setCurrentTrainer] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -34,6 +36,11 @@ export function useInvitations() {
       const result = await acceptInvite(invite.id);
       setInvites((prev) => prev.filter((item) => item.id !== invite.id));
       setCurrentTrainer(result.trainerName);
+      try {
+        // Accept already succeeded — don't fail the whole thing over this.
+        updateUser(await me());
+      } catch {
+      }
       return { ok: true, message: `You're now linked to ${result.trainerName}.` };
     } catch {
       return { ok: false, message: 'Check your connection and try again.' };

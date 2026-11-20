@@ -56,6 +56,7 @@ export function ProfileScreen() {
   if (!user) return null;
 
   const age = isSpeaker ? ageFromBirthDate(fields.birthDate) : null;
+  const trainer = user.profile?.trainer;
 
   return (
     <ScreenContainer scroll>
@@ -78,9 +79,16 @@ export function ProfileScreen() {
         <View style={[styles.avatar, { backgroundColor: theme.colors.accent }]}>
           <Text style={[styles.avatarText, { color: AVATAR_TEXT_COLOR }]}>{initials(user)}</Text>
         </View>
-        <Text style={[styles.name, { color: theme.colors.text }]}>
-          {user.first_name} {user.last_name}
-        </Text>
+        <View>
+          <Text style={[styles.name, { color: theme.colors.text }]}>
+            {user.first_name} {user.last_name}
+          </Text>
+          {isSpeaker && (
+            <Text style={[styles.trainerLine, { color: theme.colors.textSecondary }]}>
+              {trainer ? `Trainer: ${trainer.first_name} ${trainer.last_name} – can see this profile` : 'Trainer: None'}
+            </Text>
+          )}
+        </View>
       </View>
 
       <View style={[styles.card, { backgroundColor: theme.colors.surface }]}>
@@ -191,6 +199,7 @@ const styles = StyleSheet.create({
   avatar: { width: 56, height: 56, borderRadius: 28, alignItems: 'center', justifyContent: 'center' },
   avatarText: { fontSize: 18, fontWeight: '700' },
   name: { fontSize: 18, fontWeight: '700' },
+  trainerLine: { fontSize: 12, marginTop: 2 },
   card: { borderRadius: 20, padding: 20, marginBottom: 20 },
   cardHeading: { fontSize: 18, fontWeight: '700', marginBottom: 8 },
   cardSubtitle: { fontSize: 13, lineHeight: 18, marginBottom: 16 },
