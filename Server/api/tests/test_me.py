@@ -71,7 +71,6 @@ class MeEndpointTests(APITestCase):
                 "role": "speaker",
                 "pending_email": "",
                 "profile": {
-                    "id": str(self.speaker.speaker_profile.id),
                     "birth_date": "1996-01-01",
                     "height_cm": 180,
                     "improvement_goals": "Calmer pace",
@@ -85,8 +84,7 @@ class MeEndpointTests(APITestCase):
             response = self.client.get(URL)
             self.assertEqual(response.status_code, status.HTTP_200_OK)
             self.assertEqual(response.json()["role"], "admin")
-            self.assertEqual(response.json()["profile"],
-                             {"id": str(self.admin.admin_profile.id)})
+            self.assertEqual(response.json()["profile"], {})
 
         with self.subTest("speaker with a trainer gets the trainer's name"):
             profile = self.speaker.speaker_profile
@@ -94,7 +92,7 @@ class MeEndpointTests(APITestCase):
             profile.save(update_fields=["admin"])
             self.client.force_authenticate(self.speaker)
             self.assertEqual(self.client.get(URL).json()["profile"]["trainer"],
-                             {"id": str(self.admin.admin_profile.id),
+                             {"id": str(self.admin.id),
                               "first_name": "Anne", "last_name": "Admin"})
 
         with self.subTest("missing profile row gives null"):
@@ -188,8 +186,8 @@ class MeEndpointTests(APITestCase):
                 self.assertEqual(self.speaker.email, "speaker@example.com")
                 self.assertEqual(self.speaker.role, User.Role.SPEAKER)
                 self.assertTrue(self.speaker.check_password(PASSWORD))
-                self.assertEqual(response.json()["profile"]["id"],
-                                 str(self.speaker.speaker_profile.id))
+                # The profile has no id of its own in the API.
+                self.assertNotIn("id", response.json()["profile"])
 
     def test_patch_serializer_depends_on_role(self):
         """Speakers get SpeakerMeUpdateSerializer, admins AdminMeUpdateSerializer."""
@@ -226,7 +224,7 @@ class MeEndpointTests(APITestCase):
 
     def test_admin_patch_ignores_speaker_profile(self):
         self.client.force_authenticate(self.admin)
-        admin_profile = {"id": str(self.admin.admin_profile.id)}
+        admin_profile = {}
         cases = [
             ("profile field", {"profile": {"height_cm": 180}}),
             ("all profile fields", {"profile": {

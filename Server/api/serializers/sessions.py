@@ -29,7 +29,19 @@ class SessionCreateSerializer(SessionBaseSerializer):
     """Input for POST /api/sessions/: who the session is with, plus the base
     fields. display defaults to WEB. The speaker can't be changed later."""
 
+    # The speaker's user id.
     speaker_id = serializers.UUIDField()
+
+
+class SessionListQuerySerializer(serializers.Serializer):
+    """Query parameters of GET /api/sessions/, all optional. status can be
+    given more than once (?status=LIVE&status=FINISHED)."""
+
+    status = serializers.ListField(
+        child=serializers.ChoiceField(choices=Session.Status.choices), required=False)
+    speaker_id = serializers.UUIDField(required=False)
+    limit = serializers.IntegerField(required=False, default=20)
+    offset = serializers.IntegerField(required=False, default=0)
 
 
 class SessionUpdateSerializer(SessionBaseSerializer):

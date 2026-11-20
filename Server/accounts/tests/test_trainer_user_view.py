@@ -75,7 +75,7 @@ class TrainerUserViewTests(TestCase):
             self.assertEqual(
                 (row.id, row.kind, row.state, row.first_name, row.last_name,
                  row.birth_date, row.phone, row.expires),
-                (self.speaker.speaker_profile.pk, TrainerUser.Kind.SPEAKER, "active",
+                (self.speaker.pk, TrainerUser.Kind.SPEAKER, "active",
                  "Mikkel", "Jensen", date(1996, 1, 1), "+4520123456", None))
             self.assertIsNotNone(row.age)
 

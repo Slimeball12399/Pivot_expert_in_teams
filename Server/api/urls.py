@@ -13,6 +13,7 @@ from .views.auth import (
     VerifyEmailView,
 )
 from .views.invites import InviteAcceptView, InviteDeclineView, InviteListView
+from .views.sessions import SessionDetailView, SessionListView
 from .views.system import health
 
 app_name = "api"
@@ -34,6 +35,10 @@ urlpatterns = [
     path("invites/", InviteListView.as_view(), name="invites"),
     path("invites/<uuid:invite_id>/accept/", InviteAcceptView.as_view(), name="invite-accept"),
     path("invites/<uuid:invite_id>/decline/", InviteDeclineView.as_view(), name="invite-decline"),
+    # GET: list. POST: create.
+    path("sessions/", SessionListView.as_view(), name="sessions"),
+    # GET: the session with its talks. PATCH: change. DELETE: cancel.
+    path("sessions/<uuid:session_id>/", SessionDetailView.as_view(), name="session"),
 
     # API docs: raw OpenAPI schema and Swagger UI
     path("schema/", SpectacularAPIView.as_view(), name="schema"),

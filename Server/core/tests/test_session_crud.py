@@ -65,7 +65,7 @@ class CreateSessionTests(SessionServiceTestCase):
         with self.subTest("with a display and a schedule"):
             when = timezone.now() + timedelta(days=1)
             session = create_session(
-                trainer=self.trainer.user, speaker_id=self.speaker.pk,
+                trainer=self.trainer.user, speaker_id=self.speaker.user_id,
                 display=Session.Display.BOTH, scheduled_at=when)
             self.assertEqual(session.status, Session.Status.NOT_STARTED)
             self.assertEqual(session.trainer, self.trainer)
@@ -76,7 +76,7 @@ class CreateSessionTests(SessionServiceTestCase):
             self.assertIsNone(session.ended_at)
 
         with self.subTest("defaults: browser only, no schedule"):
-            session = create_session(trainer=self.trainer.user, speaker_id=self.speaker.pk)
+            session = create_session(trainer=self.trainer.user, speaker_id=self.speaker.user_id)
             self.assertEqual(session.display, Session.Display.WEB)
             self.assertIsNone(session.scheduled_at)
 
@@ -86,7 +86,7 @@ class CreateSessionTests(SessionServiceTestCase):
     def test_rejects(self):
         cases = [
             ("another trainer's speaker", None, SPEAKER_NOT_YOURS,
-             {"speaker_id": self.other_speaker.pk}),
+             {"speaker_id": self.other_speaker.user_id}),
             ("a speaker that doesn't exist", None, SPEAKER_NOT_YOURS, {"speaker_id": uuid.uuid4()}),
             ("a speaker can't create sessions", None, SPEAKER_NOT_YOURS,
              {"trainer": self.speaker.user}),
@@ -99,14 +99,14 @@ class CreateSessionTests(SessionServiceTestCase):
         for label, field, code, overrides in cases:
             with self.subTest(label):
                 self.assertRaisesCode(code, create_session, field, **{
-                    "trainer": self.trainer.user, "speaker_id": self.speaker.pk, **overrides})
+                    "trainer": self.trainer.user, "speaker_id": self.speaker.user_id, **overrides})
 
         # Last, because it changes the speaker.
         with self.subTest("a deactivated speaker"):
             self.speaker.user.is_active = False
             self.speaker.user.save(update_fields=["is_active"])
             self.assertRaisesCode(SPEAKER_INACTIVE, create_session,
-                                  trainer=self.trainer.user, speaker_id=self.speaker.pk)
+                                  trainer=self.trainer.user, speaker_id=self.speaker.user_id)
 
         self.assertFalse(Session.objects.exists())
 
@@ -132,7 +132,7 @@ class ListSessionsTests(SessionServiceTestCase):
         with self.subTest("by status"):
             self.assertEqual(list_sessions(user=self.trainer.user, statuses=["LIVE"]), [live])
         with self.subTest("by speaker"):
-            self.assertEqual(list_sessions(user=self.trainer.user, speaker_id=second.pk), [theirs])
+            self.assertEqual(list_sessions(user=self.trainer.user, speaker_id=second.user_id), [theirs])
         with self.subTest("an unknown status"):
             self.assertRaisesCode(INVALID_FILTER, list_sessions,
                                   user=self.trainer.user, statuses=["SLEEPING"])

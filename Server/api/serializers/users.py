@@ -117,16 +117,16 @@ class RegisteredUserSerializer(UserBaseSerializer):
 
 
 class ProfileSerializer(serializers.Serializer):
-    """A person as others see them: the id of their profile (AdminProfile or
-    SpeakerProfile) and their name. E.g. a session's trainer and speaker."""
+    """A person as others see them: their user id and name, read from their
+    AdminProfile or SpeakerProfile. E.g. a session's trainer and speaker."""
 
-    id = serializers.UUIDField()
+    id = serializers.UUIDField(source="user_id")
     first_name = serializers.CharField(source="user.first_name")
     last_name = serializers.CharField(source="user.last_name")
 
 
 class InviteTrainerSerializer(ProfileSerializer):
-    """A trainer (an AdminProfile): their id and name. Who an invitation is
+    """A trainer (an AdminProfile): their user id and name. Who an invitation is
     from, the trainer an accepted one replaced, or a speaker's current
     trainer in /api/me/. Its own class so the API docs keep this name."""
 
@@ -135,14 +135,11 @@ class SpeakerProfileSerializer(SpeakerProfileBaseSerializer):
     """The "profile" part of GET /api/me/ for a speaker, with their current
     trainer (null when they have none)."""
 
-    id = serializers.UUIDField()
     trainer = InviteTrainerSerializer(source="admin", allow_null=True)
 
 
 class AdminProfileSerializer(serializers.Serializer):
-    """The "profile" part of GET /api/me/ for an admin."""
-
-    id = serializers.UUIDField()
+    """The "profile" part of GET /api/me/ for an admin: nothing yet."""
 
 
 class MeBaseSerializer(RegisteredUserSerializer):

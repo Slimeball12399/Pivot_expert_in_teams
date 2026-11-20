@@ -46,7 +46,8 @@ def create_session(
     scheduled_at: datetime | None = None,
 ) -> Session:
     """Creates a NOT_STARTED session of `trainer` (the logged-in admin)
-    with one of their speakers, and returns it.
+    with one of their speakers, and returns it. `speaker_id` is the
+    speaker's user id.
 
     `scheduled_at` is optional: None means the session is started on the
     spot. A speaker may have several NOT_STARTED sessions; only one can be
@@ -56,7 +57,7 @@ def create_session(
     # A speaker that doesn't exist and someone else's speaker give the
     # same error, so the API doesn't reveal which speaker ids exist.
     speaker = (SpeakerProfile.objects.select_related("user", "admin")
-               .filter(pk=speaker_id, admin__user=trainer).first())
+               .filter(user_id=speaker_id, admin__user=trainer).first())
     if speaker is None:
         raise ValidationError("This speaker is not one of yours.", code=SPEAKER_NOT_YOURS)
     if not speaker.user.is_active:
@@ -89,7 +90,7 @@ def list_sessions(
 
     Filters (optional, combined with AND):
     - `statuses`: e.g. ["NOT_STARTED", "LIVE"]
-    - `speaker_id`: a SpeakerProfile id (the same id create_session() takes), for
+    - `speaker_id`: the speaker's user id (the same id create_session() takes), for
       an admin listing one speaker's sessions. A speaker only ever sees
       their own sessions, so for them it can only narrow to nothing.
     `limit` (at least 1) and `offset` page through the results; a page
@@ -112,7 +113,7 @@ def list_sessions(
                 f"Unknown status: {', '.join(sorted(unknown))}.", code=INVALID_FILTER)
         sessions = sessions.filter(status__in=statuses)
     if speaker_id is not None:
-        sessions = sessions.filter(speaker_id=speaker_id)
+        sessions = sessions.filter(speaker__user_id=speaker_id)
 
     return list(sessions.select_related("trainer__user", "speaker__user")
                 .order_by("-created_at")[offset:offset + limit])
