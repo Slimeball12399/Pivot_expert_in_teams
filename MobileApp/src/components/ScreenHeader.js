@@ -22,8 +22,20 @@ export function ScreenHeader({ kicker, title, onBack }) {
 }
 
 const styles = StyleSheet.create({
-  row: { flexDirection: 'row', alignItems: 'flex-start', marginBottom: 20 },
-  back: { marginRight: 10, marginTop: 2 },
-  text: { flex: 1 },
-  kicker: { fontSize: 13, marginBottom: 4 },
+  row: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    marginBottom: 20,
+  },
+  back: {
+    marginRight: 10,
+    marginTop: 2,
+  },
+  text: {
+    flex: 1,
+  },
+  kicker: {
+    fontSize: 13,
+    marginBottom: 4,
+  },
 });

@@ -66,13 +66,27 @@ export function CalibrationCompass({ measurements, currentDirection, pulsing }) 
 
 const styles = StyleSheet.create({
   circle: {
-    width: SIZE, height: SIZE, borderRadius: SIZE / 2, borderWidth: 2,
-    alignItems: 'center', justifyContent: 'center',
+    width: SIZE,
+    height: SIZE,
+    borderRadius: SIZE / 2,
+    borderWidth: 2,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   innerRing: {
-    position: 'absolute', width: SIZE * 0.6, height: SIZE * 0.6,
-    borderRadius: (SIZE * 0.6) / 2, borderWidth: 1,
+    position: 'absolute',
+    width: SIZE * 0.6,
+    height: SIZE * 0.6,
+    borderRadius: (SIZE * 0.6) / 2,
+    borderWidth: 1,
   },
-  arrowWrap: { position: 'absolute' },
-  dot: { width: DOT_SIZE, height: DOT_SIZE, borderRadius: DOT_SIZE / 2, position: 'absolute' },
+  arrowWrap: {
+    position: 'absolute',
+  },
+  dot: {
+    width: DOT_SIZE,
+    height: DOT_SIZE,
+    borderRadius: DOT_SIZE / 2,
+    position: 'absolute',
+  },
 });

@@ -17,6 +17,16 @@ export function ChecklistRow({ label, value }) {
 }
 
 const styles = StyleSheet.create({
-  checklistRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', padding: 12, borderBottomWidth: 1 },
-  checklistLabel: { flexDirection: 'row', alignItems: 'center', gap: 8 },
+  checklistRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    padding: 12,
+    borderBottomWidth: 1,
+  },
+  checklistLabel: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
 });

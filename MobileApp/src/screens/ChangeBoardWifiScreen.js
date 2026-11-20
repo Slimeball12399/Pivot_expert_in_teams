@@ -53,5 +53,10 @@ export function ChangeBoardWifiScreen({ boardId }) {
 }
 
 const styles = StyleSheet.create({
-  helper: { fontSize: 13, marginTop: 20, marginBottom: 12, lineHeight: 18 },
+  helper: {
+    fontSize: 13,
+    marginTop: 20,
+    marginBottom: 12,
+    lineHeight: 18,
+  },
 });

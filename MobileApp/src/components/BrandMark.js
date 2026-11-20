@@ -30,8 +30,15 @@ export function BrandMark({ badge, subtitle }) {
 }
 
 const styles = StyleSheet.create({
-  wrapper: { alignItems: 'center', marginBottom: 24 },
-  icon: { width: 110, height: 60, marginBottom: 8 },
+  wrapper: {
+    alignItems: 'center',
+    marginBottom: 24,
+  },
+  icon: {
+    width: 110,
+    height: 60,
+    marginBottom: 8,
+  },
   fulcrum: {
     position: 'absolute',
     bottom: 4,
@@ -61,10 +68,25 @@ const styles = StyleSheet.create({
     height: 26,
     borderRadius: 13,
   },
-  wordmarkRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
-  wordmark: { fontFamily: 'Jost_400Regular', fontSize: 40 },
-  badge: { paddingHorizontal: 10, paddingVertical: 4, borderRadius: 12 },
-  badgeText: { fontSize: 12, fontWeight: '700', letterSpacing: 0.5 },
+  wordmarkRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  wordmark: {
+    fontFamily: 'Jost_400Regular',
+    fontSize: 40,
+  },
+  badge: {
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 12,
+  },
+  badgeText: {
+    fontSize: 12,
+    fontWeight: '700',
+    letterSpacing: 0.5,
+  },
   subtitle: {
     fontFamily: 'Outfit_400Regular',
     fontSize: 14,

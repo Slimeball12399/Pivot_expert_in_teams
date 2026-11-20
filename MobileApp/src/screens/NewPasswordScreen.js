@@ -33,5 +33,7 @@ export function NewPasswordScreen() {
 }
 
 const styles = StyleSheet.create({
-  submit: { marginTop: 8 },
+  submit: {
+    marginTop: 8,
+  },
 });

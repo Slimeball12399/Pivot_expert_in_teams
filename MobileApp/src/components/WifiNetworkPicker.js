@@ -57,11 +57,40 @@ export function WifiNetworkPicker({ networks, selectedSsid, onSelect, password, 
 }
 
 const styles = StyleSheet.create({
-  list: { borderWidth: 1, borderRadius: 14, marginBottom: 16, overflow: 'hidden' },
-  row: { flexDirection: 'row', alignItems: 'center', gap: 12, padding: 14 },
-  radio: { width: 20, height: 20, borderRadius: 10, borderWidth: 2, alignItems: 'center', justifyContent: 'center' },
-  radioDot: { width: 10, height: 10, borderRadius: 5 },
-  rowText: { flex: 1 },
-  ssid: { fontSize: 15, fontWeight: '700' },
-  meta: { fontSize: 12, marginTop: 2 },
+  list: {
+    borderWidth: 1,
+    borderRadius: 14,
+    marginBottom: 16,
+    overflow: 'hidden',
+  },
+  row: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    padding: 14,
+  },
+  radio: {
+    width: 20,
+    height: 20,
+    borderRadius: 10,
+    borderWidth: 2,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  radioDot: {
+    width: 10,
+    height: 10,
+    borderRadius: 5,
+  },
+  rowText: {
+    flex: 1,
+  },
+  ssid: {
+    fontSize: 15,
+    fontWeight: '700',
+  },
+  meta: {
+    fontSize: 12,
+    marginTop: 2,
+  },
 });

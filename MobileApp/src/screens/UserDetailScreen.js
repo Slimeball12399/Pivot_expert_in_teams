@@ -19,5 +19,9 @@ export function UserDetailScreen({ userId }) {
 }
 
 const styles = StyleSheet.create({
-  body: { marginTop: 12, fontSize: 14, lineHeight: 20 },
+  body: {
+    marginTop: 12,
+    fontSize: 14,
+    lineHeight: 20,
+  },
 });

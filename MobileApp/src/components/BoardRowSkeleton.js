@@ -19,8 +19,21 @@ export function BoardRowSkeleton() {
 }
 
 const styles = StyleSheet.create({
-  row: { flexDirection: 'row', alignItems: 'center', gap: 14, borderRadius: 16, padding: 14, marginBottom: 12 },
-  rowText: { flex: 1 },
-  skeletonGapLarge: { marginBottom: 8 },
-  skeletonGap: { marginBottom: 6 },
+  row: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 14,
+    borderRadius: 16,
+    padding: 14,
+    marginBottom: 12,
+  },
+  rowText: {
+    flex: 1,
+  },
+  skeletonGapLarge: {
+    marginBottom: 8,
+  },
+  skeletonGap: {
+    marginBottom: 6,
+  },
 });

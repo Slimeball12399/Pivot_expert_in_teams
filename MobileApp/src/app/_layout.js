@@ -44,6 +44,13 @@ export default function RootLayout() {
 }
 
 const styles = StyleSheet.create({
-  center: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: 24 },
-  errorText: { textAlign: 'center' },
+  center: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: 24,
+  },
+  errorText: {
+    textAlign: 'center',
+  },
 });

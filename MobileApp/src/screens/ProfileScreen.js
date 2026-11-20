@@ -192,17 +192,75 @@ export function ProfileScreen() {
 }
 
 const styles = StyleSheet.create({
-  titleRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
-  iconButton: { width: 44, height: 44, borderRadius: 22, borderWidth: 1, alignItems: 'center', justifyContent: 'center' },
-  badge: { position: 'absolute', top: -2, right: -2, width: 12, height: 12, borderRadius: 6, borderWidth: 2 },
-  identityRow: { flexDirection: 'row', alignItems: 'center', gap: 14, marginTop: 20, marginBottom: 20 },
-  avatar: { width: 56, height: 56, borderRadius: 28, alignItems: 'center', justifyContent: 'center' },
-  avatarText: { fontSize: 18, fontWeight: '700' },
-  name: { fontSize: 18, fontWeight: '700' },
-  trainerLine: { fontSize: 12, marginTop: 2 },
-  card: { borderRadius: 20, padding: 20, marginBottom: 20 },
-  cardHeading: { fontSize: 18, fontWeight: '700', marginBottom: 8 },
-  cardSubtitle: { fontSize: 13, lineHeight: 18, marginBottom: 16 },
-  helper: { fontSize: 12, marginTop: -10, marginBottom: 16 },
-  action: { marginTop: 8 },
+  titleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  iconButton: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    borderWidth: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  badge: {
+    position: 'absolute',
+    top: -2,
+    right: -2,
+    width: 12,
+    height: 12,
+    borderRadius: 6,
+    borderWidth: 2,
+  },
+  identityRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 14,
+    marginTop: 20,
+    marginBottom: 20,
+  },
+  avatar: {
+    width: 56,
+    height: 56,
+    borderRadius: 28,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  avatarText: {
+    fontSize: 18,
+    fontWeight: '700',
+  },
+  name: {
+    fontSize: 18,
+    fontWeight: '700',
+  },
+  trainerLine: {
+    fontSize: 12,
+    marginTop: 2,
+  },
+  card: {
+    borderRadius: 20,
+    padding: 20,
+    marginBottom: 20,
+  },
+  cardHeading: {
+    fontSize: 18,
+    fontWeight: '700',
+    marginBottom: 8,
+  },
+  cardSubtitle: {
+    fontSize: 13,
+    lineHeight: 18,
+    marginBottom: 16,
+  },
+  helper: {
+    fontSize: 12,
+    marginTop: -10,
+    marginBottom: 16,
+  },
+  action: {
+    marginTop: 8,
+  },
 });

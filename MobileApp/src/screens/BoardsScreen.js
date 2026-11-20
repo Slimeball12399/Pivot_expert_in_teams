@@ -129,19 +129,72 @@ export function BoardsScreen() {
 }
 
 const styles = StyleSheet.create({
-  header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 20 },
-  subtitleHeader: { fontSize: 14, marginTop: 6 },
-  logout: { fontSize: 14, fontWeight: '700', textDecorationLine: 'underline', marginTop: 6 },
-  addButton: { marginBottom: 20 },
-  centerState: { flex: 1, alignItems: 'center', justifyContent: 'center', paddingVertical: 60 },
-  centerIcon: { opacity: 0.35, marginBottom: 16 },
-  centerText: { fontSize: 14, textAlign: 'center' },
-  helper: { fontSize: 13, textAlign: 'center', marginTop: 8 },
+  header: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'flex-start',
+    marginBottom: 20,
+  },
+  subtitleHeader: {
+    fontSize: 14,
+    marginTop: 6,
+  },
+  logout: {
+    fontSize: 14,
+    fontWeight: '700',
+    textDecorationLine: 'underline',
+    marginTop: 6,
+  },
+  addButton: {
+    marginBottom: 20,
+  },
+  centerState: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 60,
+  },
+  centerIcon: {
+    opacity: 0.35,
+    marginBottom: 16,
+  },
+  centerText: {
+    fontSize: 14,
+    textAlign: 'center',
+  },
+  helper: {
+    fontSize: 13,
+    textAlign: 'center',
+    marginTop: 8,
+  },
 
-  sheetTitle: { fontSize: 18, fontWeight: '700', marginBottom: 16 },
-  sheetAction: { flexDirection: 'row', alignItems: 'center', gap: 12, borderWidth: 1, borderRadius: 12, padding: 14, marginBottom: 10 },
-  sheetActionDanger: { borderWidth: 0 },
-  sheetActionText: { fontSize: 15, fontWeight: '700' },
-  cancel: { marginTop: 6, alignItems: 'center' },
-  cancelText: { fontSize: 15, fontWeight: '700' },
+  sheetTitle: {
+    fontSize: 18,
+    fontWeight: '700',
+    marginBottom: 16,
+  },
+  sheetAction: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    borderWidth: 1,
+    borderRadius: 12,
+    padding: 14,
+    marginBottom: 10,
+  },
+  sheetActionDanger: {
+    borderWidth: 0,
+  },
+  sheetActionText: {
+    fontSize: 15,
+    fontWeight: '700',
+  },
+  cancel: {
+    marginTop: 6,
+    alignItems: 'center',
+  },
+  cancelText: {
+    fontSize: 15,
+    fontWeight: '700',
+  },
 });

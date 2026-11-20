@@ -31,5 +31,7 @@ export function Skeleton({ width, height, borderRadius = 8, style }) {
 }
 
 const styles = StyleSheet.create({
-  base: { overflow: 'hidden' },
+  base: {
+    overflow: 'hidden',
+  },
 });

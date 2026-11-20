@@ -23,8 +23,22 @@ export function InviteRow({ invite, onPress }) {
 }
 
 const styles = StyleSheet.create({
-  card: { borderRadius: 20, padding: 20, marginTop: 20 },
-  row: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
-  trainerName: { fontSize: 18, fontWeight: '700' },
-  expiry: { fontSize: 13, marginTop: 4 },
+  card: {
+    borderRadius: 20,
+    padding: 20,
+    marginTop: 20,
+  },
+  row: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  trainerName: {
+    fontSize: 18,
+    fontWeight: '700',
+  },
+  expiry: {
+    fontSize: 13,
+    marginTop: 4,
+  },
 });

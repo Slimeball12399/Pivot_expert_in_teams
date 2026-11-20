@@ -24,6 +24,16 @@ export function StatusPill({ state, label }) {
 }
 
 const styles = StyleSheet.create({
-  pill: { flexDirection: 'row', alignItems: 'center', gap: 6, borderRadius: 16, paddingVertical: 6, paddingHorizontal: 12 },
-  pillText: { fontSize: 13, fontWeight: '700' },
+  pill: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    borderRadius: 16,
+    paddingVertical: 6,
+    paddingHorizontal: 12,
+  },
+  pillText: {
+    fontSize: 13,
+    fontWeight: '700',
+  },
 });

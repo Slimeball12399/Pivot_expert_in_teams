@@ -127,22 +127,80 @@ export function InvitationsScreen() {
 }
 
 const styles = StyleSheet.create({
-  subtitle: { fontSize: 14, marginTop: 8 },
-  card: { borderRadius: 20, padding: 20, marginTop: 20 },
-  emptyText: { fontSize: 14, textAlign: 'center' },
+  subtitle: {
+    fontSize: 14,
+    marginTop: 8,
+  },
+  card: {
+    borderRadius: 20,
+    padding: 20,
+    marginTop: 20,
+  },
+  emptyText: {
+    fontSize: 14,
+    textAlign: 'center',
+  },
 
-  sheetHeader: { flexDirection: 'row', alignItems: 'center', gap: 14, marginBottom: 20 },
-  avatar: { width: 48, height: 48, borderRadius: 24, alignItems: 'center', justifyContent: 'center' },
-  avatarText: { fontSize: 16, fontWeight: '700' },
-  sheetHeaderText: { flex: 1 },
-  sheetTitle: { fontSize: 18, fontWeight: '700' },
-  sheetSubtitle: { fontSize: 13, marginTop: 2 },
-  infoBox: { borderRadius: 14, padding: 16, marginBottom: 16 },
-  infoRow: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 10 },
-  infoRowLast: { marginBottom: 0 },
-  infoLabel: { fontSize: 13 },
-  infoValue: { fontSize: 13, fontWeight: '700' },
-  sheetBody: { fontSize: 13, lineHeight: 18, marginBottom: 20 },
-  notNow: { marginTop: 16, alignItems: 'center' },
-  notNowText: { fontSize: 15, fontWeight: '700', textDecorationLine: 'underline' },
+  sheetHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 14,
+    marginBottom: 20,
+  },
+  avatar: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  avatarText: {
+    fontSize: 16,
+    fontWeight: '700',
+  },
+  sheetHeaderText: {
+    flex: 1,
+  },
+  sheetTitle: {
+    fontSize: 18,
+    fontWeight: '700',
+  },
+  sheetSubtitle: {
+    fontSize: 13,
+    marginTop: 2,
+  },
+  infoBox: {
+    borderRadius: 14,
+    padding: 16,
+    marginBottom: 16,
+  },
+  infoRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginBottom: 10,
+  },
+  infoRowLast: {
+    marginBottom: 0,
+  },
+  infoLabel: {
+    fontSize: 13,
+  },
+  infoValue: {
+    fontSize: 13,
+    fontWeight: '700',
+  },
+  sheetBody: {
+    fontSize: 13,
+    lineHeight: 18,
+    marginBottom: 20,
+  },
+  notNow: {
+    marginTop: 16,
+    alignItems: 'center',
+  },
+  notNowText: {
+    fontSize: 15,
+    fontWeight: '700',
+    textDecorationLine: 'underline',
+  },
 });

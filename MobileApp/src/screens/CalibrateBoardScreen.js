@@ -146,24 +146,84 @@ export function CalibrateBoardScreen({ boardId, location }) {
 }
 
 const styles = StyleSheet.create({
-  pillRow: { flexDirection: 'row', gap: 10, marginVertical: 20 },
-  restWait: { alignItems: 'center', marginTop: 40 },
-  restWaitText: { fontSize: 13, textAlign: 'center', marginTop: 16 },
+  pillRow: {
+    flexDirection: 'row',
+    gap: 10,
+    marginVertical: 20,
+  },
+  restWait: {
+    alignItems: 'center',
+    marginTop: 40,
+  },
+  restWaitText: {
+    fontSize: 13,
+    textAlign: 'center',
+    marginTop: 16,
+  },
 
-  stepCard: { flexDirection: 'row', gap: 16, borderRadius: 18, padding: 18, marginBottom: 16, alignItems: 'center' },
-  stepCardText: { flex: 1 },
-  stepCardKicker: { fontSize: 11, fontWeight: '700', letterSpacing: 0.5, marginBottom: 4 },
-  stepCardTitle: { fontSize: 18, fontWeight: '700', marginBottom: 4 },
-  stepCardHelper: { fontSize: 13 },
+  stepCard: {
+    flexDirection: 'row',
+    gap: 16,
+    borderRadius: 18,
+    padding: 18,
+    marginBottom: 16,
+    alignItems: 'center',
+  },
+  stepCardText: {
+    flex: 1,
+  },
+  stepCardKicker: {
+    fontSize: 11,
+    fontWeight: '700',
+    letterSpacing: 0.5,
+    marginBottom: 4,
+  },
+  stepCardTitle: {
+    fontSize: 18,
+    fontWeight: '700',
+    marginBottom: 4,
+  },
+  stepCardHelper: {
+    fontSize: 13,
+  },
 
-  list: { borderRadius: 14, marginBottom: 16 },
-  listRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', padding: 14 },
-  listLabel: { flexDirection: 'row', alignItems: 'center', gap: 10 },
-  listDot: { width: 9, height: 9, borderRadius: 4.5 },
+  list: {
+    borderRadius: 14,
+    marginBottom: 16,
+  },
+  listRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    padding: 14,
+  },
+  listLabel: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+  },
+  listDot: {
+    width: 9,
+    height: 9,
+    borderRadius: 4.5,
+  },
 
-  holdLabel: { fontSize: 14, fontWeight: '700', marginBottom: 8 },
-  progressSpacing: { marginBottom: 12 },
-  calibrationNote: { fontSize: 12, marginBottom: 16 },
-  holdButton: { marginBottom: 20 },
-  saveButton: { marginBottom: 10 },
+  holdLabel: {
+    fontSize: 14,
+    fontWeight: '700',
+    marginBottom: 8,
+  },
+  progressSpacing: {
+    marginBottom: 12,
+  },
+  calibrationNote: {
+    fontSize: 12,
+    marginBottom: 16,
+  },
+  holdButton: {
+    marginBottom: 20,
+  },
+  saveButton: {
+    marginBottom: 10,
+  },
 });

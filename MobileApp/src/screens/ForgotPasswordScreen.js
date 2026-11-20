@@ -40,6 +40,12 @@ export function ForgotPasswordScreen() {
 }
 
 const styles = StyleSheet.create({
-  submit: { marginTop: 8 },
-  link: { textAlign: 'center', marginTop: 20, fontSize: 14 },
+  submit: {
+    marginTop: 8,
+  },
+  link: {
+    textAlign: 'center',
+    marginTop: 20,
+    fontSize: 14,
+  },
 });

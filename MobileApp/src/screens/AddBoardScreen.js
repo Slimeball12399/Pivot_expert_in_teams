@@ -216,31 +216,125 @@ export function AddBoardScreen() {
 }
 
 const styles = StyleSheet.create({
-  scanCard: { borderRadius: 20, padding: 24, alignItems: 'center', marginBottom: 20 },
-  bluetoothIcon: { width: 64, height: 64, borderRadius: 32, alignItems: 'center', justifyContent: 'center', marginBottom: 16 },
-  scanTitle: { fontSize: 18, fontWeight: '700', marginBottom: 8 },
-  scanHelper: { fontSize: 13, textAlign: 'center', lineHeight: 18 },
-  scanSpinner: { marginTop: 16 },
+  scanCard: {
+    borderRadius: 20,
+    padding: 24,
+    alignItems: 'center',
+    marginBottom: 20,
+  },
+  bluetoothIcon: {
+    width: 64,
+    height: 64,
+    borderRadius: 32,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 16,
+  },
+  scanTitle: {
+    fontSize: 18,
+    fontWeight: '700',
+    marginBottom: 8,
+  },
+  scanHelper: {
+    fontSize: 13,
+    textAlign: 'center',
+    lineHeight: 18,
+  },
+  scanSpinner: {
+    marginTop: 16,
+  },
 
-  foundLabel: { fontSize: 12, fontWeight: '700', letterSpacing: 0.5, marginBottom: 8 },
-  boardRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', borderRadius: 14, padding: 16, marginBottom: 10, borderWidth: 0 },
-  boardRowHighlight: { borderWidth: 2 },
-  boardRowText: { flex: 1, marginRight: 12 },
-  boardRowTitle: { fontSize: 16, fontWeight: '700' },
-  boardRowMeta: { fontSize: 12, marginTop: 2 },
-  connectButton: { minHeight: 40, paddingHorizontal: 16, flexShrink: 0 },
-  footerHelper: { fontSize: 12, textAlign: 'center', marginTop: 24 },
+  foundLabel: {
+    fontSize: 12,
+    fontWeight: '700',
+    letterSpacing: 0.5,
+    marginBottom: 8,
+  },
+  boardRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    borderRadius: 14,
+    padding: 16,
+    marginBottom: 10,
+    borderWidth: 0,
+  },
+  boardRowHighlight: {
+    borderWidth: 2,
+  },
+  boardRowText: {
+    flex: 1,
+    marginRight: 12,
+  },
+  boardRowTitle: {
+    fontSize: 16,
+    fontWeight: '700',
+  },
+  boardRowMeta: {
+    fontSize: 12,
+    marginTop: 2,
+  },
+  connectButton: {
+    minHeight: 40,
+    paddingHorizontal: 16,
+    flexShrink: 0,
+  },
+  footerHelper: {
+    fontSize: 12,
+    textAlign: 'center',
+    marginTop: 24,
+  },
 
-  connectedPill: { flexDirection: 'row', alignItems: 'center', gap: 8, alignSelf: 'flex-start', borderRadius: 20, paddingVertical: 6, paddingHorizontal: 12, marginBottom: 16 },
-  connectedDot: { width: 7, height: 7, borderRadius: 3.5 },
-  connectedText: { fontSize: 13, fontWeight: '700' },
+  connectedPill: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    alignSelf: 'flex-start',
+    borderRadius: 20,
+    paddingVertical: 6,
+    paddingHorizontal: 12,
+    marginBottom: 16,
+  },
+  connectedDot: {
+    width: 7,
+    height: 7,
+    borderRadius: 3.5,
+  },
+  connectedText: {
+    fontSize: 13,
+    fontWeight: '700',
+  },
 
-  manualLink: { marginBottom: 20 },
-  manualLinkText: { fontSize: 14, fontWeight: '700', textDecorationLine: 'underline' },
-  primaryAction: { marginTop: 4 },
-  skipLink: { alignItems: 'center', marginTop: 16 },
+  manualLink: {
+    marginBottom: 20,
+  },
+  manualLinkText: {
+    fontSize: 14,
+    fontWeight: '700',
+    textDecorationLine: 'underline',
+  },
+  primaryAction: {
+    marginTop: 4,
+  },
+  skipLink: {
+    alignItems: 'center',
+    marginTop: 16,
+  },
 
-  checkIconWrap: { alignItems: 'center', marginVertical: 24 },
-  checkCircle: { width: 80, height: 80, borderRadius: 40, alignItems: 'center', justifyContent: 'center' },
-  checklist: { borderRadius: 14, padding: 4, marginBottom: 20 },
+  checkIconWrap: {
+    alignItems: 'center',
+    marginVertical: 24,
+  },
+  checkCircle: {
+    width: 80,
+    height: 80,
+    borderRadius: 40,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  checklist: {
+    borderRadius: 14,
+    padding: 4,
+    marginBottom: 20,
+  },
 });

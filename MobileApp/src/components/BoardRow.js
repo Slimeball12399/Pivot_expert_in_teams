@@ -41,12 +41,45 @@ export function BoardRow({ board, onPress }) {
 }
 
 const styles = StyleSheet.create({
-  row: { flexDirection: 'row', alignItems: 'center', gap: 14, borderRadius: 16, padding: 14, marginBottom: 12 },
-  iconBox: { width: 44, height: 44, borderRadius: 12, alignItems: 'center', justifyContent: 'center' },
-  rowText: { flex: 1 },
-  boardId: { fontSize: 16, fontWeight: '700' },
-  statusLine: { flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 4 },
-  statusDot: { width: 7, height: 7, borderRadius: 3.5 },
-  statusText: { fontSize: 13, fontWeight: '700' },
-  subtitle: { fontSize: 12, marginTop: 2 },
+  row: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 14,
+    borderRadius: 16,
+    padding: 14,
+    marginBottom: 12,
+  },
+  iconBox: {
+    width: 44,
+    height: 44,
+    borderRadius: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  rowText: {
+    flex: 1,
+  },
+  boardId: {
+    fontSize: 16,
+    fontWeight: '700',
+  },
+  statusLine: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    marginTop: 4,
+  },
+  statusDot: {
+    width: 7,
+    height: 7,
+    borderRadius: 3.5,
+  },
+  statusText: {
+    fontSize: 13,
+    fontWeight: '700',
+  },
+  subtitle: {
+    fontSize: 12,
+    marginTop: 2,
+  },
 });

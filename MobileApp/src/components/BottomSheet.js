@@ -20,8 +20,13 @@ export function BottomSheet({ visible, onClose, children }) {
 }
 
 const styles = StyleSheet.create({
-  modalRoot: { flex: 1 },
-  backdrop: { ...StyleSheet.absoluteFillObject, backgroundColor: 'rgba(0,0,0,0.4)' },
+  modalRoot: {
+    flex: 1,
+  },
+  backdrop: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: 'rgba(0,0,0,0.4)',
+  },
   sheet: {
     position: 'absolute',
     left: 0,
@@ -32,5 +37,11 @@ const styles = StyleSheet.create({
     padding: 24,
     paddingBottom: 36,
   },
-  handle: { width: 36, height: 4, borderRadius: 2, alignSelf: 'center', marginBottom: 20 },
+  handle: {
+    width: 36,
+    height: 4,
+    borderRadius: 2,
+    alignSelf: 'center',
+    marginBottom: 20,
+  },
 });

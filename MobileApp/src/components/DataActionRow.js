@@ -27,8 +27,24 @@ export function DataActionRow({ icon, title, subtitle, onPress, danger }) {
 }
 
 const styles = StyleSheet.create({
-  dataRow: { flexDirection: 'row', alignItems: 'flex-start', gap: 12, borderRadius: 14, padding: 14, marginTop: 10 },
-  dataRowText: { flex: 1 },
-  dataRowTitle: { fontSize: 15, fontWeight: '700' },
-  dataRowSubtitle: { fontSize: 12, marginTop: 2, lineHeight: 16 },
+  dataRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: 12,
+    borderRadius: 14,
+    padding: 14,
+    marginTop: 10,
+  },
+  dataRowText: {
+    flex: 1,
+  },
+  dataRowTitle: {
+    fontSize: 15,
+    fontWeight: '700',
+  },
+  dataRowSubtitle: {
+    fontSize: 12,
+    marginTop: 2,
+    lineHeight: 16,
+  },
 });

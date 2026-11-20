@@ -25,6 +25,12 @@ export function ChangePasswordScreen() {
 }
 
 const styles = StyleSheet.create({
-  subtitle: { fontSize: 14, marginTop: 8, marginBottom: 20 },
-  submit: { marginTop: 8 },
+  subtitle: {
+    fontSize: 14,
+    marginTop: 8,
+    marginBottom: 20,
+  },
+  submit: {
+    marginTop: 8,
+  },
 });

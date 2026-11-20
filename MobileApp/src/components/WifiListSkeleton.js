@@ -26,8 +26,22 @@ export function WifiListSkeleton({ rows = 4 }) {
 }
 
 const styles = StyleSheet.create({
-  list: { borderWidth: 1, borderRadius: 14, marginBottom: 16, overflow: 'hidden' },
-  row: { flexDirection: 'row', alignItems: 'center', gap: 12, padding: 14 },
-  text: { flex: 1 },
-  gap: { marginBottom: 6 },
+  list: {
+    borderWidth: 1,
+    borderRadius: 14,
+    marginBottom: 16,
+    overflow: 'hidden',
+  },
+  row: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    padding: 14,
+  },
+  text: {
+    flex: 1,
+  },
+  gap: {
+    marginBottom: 6,
+  },
 });

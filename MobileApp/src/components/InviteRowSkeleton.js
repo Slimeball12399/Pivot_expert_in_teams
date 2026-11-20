@@ -17,7 +17,17 @@ export function InviteRowSkeleton() {
 }
 
 const styles = StyleSheet.create({
-  card: { borderRadius: 20, padding: 20, marginTop: 20 },
-  row: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
-  skeletonGap: { marginBottom: 6 },
+  card: {
+    borderRadius: 20,
+    padding: 20,
+    marginTop: 20,
+  },
+  row: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  skeletonGap: {
+    marginBottom: 6,
+  },
 });
