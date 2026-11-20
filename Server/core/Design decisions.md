@@ -1,10 +1,11 @@
 # Pivot: real-time architecture decisions
 
-This document compares the options for three engineering decisions in Pivot's live session pipeline, so the team can choose one per decision and record the reasoning in the report.
+This document compares the options for four engineering decisions in Pivot's live session pipeline, so the team can choose one per decision and record the reasoning in the report.
 
 1. **Audio:** how the speaker's voice gets from the browser to the backend
 2. **Process layout:** whether the real-time part runs inside the Django web process or as its own process
 3. **Background jobs:** Celery + Redis, or our own job queue in Postgres
+4. **Stream audio storage:** where the real-time part keeps the audio it receives during a talk
 
 Each decision has a diagram per option, a short explanation, a comparison table and a recommendation.
 
@@ -254,6 +255,114 @@ Middle ground: **Procrastinate**, a library that keeps jobs in Postgres and prov
 
 ---
 
+## Decision 4: Storing the stream audio on the server
+
+With 1C, the real-time process receives the trainer's voice as a stream of small audio frames (about 20 ms each). The audio is used twice:
+
+1. **Live windows:** a 30 s window every 5 s, analysed with `VoiceAnalysis.get_short_analysis` and saved as a `PartialVoiceResult`. This only needs the most recent 30 s. `VoiceAnalysis` takes a file path, so each window is written to a temporary WAV.
+2. **The full talk:** analysed once after `finish_talk` with `get_long_analysis`. This needs the whole recording, kept safe until it is in the object store (MinIO) as `Talk.audio`.
+
+Terms used below:
+
+- **PCM:** raw audio samples, one number per measurement, with no header. At 16 kHz, 16-bit, mono that is 32 KB/s, about 2 MB per minute. A PCM file can be appended to at any time, and whatever was written before a crash is still valid audio.
+- **WAV:** PCM with a 44-byte header that states the format and the data length. Python's `wave` module only writes the length on `close()`, so a WAV that is being written during the talk is broken if the process crashes.
+- **Ring buffer:** a fixed-size buffer that drops the oldest data when new data arrives, so it always holds exactly the last 30 s (`collections.deque(maxlen=...)`).
+
+### Option 4A: Memory only
+
+```mermaid
+flowchart LR
+  F["Audio frames<br/>WebRTC track"] --> M["Whole talk in memory"]
+  M -->|"every 5 s: last 30 s"| A["Window analysis"]
+  M -->|"talk finished"| O[("Object store")]
+```
+
+- Simplest: no files on the server.
+- A crash, deploy or restart of the real-time process loses the whole recording of every running talk.
+- Memory grows with talk length (about 115 MB per hour of talk).
+
+### Option 4B: Raw PCM on local disk + ring buffer in memory
+
+```mermaid
+flowchart LR
+  F["Audio frames<br/>WebRTC track"] --> P["recordings/talk_id.pcm<br/>appended, on a Docker volume"]
+  F --> RB["Ring buffer in memory<br/>last 30 s"]
+  RB -->|"every 5 s"| A["Temp WAV, get_short_analysis,<br/>PartialVoiceResult"]
+  P -->|"talk finished: wrap as WAV"| O[("Object store<br/>Talk.audio")]
+  O --> J["Background job<br/>get_long_analysis"]
+```
+
+- A crash loses at most the last flush (about 1 s), and the file is recovered on startup.
+- Memory stays at about 1 MB per talk, however long the talk is.
+- Reconnects are simple: the recording belongs to the talk, not to the connection, so audio after a reconnect is appended to the same file.
+- Lost if the server's disk itself fails during the talk.
+
+### Option 4C: Upload chunks to the object store during the talk
+
+```mermaid
+flowchart LR
+  F["Audio frames<br/>WebRTC track"] --> RB["Ring buffer in memory<br/>last 30 s"]
+  F --> C["Local chunk<br/>e.g. 30 s"]
+  C -->|"chunk full: upload, retry on failure"| O[("Object store")]
+  O -->|"talk finished: join chunks"| J["Background job"]
+```
+
+- Survives the whole server dying mid-talk.
+- Most work: retries, ordering, joining the chunks and cleaning up orphaned chunks.
+- Doesn't help the live windows: with a 5 s step every piece of audio is in 6 overlapping windows, so the windows still come from memory.
+- A multipart upload straight to the object store isn't live either: every part except the last must be at least 5 MB (about 2.5 min of 16 kHz PCM).
+
+Storing audio as database blobs was not considered: it bloats Postgres, and the object store exists for this.
+
+### Comparison
+
+| | 4A Memory only | 4B PCM on disk + ring buffer | 4C Chunks to object store |
+| --- | --- | --- | --- |
+| Real-time process crashes or restarts | Recording lost | At most ~1 s lost, recovered on startup | At most one chunk lost |
+| Server disk fails mid-talk | Recording lost | Recording lost | Kept up to the last uploaded chunk |
+| Memory per talk | Grows (~115 MB per hour) | ~1 MB | ~1 MB |
+| Live windows come from | Memory | Ring buffer | Ring buffer |
+| Extra code | None | Append + flush, WAV wrap, startup recovery | 4B plus upload, retries, joining, cleanup |
+
+**Recommendation: 4B.** It covers the realistic failure (the real-time process restarting) with little code. Add 4C next to it only if whole-server failures during talks turn out to matter; the live side stays the same.
+
+### Details for 4B
+
+**Format**
+
+- Resample every frame to one fixed format before writing: 16 kHz, mono, 16-bit, unless the analysis needs another rate (see open questions). After a reconnect the browser may send a different rate (with aiortc: `av.AudioResampler`).
+- Record raw PCM and turn it into WAV only once, when the talk is finished. FLAC (lossless, about half the size) is an option for what is kept in the object store.
+- Turn off the browser's audio processing in `getUserMedia` (`echoCancellation`, `noiseSuppression` and `autoGainControl` all `false`). Otherwise loudness and spectrum are changed before the server sees them, which skews `spl_dbfs`, pitch and spectral tilt.
+- WebRTC carries Opus, which is lossy. Whether that is good enough for formants and spectral tilt is an open question; the exact WAV upload from 1C is the fix if not.
+
+**Recording**
+
+- One file per talk, `recordings/<talk_id>.pcm`, opened in append mode, on a Docker volume so a container restart doesn't wipe it.
+- `flush()` and `os.fsync()` every 1 to 2 s.
+- On finish: write a WAV header in front, upload with `FilesService`, set `Talk.audio`, delete the local file and queue the final analysis.
+- On startup of the real-time process: `.pcm` files left from talks that are still RECORDING or PAUSED are wrapped as WAV, uploaded and set as `Talk.audio`. The audio is not lost, and a talk that ends up FAILED can be retried (`FAILED --> PROCESSING : retry [audio exists]` in LogicGraphs.md).
+
+**Live windows (30 s every 5 s)**
+
+- Every 5 s: ring buffer to temp WAV, `get_short_analysis`, save the `PartialVoiceResult`, delete the temp WAV.
+- `start_at` is the receive time (UTC) of the window's first frame, so windows line up with the stability data directly.
+- The analysis must take less than 5 s. It runs outside the event loop (`asyncio.to_thread` around `VoiceAnalysis`, which already runs the tool as a subprocess). If the previous window is still running, the next one is skipped rather than queued, so the feedback never falls behind. The analysis time is logged.
+- The ring buffer is cleared on pause, so no window mixes audio from before and after a gap.
+
+**Pauses and connection drops**
+
+- During a drop no frames arrive, so nothing is written: the file has no gaps, and the pause intervals (`TalkPause`) map audio time back to real time.
+- `paused_at` is the receive time of the last frame before the drop, not the moment the drop was detected (ICE takes a few seconds to notice). Otherwise every window after the drop is shifted by that delay.
+- `resumed_at` is the receive time of the first frame after the reconnect.
+- Short packet loss inside one connection doesn't pause the talk. It is logged per talk (1C); filling such gaps with silence based on the RTP timestamps is a later upgrade.
+
+**When the exact WAV upload from 1C is added**
+
+- The server PCM becomes the fallback if the browser upload never arrives.
+- The browser's recorder must pause and resume on the same events as the talk. Otherwise its file contains audio from stretches that count as paused and no longer matches the pause intervals.
+
+---
+
 ## Summary
 
 | Decision | Options | Recommended | Main reason |
@@ -261,6 +370,7 @@ Middle ground: **Procrastinate**, a library that keeps jobs in Postgres and prov
 | 1. Audio | 1A fixed chunks / 1B stream + chunked exact upload / 1C stream + exact upload at the end | 1C, starting stream-only | Live feedback in about a second, exact audio available, least extra work |
 | 2. Process layout | 2A inside Django / 2B separate real-time process | 2B | Deploys don't drop live sessions; only one container needs public ports |
 | 3. Background jobs | 3A Celery + Redis / 3B own Postgres queue | 3B or Procrastinate | No extra service; jobs and data commit together |
+| 4. Stream audio storage | 4A memory only / 4B PCM on disk + ring buffer / 4C chunks to object store during the talk | 4B | Survives a real-time process restart, about 1 MB memory per talk, little code |
 
 ### Decision matrix template
 
@@ -281,3 +391,5 @@ Scores 1 (poor) to 5 (good). The weights and scores below are a suggested starti
 - Latency target: SCRUM-152 says under 250 ms board to screen; SCRUM-198 says under 50 ms sensor to screen. Which one is the requirement?
 - Which sample rate does the voice-analysis module expect (16, 44.1 or 48 kHz)?
 - How many talks can run at the same time on the VPS (SCRUM-140 load test)?
+- Live windows at the start of a talk and after a resume: wait for a full 30 s window, or send shorter windows first (`window_length` is stored per row)? To agree with Oliver.
+- Is the Opus-compressed stream audio good enough for formants and spectral tilt (`h1_h2_corrected`, `h1_a3_corrected`), or is the exact WAV upload from 1C needed from the start? To ask Oliver.

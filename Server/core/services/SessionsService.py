@@ -15,10 +15,11 @@ from datetime import datetime
 
 from django.core.exceptions import ValidationError
 from django.db import IntegrityError, transaction
+from django.db.models import Prefetch
 from django.utils import timezone
 
 from accounts.models import SpeakerProfile, User
-from core.models import Session
+from core.models import Session, Talk
 
 # Error codes (ValidationError.code) the web views and the API react to.
 SPEAKER_NOT_YOURS = "speaker_not_yours"
@@ -33,7 +34,6 @@ SPEAKER_ALREADY_LIVE = "speaker_already_live"
 UNCHANGED = object()
 INVALID_FILTER = "invalid_filter"
 INVALID_PAGE = "invalid_page"
-
 
 
 # --- Create ---
@@ -117,27 +117,41 @@ def list_sessions(
     return list(sessions.select_related("trainer__user", "speaker__user")
                 .order_by("-created_at")[offset:offset + limit])
 
-# --- Update ---
-
 def get_session(user: User, session_id: uuid.UUID) -> Session:
-    """Returns the session if `user` may access it; raises otherwise, so the
-    caller stops right there.
+    """Returns the session with its talks if `user` may access it; raises
+    otherwise, so the caller stops right there.
     - admin: the sessions they are the trainer of
     - speaker: their own sessions
     Anything else, or a session that doesn't exist, gives session_not_yours
     (the same error, so the API doesn't reveal which session ids exist).
     Callers check the status they need themselves.
+
+    The talks come in the same call (two queries in total):
+    session.talks.all() holds them oldest first, without discarded ones, each
+    with its full voice result. A talk without one yet raises on
+    talk.full_voice_result, so read it with getattr(talk, "full_voice_result", None).
+    session.talks.filter(...) still runs its own query over all talks.
     """
+    talks = Prefetch(
+        "talks",
+        queryset=(Talk.objects
+                  .exclude(status=Talk.Status.DISCARDED)
+                  .select_related("full_voice_result")
+                  .order_by("started_at")))
     if user.role == User.Role.ADMIN:
-        session = Session.objects.filter(pk=session_id, trainer__user=user).first()
+        session = (Session.objects.prefetch_related(talks)
+                   .filter(pk=session_id, trainer__user=user).first())
     elif user.role == User.Role.SPEAKER:
-        session = Session.objects.filter(pk=session_id, speaker__user=user).first()
+        session = (Session.objects.prefetch_related(talks)
+                   .filter(pk=session_id, speaker__user=user).first())
     else:
         session = None
     if session is None:
         raise ValidationError("This session is not one of yours.", code=SESSION_NOT_YOURS)
     return session
 
+
+# --- Update ---
 
 @transaction.atomic
 def update_session(
@@ -208,7 +222,9 @@ def start_session(trainer: User, session_id: uuid.UUID) -> Session:
 
 @transaction.atomic
 def end_session(trainer: User, session_id: uuid.UUID) -> Session:
-    """Ends a live session (LIVE -> FINISHED), sets ended_at and returns it."""
+    """Ends a live session (LIVE -> FINISHED), sets ended_at and returns it.
+    A talk still recording or paused is finished at the same moment
+    (-> PROCESSING, with its duration), as if the trainer had finished it."""
     if trainer.role != User.Role.ADMIN:
         raise ValidationError("Only admins can manage sessions.", code=NOT_ADMIN)
     session = get_session(user=trainer, session_id=session_id)
@@ -218,8 +234,13 @@ def end_session(trainer: User, session_id: uuid.UUID) -> Session:
             f"{session.get_status_display().lower()}.",
             code=INVALID_TRANSITION)
 
+    now = timezone.now()
+    # From get_session's prefetch, so the returned session shows the change.
+    for talk in session.talks.all():
+        if talk.status in (Talk.Status.RECORDING, Talk.Status.PAUSED):
+            talk.close(Talk.Status.PROCESSING, now)
     session.status = Session.Status.FINISHED
-    session.ended_at = timezone.now()
+    session.ended_at = now
     session.save(update_fields=["status", "ended_at"])
     return session
 
@@ -241,4 +262,31 @@ def cancel_session(trainer: User, session_id: uuid.UUID) -> Session:
 
     session.status = Session.Status.CANCELLED
     session.save(update_fields=["status"])
+    return session
+
+
+@transaction.atomic
+def abort_session(trainer: User, session_id: uuid.UUID) -> Session:
+    """Aborts a live session that can't go on (LIVE -> ABORTED), e.g. when
+    the WebRTC side gives up reconnecting; sets ended_at and returns it. The
+    system calls it with the session's trainer, not a button. A talk still
+    recording or paused fails at the same moment (-> FAILED), with its
+    duration set, so it can be retried if its audio was saved."""
+    if trainer.role != User.Role.ADMIN:
+        raise ValidationError("Only admins can manage sessions.", code=NOT_ADMIN)
+    session = get_session(user=trainer, session_id=session_id)
+    if session.status != Session.Status.LIVE:
+        raise ValidationError(
+            "Only a live session can be aborted; this one is "
+            f"{session.get_status_display().lower()}.",
+            code=INVALID_TRANSITION)
+
+    now = timezone.now()
+    # From get_session's prefetch, so the returned session shows the change.
+    for talk in session.talks.all():
+        if talk.status in (Talk.Status.RECORDING, Talk.Status.PAUSED):
+            talk.close(Talk.Status.FAILED, now)
+    session.status = Session.Status.ABORTED
+    session.ended_at = now
+    session.save(update_fields=["status", "ended_at"])
     return session

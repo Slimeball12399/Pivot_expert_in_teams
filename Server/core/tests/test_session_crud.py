@@ -6,7 +6,7 @@ from django.test import TestCase
 from django.utils import timezone
 
 from accounts.tests.utils import make_speaker, make_trainer
-from core.models import Session
+from core.models import FullVoiceResult, Session, Talk
 from core.services.SessionsService import (
     INVALID_FILTER,
     INVALID_PAGE,
@@ -16,6 +16,7 @@ from core.services.SessionsService import (
     SPEAKER_ALREADY_LIVE,
     SPEAKER_INACTIVE,
     SPEAKER_NOT_YOURS,
+    abort_session,
     cancel_session,
     create_session,
     end_session,
@@ -27,7 +28,7 @@ from core.services.SessionsService import (
 from core.validators import INVALID_SCHEDULE
 
 # The rules of SessionsService: creating, listing, reading and changing
-# sessions, and the state machine events (start, end, cancel). A trainer
+# sessions, and the state machine events (start, end, cancel, abort). A trainer
 # manages their own sessions; a speaker only sees theirs.
 # The HTTP layer gets its own tests in api/tests and web/tests with the endpoints.
 
@@ -163,6 +164,31 @@ class GetSessionTests(SessionServiceTestCase):
                 self.assertEqual(get_session(user=self.trainer.user, session_id=session.pk), session)
                 self.assertEqual(get_session(user=self.speaker.user, session_id=session.pk), session)
 
+    def test_includes_the_talks_oldest_first_without_discarded_ones(self):
+        session = self.make_session(Session.Status.FINISHED)
+        now = timezone.now()
+        second = Talk.objects.create(
+            session=session, status=Talk.Status.COMPLETED, started_at=now - timedelta(minutes=5))
+        first = Talk.objects.create(
+            session=session, status=Talk.Status.COMPLETED, started_at=now - timedelta(minutes=20))
+        Talk.objects.create(
+            session=session, status=Talk.Status.DISCARDED, started_at=now - timedelta(minutes=10))
+        Talk.objects.create(
+            session=self.make_session(speaker=self.other_speaker),
+            status=Talk.Status.COMPLETED, started_at=now)
+        FullVoiceResult.objects.create(talk=first, voice_score=7.5)
+
+        for label, user in [("the trainer", self.trainer.user), ("the speaker", self.speaker.user)]:
+            with self.subTest(label):
+                with self.assertNumQueries(2):
+                    found = get_session(user=user, session_id=session.pk)
+                # The talks and their scores came with the session: no extra queries.
+                with self.assertNumQueries(0):
+                    talks = list(found.talks.all())
+                    self.assertEqual(talks, [first, second])
+                    self.assertEqual(talks[0].full_voice_result.voice_score, 7.5)
+                    self.assertIsNone(getattr(talks[1], "full_voice_result", None))
+
     def test_not_found(self):
         others = self.make_session(speaker=self.other_speaker)
         cases = [
@@ -273,6 +299,37 @@ class EndSessionTests(SessionServiceTestCase):
         session.refresh_from_db()
         self.assertEqual(session.status, Session.Status.FINISHED)
 
+    def test_finishes_the_open_talk_at_the_same_moment(self):
+        for status in (Talk.Status.RECORDING, Talk.Status.PAUSED):
+            with self.subTest(status):
+                session = self.make_session(Session.Status.LIVE, started_at=timezone.now())
+                now = timezone.now()
+                done = Talk.objects.create(
+                    session=session, status=Talk.Status.COMPLETED,
+                    started_at=now - timedelta(minutes=20), duration=timedelta(minutes=3))
+                talk = Talk.objects.create(
+                    session=session, status=status, started_at=now - timedelta(minutes=10))
+                if status == Talk.Status.PAUSED:
+                    talk.pauses.create(paused_at=now - timedelta(minutes=2))
+
+                ended = end_session(trainer=self.trainer.user, session_id=session.pk)
+
+                talk.refresh_from_db()
+                self.assertEqual(talk.status, Talk.Status.PROCESSING)
+                if status == Talk.Status.PAUSED:
+                    # Recorded until the pause, 8 minutes; the pause ends with the session.
+                    self.assertEqual(talk.duration, timedelta(minutes=8))
+                    self.assertEqual(talk.pauses.get().resumed_at, ended.ended_at)
+                else:
+                    self.assertEqual(talk.duration, ended.ended_at - talk.started_at)
+                # The returned session shows the change, without a new query.
+                with self.assertNumQueries(0):
+                    self.assertEqual(
+                        [t.status for t in ended.talks.all()],
+                        [Talk.Status.COMPLETED, Talk.Status.PROCESSING])
+                done.refresh_from_db()
+                self.assertEqual(done.duration, timedelta(minutes=3))
+
     def test_rejects(self):
         live = self.make_session(Session.Status.LIVE, started_at=timezone.now())
         waiting = self.make_session()
@@ -312,3 +369,39 @@ class CancelSessionTests(SessionServiceTestCase):
 
         waiting.refresh_from_db()
         self.assertEqual(waiting.status, Session.Status.NOT_STARTED)
+
+
+class AbortSessionTests(SessionServiceTestCase):
+    def test_aborts_and_fails_the_open_talk(self):
+        session = self.make_session(Session.Status.LIVE, started_at=timezone.now())
+        now = timezone.now()
+        talk = Talk.objects.create(
+            session=session, status=Talk.Status.PAUSED, started_at=now - timedelta(minutes=10))
+        talk.pauses.create(paused_at=now - timedelta(minutes=2))
+
+        aborted = abort_session(trainer=self.trainer.user, session_id=session.pk)
+
+        self.assertEqual(aborted.status, Session.Status.ABORTED)
+        self.assertIsNotNone(aborted.ended_at)
+        talk.refresh_from_db()
+        self.assertEqual(talk.status, Talk.Status.FAILED)
+        # The duration is set, for a retry if the audio was saved.
+        self.assertEqual(talk.duration, timedelta(minutes=8))
+        self.assertEqual(talk.pauses.get().resumed_at, aborted.ended_at)
+        session.refresh_from_db()
+        self.assertEqual(session.status, Session.Status.ABORTED)
+
+    def test_rejects(self):
+        live = self.make_session(Session.Status.LIVE, started_at=timezone.now())
+        finished = self.make_session(Session.Status.FINISHED)
+        cases = [
+            ("a speaker", NOT_ADMIN, self.speaker.user, live.pk),
+            ("another trainer", SESSION_NOT_YOURS, self.other_trainer.user, live.pk),
+            ("a session that isn't live", INVALID_TRANSITION, self.trainer.user, finished.pk),
+        ]
+        for label, code, user, session_id in cases:
+            with self.subTest(label):
+                self.assertRaisesCode(code, abort_session, trainer=user, session_id=session_id)
+
+        live.refresh_from_db()
+        self.assertEqual(live.status, Session.Status.LIVE)

@@ -8,7 +8,7 @@ from django.test import TestCase, override_settings
 from django.utils import timezone
 
 from accounts.tests.utils import make_speaker, make_trainer
-from core.models import File, Session, Talk
+from core.models import File, FullVoiceResult, PartialVoiceResult, Session, Talk
 from core.services.FilesService import FilesService
 from core.services.SessionsService import INVALID_TRANSITION, NOT_ADMIN, SESSION_NOT_YOURS
 from core.services.TalksService import (
@@ -17,6 +17,7 @@ from core.services.TalksService import (
     TALK_NOT_YOURS,
     discard_talk,
     finish_talk,
+    get_talk,
     pause_talk,
     resume_talk,
     start_talk,
@@ -24,7 +25,8 @@ from core.services.TalksService import (
 
 # The rules of TalksService: the talk state machine (start, pause, resume,
 # finish, discard), that only the session's trainer controls talks, and the
-# pause bookkeeping behind a talk's duration. Reading talks comes later.
+# pause bookkeeping behind a talk's duration, and reading talks with their
+# voice results.
 # Storing the audio itself is tested in test_files_service.py.
 
 IN_MEMORY_STORAGES = {
@@ -230,3 +232,41 @@ class DiscardTalkTests(TalkServiceTestCase):
 
         recording.refresh_from_db()
         self.assertEqual(recording.status, Talk.Status.RECORDING)
+
+
+class GetTalkTests(TalkServiceTestCase):
+    def test_gets_the_talk_with_its_results_in_time_order(self):
+        talk = self.make_talk(Talk.Status.COMPLETED)
+        FullVoiceResult.objects.create(talk=talk, voice_score=6.0)
+        # Saved out of order, read back in time order.
+        for seconds in (10, 0, 5):
+            PartialVoiceResult.objects.create(
+                talk=talk, start_at=talk.started_at + timedelta(seconds=seconds),
+                window_length=timedelta(seconds=30))
+
+        for label, user in [("the trainer", self.trainer.user), ("the speaker", self.speaker.user)]:
+            with self.subTest(label):
+                found = get_talk(user=user, talk_id=talk.pk)
+
+                with self.assertNumQueries(0):
+                    self.assertEqual(found.full_voice_result.voice_score, 6.0)
+                    starts = [p.start_at - talk.started_at
+                              for p in found.partial_voice_results.all()]
+                self.assertEqual(starts, [timedelta(seconds=s) for s in (0, 5, 10)])
+
+    def test_a_talk_without_results(self):
+        found = get_talk(user=self.trainer.user, talk_id=self.make_talk().pk)
+
+        self.assertIsNone(getattr(found, "full_voice_result", None))
+        self.assertEqual(list(found.partial_voice_results.all()), [])
+
+    def test_rejects(self):
+        talk = self.make_talk()
+        cases = [
+            ("another trainer", self.other_trainer.user, talk.pk),
+            ("another speaker", self.second_speaker.user, talk.pk),
+            ("a talk that doesn't exist", self.trainer.user, uuid.uuid4()),
+        ]
+        for label, user, talk_id in cases:
+            with self.subTest(label):
+                self.assertRaisesCode(TALK_NOT_YOURS, get_talk, user=user, talk_id=talk_id)

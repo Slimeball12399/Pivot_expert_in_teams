@@ -106,6 +106,17 @@ class Talk(UUIDModel):
             ),
         ]
 
+    def close(self, status, now):
+        """Ends this talk at `now` with `status` and saves it: a pause going on
+        ends now, and duration becomes the time recorded, without the pauses.
+        Only sets the talk's own data; the services decide when a talk may be
+        closed and with which status."""
+        self.pauses.filter(resumed_at__isnull=True).update(resumed_at=now)
+        paused = sum((p.resumed_at - p.paused_at for p in self.pauses.all()), start=timedelta(0))
+        self.status = status
+        self.duration = now - self.started_at - paused
+        self.save(update_fields=["status", "duration"])
+
     def __str__(self):
         return f"Talk {self.id} {self.status}"
 

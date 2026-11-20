@@ -3,18 +3,20 @@ core/LogicGraphs.md: start, pause, resume, finish and discard.
 
 Only the session's trainer controls talks. Whether the devices are connected
 (needed before starting or resuming) is checked by the caller, which knows the
-WebRTC state; these functions only look at the database. Reading talks and
-their results comes later.
+WebRTC state; these functions only look at the database.
+
+get_talk reads one talk with all its results, for the session's trainer and
+its speaker. A session's talks come with get_session.
 """
 import uuid
-from datetime import timedelta
 
 from django.core.exceptions import ValidationError
 from django.db import IntegrityError, transaction
+from django.db.models import Prefetch
 from django.utils import timezone
 
 from accounts.models import User
-from core.models import Session, Talk
+from core.models import PartialVoiceResult, Session, Talk
 from core.services.FilesService import FilesService
 from core.services.SessionsService import INVALID_TRANSITION, NOT_ADMIN, get_session
 
@@ -94,13 +96,7 @@ def finish_talk(trainer: User, talk_id: uuid.UUID) -> Talk:
             f"{talk.get_status_display().lower()}.",
             code=INVALID_TRANSITION)
 
-    now = timezone.now()
-    # A talk finished while paused: its pause ends now.
-    talk.pauses.filter(resumed_at__isnull=True).update(resumed_at=now)
-    paused = sum((p.resumed_at - p.paused_at for p in talk.pauses.all()), start=timedelta(0))
-    talk.status = Talk.Status.PROCESSING
-    talk.duration = now - talk.started_at - paused
-    talk.save(update_fields=["status", "duration"])
+    talk.close(Talk.Status.PROCESSING, timezone.now())
     return talk
 
 
@@ -125,6 +121,33 @@ def discard_talk(trainer: User, talk_id: uuid.UUID) -> Talk:
     if talk.audio is not None:
         audio = talk.audio
         transaction.on_commit(lambda: FilesService().delete(audio), robust=True)
+    return talk
+
+
+# --- Read ---
+
+def get_talk(user: User, talk_id: uuid.UUID) -> Talk:
+    """The talk with its full voice result and all its partial voice results
+    (talk.partial_voice_results.all(), in time order), if `user` may see it:
+    - admin: talks in the sessions they are the trainer of
+    - speaker: talks in their own sessions
+    Anything else, or a talk that doesn't exist, gives talk_not_yours (the
+    same error, so the API doesn't reveal which talk ids exist).
+    Discarded talks are returned too; callers check the status they need.
+    """
+    talks = (Talk.objects
+             .select_related("full_voice_result")
+             .prefetch_related(Prefetch(
+                 "partial_voice_results",
+                 queryset=PartialVoiceResult.objects.order_by("start_at"))))
+    if user.role == User.Role.ADMIN:
+        talk = talks.filter(pk=talk_id, session__trainer__user=user).first()
+    elif user.role == User.Role.SPEAKER:
+        talk = talks.filter(pk=talk_id, session__speaker__user=user).first()
+    else:
+        talk = None
+    if talk is None:
+        raise ValidationError("This talk is not one of yours.", code=TALK_NOT_YOURS)
     return talk
 
 
