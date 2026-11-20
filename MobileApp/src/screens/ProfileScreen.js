@@ -1,11 +1,12 @@
 import { Feather } from '@expo/vector-icons';
-import { router, useFocusEffect } from 'expo-router';
-import { useCallback, useState } from 'react';
+import { router } from 'expo-router';
+import { useState } from 'react';
 import { Alert, Pressable, StyleSheet, Text, View } from 'react-native';
 
-import { fetchInvites } from '../api/invites';
+import { DataActionRow } from '../components/DataActionRow';
 import { FormError } from '../components/FormError';
 import { ScreenContainer } from '../components/ScreenContainer';
+import { usePendingInvites } from '../hooks/usePendingInvites';
 import { useProfileForm } from '../hooks/useProfileForm';
 import { useAuth } from '../providers/AuthProvider';
 import { useTheme } from '../providers/ThemeProvider';
@@ -13,41 +14,16 @@ import { Button } from '../ui/Button';
 import { TextInput } from '../ui/TextInput';
 import { ageFromBirthDate } from '../utils/validators';
 
-
 const AVATAR_TEXT_COLOR = '#123048';
 
 function initials(user) {
   return `${user.first_name?.[0] ?? ''}${user.last_name?.[0] ?? ''}`.toUpperCase();
 }
 
-function DataActionRow({ icon, title, subtitle, onPress, danger }) {
-  const { theme } = useTheme();
-  const textColor = danger ? '#ffffff' : theme.colors.text;
-  const subtitleColor = danger ? 'rgba(255,255,255,0.85)' : theme.colors.textSecondary;
-
-  return (
-    <Pressable
-      onPress={onPress}
-      style={({ pressed }) => [
-        styles.dataRow,
-        danger ? { backgroundColor: theme.colors.danger } : { borderWidth: 1, borderColor: theme.colors.border },
-        pressed && { opacity: 0.85 },
-      ]}
-    >
-      <Feather name={icon} size={20} color={textColor} />
-      <View style={styles.dataRowText}>
-        <Text style={[styles.dataRowTitle, { color: textColor }]}>{title}</Text>
-        <Text style={[styles.dataRowSubtitle, { color: subtitleColor }]}>{subtitle}</Text>
-      </View>
-    </Pressable>
-  );
-}
-
 export function ProfileScreen() {
   const { theme } = useTheme();
   const { logout } = useAuth();
   const [loggingOut, setLoggingOut] = useState(false);
-  const [hasPendingInvites, setHasPendingInvites] = useState(false);
   const {
     user,
     isSpeaker,
@@ -62,6 +38,7 @@ export function ProfileScreen() {
     cancelEditing,
     handleSave,
   } = useProfileForm();
+  const hasPendingInvites = usePendingInvites(isSpeaker);
 
   async function handleLogout() {
     setLoggingOut(true);
@@ -72,26 +49,9 @@ export function ProfileScreen() {
     }
   }
 
-  
   function comingSoon() {
     Alert.alert('Coming soon', "This feature isn't available yet.");
   }
-
-  useFocusEffect(
-    useCallback(() => {
-      if (!isSpeaker) return undefined;
-      let cancelled = false;
-      (async () => {
-        try {
-          const invites = await fetchInvites();
-          if (!cancelled) setHasPendingInvites(invites.length > 0);
-        } catch {
-         
-        }
-      })();
-      return () => { cancelled = true; };
-    }, [isSpeaker]),
-  );
 
   if (!user) return null;
 
@@ -236,8 +196,4 @@ const styles = StyleSheet.create({
   cardSubtitle: { fontSize: 13, lineHeight: 18, marginBottom: 16 },
   helper: { fontSize: 12, marginTop: -10, marginBottom: 16 },
   action: { marginTop: 8 },
-  dataRow: { flexDirection: 'row', alignItems: 'flex-start', gap: 12, borderRadius: 14, padding: 14, marginTop: 10 },
-  dataRowText: { flex: 1 },
-  dataRowTitle: { fontSize: 15, fontWeight: '700' },
-  dataRowSubtitle: { fontSize: 12, marginTop: 2, lineHeight: 16 },
 });

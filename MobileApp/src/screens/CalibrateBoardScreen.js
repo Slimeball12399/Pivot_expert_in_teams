@@ -1,17 +1,15 @@
-import { Feather } from '@expo/vector-icons';
 import { router } from 'expo-router';
-import { useEffect, useRef, useState } from 'react';
-import { ActivityIndicator, Alert, StyleSheet, Text, View } from 'react-native';
+import { ActivityIndicator, StyleSheet, Text, View } from 'react-native';
 
-import { measureCalibrationStep, saveCalibration } from '../api/boards';
 import { CalibrationCompass } from '../components/CalibrationCompass';
+import { ProgressBar } from '../components/ProgressBar';
 import { ScreenContainer } from '../components/ScreenContainer';
 import { ScreenHeader } from '../components/ScreenHeader';
+import { StatusPill } from '../components/StatusPill';
+import { DIRECTIONS, HOLD_SECONDS, useCalibrateBoard } from '../hooks/useCalibrateBoard';
 import { useTheme } from '../providers/ThemeProvider';
 import { Button } from '../ui/Button';
 
-const HOLD_SECONDS = 2;
-const DIRECTIONS = ['left', 'right', 'front', 'back'];
 const DIRECTION_LABEL = { left: 'Left', right: 'Right', front: 'Front', back: 'Back' };
 const DIRECTION_PROMPT = {
   left: 'Tilt all the way to the left.',
@@ -22,60 +20,19 @@ const DIRECTION_PROMPT = {
 
 export function CalibrateBoardScreen({ boardId, location }) {
   const { theme } = useTheme();
-  const [restDone, setRestDone] = useState(false);
-  const [measurements, setMeasurements] = useState({ left: null, right: null, front: null, back: null });
-  const [holding, setHolding] = useState(false);
-  const [holdSeconds, setHoldSeconds] = useState(0);
-  const [saving, setSaving] = useState(false);
-  const intervalRef = useRef(null);
-
-  useEffect(() => {
-    const timer = setTimeout(() => setRestDone(true), 1200);
-    return () => clearTimeout(timer);
-  }, []);
-
-  useEffect(() => () => clearInterval(intervalRef.current), []);
-
-  const currentDirection = DIRECTIONS.find((direction) => measurements[direction] == null);
-  const allMeasured = restDone && !currentDirection;
-  const measuredCount = DIRECTIONS.filter((direction) => measurements[direction] != null).length;
-
-  async function handleHold() {
-    setHolding(true);
-    setHoldSeconds(0);
-    intervalRef.current = setInterval(() => {
-      setHoldSeconds((prev) => Math.min(prev + 1, HOLD_SECONDS));
-    }, 1000);
-
-    try {
-      const result = await measureCalibrationStep(boardId, currentDirection);
-      setMeasurements((prev) => ({ ...prev, [currentDirection]: result.stopAngle }));
-    } catch {
-      Alert.alert('Could not measure this direction', 'Check your connection and try again.');
-    } finally {
-      clearInterval(intervalRef.current);
-      setHolding(false);
-      setHoldSeconds(0);
-    }
-  }
-
-  function handleStartAgain() {
-    clearInterval(intervalRef.current);
-    setHolding(false);
-    setMeasurements({ left: null, right: null, front: null, back: null });
-  }
-
-  async function handleSave() {
-    setSaving(true);
-    try {
-      await saveCalibration(boardId);
-      router.replace('/(admin)/boards');
-    } catch {
-      Alert.alert('Could not save calibration', 'Check your connection and try again.');
-    } finally {
-      setSaving(false);
-    }
-  }
+  const {
+    restDone,
+    measurements,
+    holding,
+    holdSeconds,
+    saving,
+    currentDirection,
+    allMeasured,
+    measuredCount,
+    handleHold,
+    handleStartAgain,
+    handleSave,
+  } = useCalibrateBoard(boardId);
 
   return (
     <ScreenContainer scroll>
@@ -86,37 +43,11 @@ export function CalibrateBoardScreen({ boardId, location }) {
       />
 
       <View style={styles.pillRow}>
-        <View
-          style={[
-            styles.pill,
-            restDone
-              ? { backgroundColor: theme.colors.success + '26' }
-              : { borderWidth: 1, borderColor: theme.colors.primary },
-          ]}
-        >
-          {restDone && <Feather name="check" size={14} color={theme.colors.success} />}
-          <Text style={[styles.pillText, { color: restDone ? theme.colors.success : theme.colors.text }]}>
-            1 · Level at rest
-          </Text>
-        </View>
-        <View
-          style={[
-            styles.pill,
-            allMeasured
-              ? { backgroundColor: theme.colors.success + '26' }
-              : { borderWidth: 1, borderColor: restDone ? theme.colors.primary : theme.colors.border },
-          ]}
-        >
-          {allMeasured && <Feather name="check" size={14} color={theme.colors.success} />}
-          <Text
-            style={[
-              styles.pillText,
-              { color: allMeasured ? theme.colors.success : restDone ? theme.colors.text : theme.colors.textSecondary },
-            ]}
-          >
-            2 · Full tilt range{restDone ? ` · ${measuredCount} of 4` : ''}
-          </Text>
-        </View>
+        <StatusPill state={restDone ? 'done' : 'active'} label="1 · Level at rest" />
+        <StatusPill
+          state={allMeasured ? 'done' : restDone ? 'active' : 'pending'}
+          label={`2 · Full tilt range${restDone ? ` · ${measuredCount} of 4` : ''}`}
+        />
       </View>
 
       {!restDone ? (
@@ -186,14 +117,7 @@ export function CalibrateBoardScreen({ boardId, location }) {
                 {holding && <Text style={{ color: theme.colors.textSecondary }}>   {holdSeconds} of {HOLD_SECONDS} s</Text>}
               </Text>
               {holding && (
-                <View style={[styles.progressTrack, { backgroundColor: theme.colors.border }]}>
-                  <View
-                    style={[
-                      styles.progressFill,
-                      { backgroundColor: theme.colors.primary, width: `${(holdSeconds / HOLD_SECONDS) * 100}%` },
-                    ]}
-                  />
-                </View>
+                <ProgressBar progress={holdSeconds / HOLD_SECONDS} style={styles.progressSpacing} />
               )}
               <Text style={[styles.calibrationNote, { color: theme.colors.textSecondary }]}>
                 Calibration data is never counted in anyone&apos;s progress.
@@ -223,8 +147,6 @@ export function CalibrateBoardScreen({ boardId, location }) {
 
 const styles = StyleSheet.create({
   pillRow: { flexDirection: 'row', gap: 10, marginVertical: 20 },
-  pill: { flexDirection: 'row', alignItems: 'center', gap: 6, borderRadius: 16, paddingVertical: 6, paddingHorizontal: 12 },
-  pillText: { fontSize: 13, fontWeight: '700' },
   restWait: { alignItems: 'center', marginTop: 40 },
   restWaitText: { fontSize: 13, textAlign: 'center', marginTop: 16 },
 
@@ -240,8 +162,7 @@ const styles = StyleSheet.create({
   listDot: { width: 9, height: 9, borderRadius: 4.5 },
 
   holdLabel: { fontSize: 14, fontWeight: '700', marginBottom: 8 },
-  progressTrack: { height: 8, borderRadius: 4, overflow: 'hidden', marginBottom: 12 },
-  progressFill: { height: '100%', borderRadius: 4 },
+  progressSpacing: { marginBottom: 12 },
   calibrationNote: { fontSize: 12, marginBottom: 16 },
   holdButton: { marginBottom: 20 },
   saveButton: { marginBottom: 10 },
