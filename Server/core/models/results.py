@@ -45,6 +45,10 @@ class PartialVoiceResult(VoiceMeasures):
     window_length = models.DurationField()
     # Seconds of voiced speech in the window, to filter or down-weight thin windows.
     voiced_seconds = models.FloatField(null=True, blank=True)
+    # The two lines of the live voice graph, as scores from -10 to +10; null
+    # until scored.
+    pace_score = models.FloatField(null=True, blank=True)
+    pitch_variation_score = models.FloatField(null=True, blank=True)
 
     class Meta:
         ordering = ["start_at"]

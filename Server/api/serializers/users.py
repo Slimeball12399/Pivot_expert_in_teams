@@ -116,14 +116,19 @@ class RegisteredUserSerializer(UserBaseSerializer):
     role = serializers.CharField()
 
 
-class InviteTrainerSerializer(serializers.Serializer):
-    """A trainer (an AdminProfile): their id and name. Who an invitation is
-    from, the trainer an accepted one replaced, or a speaker's current
-    trainer in /api/me/."""
+class ProfileSerializer(serializers.Serializer):
+    """A person as others see them: the id of their profile (AdminProfile or
+    SpeakerProfile) and their name. E.g. a session's trainer and speaker."""
 
     id = serializers.UUIDField()
     first_name = serializers.CharField(source="user.first_name")
     last_name = serializers.CharField(source="user.last_name")
+
+
+class InviteTrainerSerializer(ProfileSerializer):
+    """A trainer (an AdminProfile): their id and name. Who an invitation is
+    from, the trainer an accepted one replaced, or a speaker's current
+    trainer in /api/me/. Its own class so the API docs keep this name."""
 
 
 class SpeakerProfileSerializer(SpeakerProfileBaseSerializer):
