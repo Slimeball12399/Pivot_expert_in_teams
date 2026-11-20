@@ -4,6 +4,7 @@ import { useFonts } from 'expo-font';
 import { Stack } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { ActivityIndicator, StyleSheet, Text, View } from 'react-native';
+import Toast from 'react-native-toast-message';
 
 import { AppProviders } from '../providers/AppProviders';
 
@@ -39,6 +40,7 @@ export default function RootLayout() {
         <Stack.Screen name="(auth)" />
       </Stack>
       <StatusBar style="auto" />
+      <Toast />
     </AppProviders>
   );
 }

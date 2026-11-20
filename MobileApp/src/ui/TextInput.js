@@ -2,10 +2,21 @@ import { StyleSheet, Text, TextInput as RNTextInput, View } from 'react-native';
 
 import { useTheme } from '../providers/ThemeProvider';
 
-// `prefix` is a fixed +45
-export function TextInput({ label, value, onChangeText, error, prefix, ...inputProps }) {
+// `prefix` is a fixed +45. 
+export function TextInput({ label, value, onChangeText, error, prefix, editable = true, ...inputProps }) {
   const { theme } = useTheme();
   const { colors } = theme;
+
+  if (!editable) {
+    return (
+      <View style={styles.wrapper}>
+        {label && <Text style={[styles.label, { color: colors.text }]}>{label}</Text>}
+        <Text style={[styles.value, { color: colors.textSecondary }]}>
+          {value ? (prefix ? `${prefix} ${value}` : value) : '-'}
+        </Text>
+      </View>
+    );
+  }
 
   return (
     <View style={styles.wrapper}>
@@ -53,6 +64,9 @@ const styles = StyleSheet.create({
   prefix: {
     fontSize: 16,
     marginRight: 6,
+  },
+  value: {
+    fontSize: 16,
   },
   input: {
     flex: 1,

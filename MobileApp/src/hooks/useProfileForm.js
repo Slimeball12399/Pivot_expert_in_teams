@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import Toast from 'react-native-toast-message';
 
 import { updateMe } from '../api/auth';
 import { logRequestError } from '../api/client';
@@ -44,7 +45,6 @@ export function useProfileForm() {
   const [fields, setFields] = useState(() => fieldsFromUser(user));
   const [fieldErrors, setFieldErrors] = useState({});
   const [formError, setFormError] = useState(null);
-  const [successMessage, setSuccessMessage] = useState(null);
   const [submitting, setSubmitting] = useState(false);
 
   function setField(name, value) {
@@ -55,7 +55,6 @@ export function useProfileForm() {
     setFields(fieldsFromUser(user));
     setFieldErrors({});
     setFormError(null);
-    setSuccessMessage(null);
     setEditing(true);
   }
 
@@ -96,7 +95,12 @@ export function useProfileForm() {
       const updated = await updateMe(payload);
       updateUser(updated);
       setEditing(false);
-      setSuccessMessage('Profile updated.');
+      Toast.show({ 
+        type: 'success', 
+        text1: 'Profile updated.', 
+        position: 'top', 
+        visibilityTime: 1500 
+      });
     } catch (error) {
       if (__DEV__) logRequestError('Update profile', error);
       const backendErrors = error.data && typeof error.data === 'object' ? error.data : null;
@@ -126,7 +130,6 @@ export function useProfileForm() {
     setField,
     fieldErrors,
     formError,
-    successMessage,
     submitting,
     startEditing,
     cancelEditing,

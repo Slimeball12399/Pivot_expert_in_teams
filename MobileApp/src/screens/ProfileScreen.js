@@ -31,7 +31,6 @@ export function ProfileScreen() {
     setField,
     fieldErrors,
     formError,
-    successMessage,
     submitting,
     startEditing,
     cancelEditing,
@@ -92,7 +91,6 @@ export function ProfileScreen() {
 
       <View style={[styles.card, { backgroundColor: theme.colors.surface }]}>
         <FormError message={formError} />
-        <FormError message={!editing ? successMessage : null} tone="success" />
 
         <TextInput label="First name" value={fields.firstName} onChangeText={(v) => setField('firstName', v)} error={fieldErrors.firstName} editable={editing} />
         <TextInput label="Last name" value={fields.lastName} onChangeText={(v) => setField('lastName', v)} error={fieldErrors.lastName} editable={editing} />
@@ -127,9 +125,11 @@ export function ProfileScreen() {
               editable={editing}
               keyboardType="number-pad"
             />
-            <Text style={[styles.helper, { color: theme.colors.textSecondary }]}>
-              Helps us read your balance data correctly
-            </Text>
+            {editing && (
+              <Text style={[styles.helper, { color: theme.colors.textSecondary }]}>
+                Helps us read your balance data correctly
+              </Text>
+            )}
             <TextInput
               label="What you want to get better at"
               value={fields.improvementGoals}
