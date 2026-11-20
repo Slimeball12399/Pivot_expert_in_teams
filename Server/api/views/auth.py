@@ -21,19 +21,20 @@ from rest_framework_simplejwt.views import TokenBlacklistView, TokenRefreshView
 from accounts.services import accounts as account_services
 
 from ..exceptions import CodedError
-from ..serializers import (
-    ME_SERIALIZERS,
-    ME_UPDATE_SERIALIZERS,
-    CodedErrorSerializer,
-    DetailSerializer,
+from ..serializers.auth import (
     EmailCodeSerializer,
     EmailSerializer,
     LoginSerializer,
     PasswordResetConfirmSerializer,
     PasswordResetTokenSerializer,
+    TokenPairSerializer,
+)
+from ..serializers.common import CodedErrorSerializer, DetailSerializer
+from ..serializers.users import (
+    ME_SERIALIZERS,
+    ME_UPDATE_SERIALIZERS,
     RegisteredUserSerializer,
     SpeakerRegistrationSerializer,
-    TokenPairSerializer,
     me_data,
 )
 

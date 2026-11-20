@@ -17,12 +17,8 @@ from accounts.services import invites as invite_services
 
 from ..decorators import role_required
 from ..exceptions import CodedError
-from ..serializers import (
-    CodedErrorSerializer,
-    DetailSerializer,
-    InviteAcceptedSerializer,
-    InviteSerializer,
-)
+from ..serializers.common import CodedErrorSerializer, DetailSerializer
+from ..serializers.invites import InviteAcceptedSerializer, InviteSerializer
 
 TAGS = ["invites"]
 INVITE_ACCEPTED = "Invitation accepted. You're now training with this trainer."

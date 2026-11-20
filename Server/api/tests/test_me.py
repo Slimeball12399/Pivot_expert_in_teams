@@ -6,7 +6,7 @@ from rest_framework.test import APITestCase
 
 from accounts.models import SpeakerProfile, User
 from accounts.services.accounts import register_speaker
-from api.serializers import (
+from api.serializers.users import (
     ME_UPDATE_SERIALIZERS,
     AdminMeUpdateSerializer,
     SpeakerMeUpdateSerializer,
