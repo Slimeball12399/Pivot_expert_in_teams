@@ -112,3 +112,12 @@ class SessionDetailView(APIView):
         except DjangoValidationError as e:
             raise api_error(e)
         return Response(SessionDetailSerializer(session).data)
+
+
+@extend_schema_view(post=extend_schema(tags=TAGS, request=None, responses=None))
+class SessionJoinView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    @role_required(User.Role.SPEAKER)
+    def post(self, request, session_id):
+        raise NotImplementedError("Joining a session isn't built yet.")
