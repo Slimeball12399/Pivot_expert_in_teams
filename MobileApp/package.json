@@ -5,6 +5,8 @@
   "dependencies": {
     "@expo-google-fonts/jost": "^0.4.2",
     "@expo-google-fonts/outfit": "^0.4.3",
+    "@expo/vector-icons": "^15.0.2",
+    "@react-navigation/bottom-tabs": "^7.21.0",
     "expo": "~57.0.31",
     "expo-constants": "~57.0.20",
     "expo-font": "~57.0.4",
@@ -14,8 +16,10 @@
     "expo-status-bar": "~57.0.1",
     "react": "19.2.3",
     "react-native": "0.86.3",
+    "react-native-keyboard-aware-scroll-view": "^0.9.5",
     "react-native-safe-area-context": "~5.7.0",
-    "react-native-screens": "~4.26.0"
+    "react-native-screens": "~4.26.0",
+    "react-native-toast-message": "^2.5.2"
   },
   "scripts": {
     "start": "expo start",

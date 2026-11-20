@@ -23,6 +23,10 @@ export function PrivacyNoticeScreen() {
 }
 
 const styles = StyleSheet.create({
-  title: { marginBottom: 16 },
-  close: { marginTop: 24 },
+  title: {
+    marginBottom: 16,
+  },
+  close: {
+    marginTop: 24,
+  },
 });
