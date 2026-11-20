@@ -1,0 +1,33 @@
+{% comment %}
+Voice measure: one live voice score as a small card. The name with a line
+swatch (the same line as on the voice graph), the score from -10 to +10 with
+the raw value next to it, a bar with the optimal band (-5 to +5) and a dot at
+the score, and a status at the bottom. Styled by web/css/voice-measure.css;
+the page loads it once (see talk.html). No JS: CSS places the dot from --score.
+
+  {% include "web/components/voice_measure.html" with id="pace" name="Pace" line="solid" score=1.6 raw="4.8 syl/s" status="On pace" level="good" %}
+
+  id      unique id on the page (required)
+  name    the measure, e.g. "Pace"
+  line    "solid" (speech colour) or "dashed" (text colour): the line it has on the graph
+  score   the score, -10 to +10 (0 is ideal); outside that the dot stays at the edge
+  raw     the measured value as text, e.g. "4.8 syl/s"
+  status  the score in words, e.g. "On pace"
+  level   "good" (green dot) or "warn" (yellow dot)
+
+Other code updates it without a redraw:
+  el.style.setProperty("--score", 2.1);
+  el.querySelector(".voice-measure-score").textContent = "+2.1";
+{% endcomment %}
+{% load l10n %}
+{# unlocalize: CSS needs 1.6, never a localized 1,6 #}
+<div class="voice-measure {{ line }}" id="{{ id }}" style="--score: {{ score|unlocalize }}">
+    <span class="voice-measure-name">{{ name }}</span>
+    <span class="voice-measure-value">
+        <span class="voice-measure-score">{% if score > 0 %}+{% endif %}{{ score }}</span>
+        <span class="voice-measure-raw">{{ raw }}</span>
+    </span>
+    <span class="voice-measure-bar" aria-hidden="true"></span>
+    <span class="voice-measure-axis" aria-hidden="true"><span>−10</span><span>0</span><span>+10</span></span>
+    <span class="live-status {{ level }}">{{ status }}</span>
+</div>

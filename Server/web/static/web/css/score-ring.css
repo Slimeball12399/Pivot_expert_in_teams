@@ -1,0 +1,10 @@
+/* Score ring (web/components/score_ring.html). Fills whatever it is placed in:
+   give the parent a width and height to size it. The ring stays round (it uses
+   the smaller side) and is centred. The minimum only keeps it visible when the
+   parent has no size of its own. */
+.score-ring {
+    width: 100%;
+    height: 100%;
+    min-width: 160px;
+    min-height: 160px;
+}

@@ -43,6 +43,7 @@
     --shadow-dialog: 0 16px 48px rgba(0, 0, 0, 0.5);
     --speech: #ca6789;
     --stability: #1d97a3;
+    --blue: #8faae8;  /* design system: info blue in the dark theme (#183b89 is too dark on navy) */
     --success-text: #6fcc9c;
     --error-text: #ff8a8b;
     color-scheme: dark;
