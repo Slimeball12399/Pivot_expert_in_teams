@@ -134,7 +134,7 @@ def session_list(request):
     return JsonResponse({"id": session.id}, status=201)
 
 
-@require_http_methods(["GET", "POST", "PATCH", "DELETE"])
+@require_http_methods(["GET", "PATCH", "DELETE"])
 @role_required(User.Role.ADMIN)
 def session(request, session_id):
     if request.method == "GET":

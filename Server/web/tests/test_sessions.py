@@ -389,6 +389,11 @@ class SessionEditDeleteTests(TestCase):
             self.client.force_login(make_trainer("bo@example.com").user)
             self.assertEqual(self.client.delete(url).status_code, 404)
 
+    def test_post_is_not_allowed(self):
+        # Creating goes to /sessions/ (session_list).
+        response = self.client.post(reverse("web:session", args=[self.planned.id]))
+        self.assertEqual(response.status_code, 405)
+
     def test_table_buttons_open_the_dialogs(self):
         with self.subTest("upcoming: the pencil carries the edit dialog's data"):
             response = self.client.get(reverse("web:sessions"), {"status": "upcoming"})
