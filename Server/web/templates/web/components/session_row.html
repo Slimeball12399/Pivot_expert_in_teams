@@ -64,11 +64,11 @@ stability. Dates and times are UTC.
             {% heroicon_outline "play" size=20 aria_hidden="true" %}
         </button>
         {% elif row.status == "FINISHED" %}
-        {# Asks first (confirm_dialog.html), then DELETE web:session: it moves to Discarded. #}
+        {# Asks first (confirm_dialog.html), then DELETE web:session: it and its talks move to Discarded. #}
         <button type="button" class="icon-button" aria-label="Delete session with {{ name }}"
             data-confirm-url="{% url 'web:session' row.id %}" data-confirm-method="DELETE"
             data-confirm-title="Delete this session?"
-            data-confirm-body="{{ name }}'s session on {{ row.date|date:'j M' }} moves to Discarded and no longer counts in their progress."
+            data-confirm-body="{{ name }}'s session on {{ row.date|date:'j M' }} and all its talks move to Discarded and no longer count in their progress."
             data-confirm-label="Delete session">
             {% heroicon_outline "trash" size=20 aria_hidden="true" %}
         </button>

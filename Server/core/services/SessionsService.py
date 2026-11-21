@@ -334,11 +334,11 @@ def cancel_session(trainer: User, session_id: uuid.UUID) -> Session:
 
 @transaction.atomic
 def delete_session(trainer: User, session_id: uuid.UUID) -> Session:
-    """Deletes a finished session (FINISHED -> DELETED) and returns it. Like
-    cancelling, the row stays with its talks and results: it moves to the
-    Sessions page's Discarded tab and no longer counts in the speaker's
-    progress. Only finished sessions; one that hasn't started is cancelled
-    instead."""
+    """Deletes a finished session (FINISHED -> DELETED) and returns it, and
+    discards all its talks with it (-> DISCARDED). Like cancelling, the rows
+    stay, results included: it moves to the Sessions page's Discarded tab and
+    neither it nor its talks count in the speaker's progress. Only finished
+    sessions; one that hasn't started is cancelled instead."""
     if trainer.role != User.Role.ADMIN:
         raise ValidationError("Only admins can manage sessions.", code=NOT_ADMIN)
     session = get_session(user=trainer, session_id=session_id)
@@ -350,6 +350,8 @@ def delete_session(trainer: User, session_id: uuid.UUID) -> Session:
 
     session.status = Session.Status.DELETED
     session.save(update_fields=["status"])
+    # A finished session has no open talk, so this only discards closed ones.
+    Talk.objects.filter(session=session).update(status=Talk.Status.DISCARDED)
     return session
 
 

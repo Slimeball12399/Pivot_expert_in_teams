@@ -468,15 +468,24 @@ class CancelSessionTests(SessionServiceTestCase):
 
 
 class DeleteSessionTests(SessionServiceTestCase):
-    def test_deletes_and_keeps_the_row(self):
+    def test_deletes_and_discards_its_talks(self):
         session = self.make_session(Session.Status.FINISHED, started_at=timezone.now())
-        Talk.objects.create(session=session, status=Talk.Status.COMPLETED, started_at=timezone.now())
+        for status in [Talk.Status.COMPLETED, Talk.Status.FAILED, Talk.Status.DISCARDED]:
+            Talk.objects.create(session=session, status=status, started_at=timezone.now())
+        other = self.make_session(Session.Status.FINISHED, started_at=timezone.now())
+        untouched = Talk.objects.create(session=other, status=Talk.Status.COMPLETED, started_at=timezone.now())
         deleted = delete_session(trainer=self.trainer.user, session_id=session.pk)
 
-        self.assertEqual(deleted.status, Session.Status.DELETED)
-        session.refresh_from_db()
-        self.assertEqual(session.status, Session.Status.DELETED)
-        self.assertEqual(session.talks.count(), 1)  # its talks stay too
+        with self.subTest("the session: deleted, the row stays"):
+            self.assertEqual(deleted.status, Session.Status.DELETED)
+            session.refresh_from_db()
+            self.assertEqual(session.status, Session.Status.DELETED)
+        with self.subTest("all its talks discarded, the rows stay"):
+            self.assertEqual(
+                list(session.talks.values_list("status", flat=True)), [Talk.Status.DISCARDED] * 3)
+        with self.subTest("another session's talks untouched"):
+            untouched.refresh_from_db()
+            self.assertEqual(untouched.status, Talk.Status.COMPLETED)
 
     def test_rejects(self):
         finished = self.make_session(Session.Status.FINISHED, started_at=timezone.now())
@@ -492,6 +501,7 @@ class DeleteSessionTests(SessionServiceTestCase):
 
         finished.refresh_from_db()
         self.assertEqual(finished.status, Session.Status.FINISHED)
+        self.assertFalse(Talk.objects.filter(status=Talk.Status.DISCARDED).exists())
 
 
 class AbortSessionTests(SessionServiceTestCase):
