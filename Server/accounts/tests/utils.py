@@ -29,7 +29,8 @@ def code_in(message):
     return match.group(1).replace(" ", "")
 
 
-# Trainers, speakers and invites for the invite tests.
+# Trainers and speakers for tests. The same helpers as on main/admin-home
+# (there with make_invite too); when merging, keep that version.
 
 PASSWORD = "Str0ng-test-pass!"
 

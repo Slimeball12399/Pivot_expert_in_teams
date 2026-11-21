@@ -255,3 +255,94 @@
     width: 20px;
     height: 20px;
 }
+
+/* Session header (web/components/session_header.html): the app bar of the
+   session page in place of the site header. Back arrow, the name with the
+   board, talks and time under it, the status, and the actions on the right.
+   Wraps on narrow screens: the actions go to a row of their own. */
+.session-header {
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 8px 16px;
+    padding-block: 8px;
+}
+
+.session-header-back {
+    flex: none;
+    color: var(--text);
+}
+
+.session-header-text {
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+}
+
+.session-header-title {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    font-family: "Jost", sans-serif;
+    font-size: 20px;
+    line-height: 26px;
+    font-weight: 600;
+}
+
+.session-header-meta {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    font-size: 13px;
+    line-height: 18px;
+    color: var(--text-muted);
+    font-variant-numeric: tabular-nums;
+}
+
+/* The status: a dot and the label in bold, both in the status colour, no
+   border. The label takes the readable text shade where the plain colour is
+   too light for text (green; red is never text in the design system). */
+.session-header-status {
+    --status-dot: var(--text-muted);
+    --status-text: var(--text-muted);
+    flex: none;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    font-weight: 700;
+    color: var(--status-text);
+}
+
+.session-header-status::before {
+    content: "";
+    width: 10px;
+    height: 10px;
+    border-radius: 5px;
+    background: var(--status-dot);
+}
+
+.session-header-status-live,
+.session-header-status-aborted {
+    --status-dot: var(--red);
+    --status-text: var(--error-text);
+}
+
+.session-header-status-not_started {
+    --status-dot: var(--blue);
+    --status-text: var(--blue);
+}
+
+.session-header-status-finished {
+    --status-dot: var(--green);
+    --status-text: var(--success-text);
+}
+
+.session-header-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-left: auto;
+}
+
+.session-header-actions:empty {
+    display: none;
+}

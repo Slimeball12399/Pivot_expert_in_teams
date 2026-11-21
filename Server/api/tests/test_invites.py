@@ -16,7 +16,7 @@ class InviteEndpointTests(APITestCase):
         self.trainer = make_trainer("anne@example.com")
         self.speaker = make_speaker("mikkel@example.com")
         self.invite = make_invite(self.trainer, "mikkel@example.com")
-        self.trainer_body = {"id": str(self.trainer.pk), **TRAINER}
+        self.trainer_body = {"id": str(self.trainer.user_id), **TRAINER}
         self.accept_url = reverse("api:invite-accept", args=[self.invite.pk])
         self.decline_url = reverse("api:invite-decline", args=[self.invite.pk])
 
@@ -51,7 +51,7 @@ class InviteEndpointTests(APITestCase):
             [item] = self.client.get(LIST_URL).json()
             self.assertEqual(item["trainer"], self.trainer_body)
             self.assertEqual(item["replaces_trainer"],
-                             {"id": str(current.pk), "first_name": "Bo", "last_name": "Larsen"})
+                             {"id": str(current.user_id), "first_name": "Bo", "last_name": "Larsen"})
 
     def test_accept(self):
         self.client.force_authenticate(self.speaker)

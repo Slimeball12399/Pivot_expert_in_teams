@@ -1,0 +1,79 @@
+{% extends "web/base.html" %}
+{% load static %}
+
+{% block title %}Sessions | Pivot{% endblock %}
+
+{% block head %}
+<link rel="stylesheet" href="{% static 'web/css/sessions.css' %}">
+<link rel="stylesheet" href="{% static 'web/css/dialog.css' %}">
+<link rel="stylesheet" href="{% static 'web/css/combobox.css' %}">
+<link rel="stylesheet" href="{% static 'web/css/filter-menu.css' %}">
+<link rel="stylesheet" href="{% static 'web/css/badge.css' %}">
+<link rel="stylesheet" href="{% static 'web/css/user-table.css' %}">
+<script src="{% static 'web/js/new-session-dialog.js' %}" defer></script>
+<script src="{% static 'web/js/filter-menu.js' %}" defer></script>
+<script src="{% static 'web/js/confirm-dialog.js' %}" defer></script>
+{% endblock %}
+
+{% block content %}
+<section class="sessions-page">
+    {# Page head, as on the Users page: the title and numbers on the left, search and New session on the right, bottoms lined up. #}
+    <div class="sessions-head">
+        <div class="sessions-head-text">
+            <h1>Sessions</h1>
+            <p class="sessions-summary">
+                <span>{{ sessions_this_week }} this week</span>
+                <span class="sessions-summary-dot" aria-hidden="true">&middot;</span>
+                <span>{{ upcoming_today }} upcoming today</span>
+            </p>
+        </div>
+
+        <div class="sessions-actions">
+            <form class="sessions-search" method="get" role="search">
+                {# Keeps the current filters when searching. #}
+                <input type="hidden" name="status" value="{{ status }}">
+                <input type="hidden" name="period" value="{{ period }}">
+                {% heroicon_outline "magnifying-glass" size=20 aria_hidden="true" %}
+                <input class="input" type="search" name="q" value="{{ query }}" placeholder="Search by user"
+                    aria-label="Search sessions">
+            </form>
+            {% include "web/components/button.html" with text="New session" icon="plus" id="new-session-open" %}
+        </div>
+    </div>
+
+    {# Content still to be decided. #}
+    <div class="sessions-top"></div>
+
+    {# Its own row, as on the Users page: the Filters button and the selected status and time as tags. #}
+    {% include "web/components/filter_menu.html" with id="session-filters" groups=filter_groups %}
+
+    {# Sessions table, the columns as in the design. Search and filter go through the URL (?q=, ?status=). #}
+    <div class="session-table" role="table" aria-label="Sessions">
+        <div class="session-table-row session-table-head" role="row">
+            <div class="session-table-date" role="columnheader">Date</div>
+            <div class="session-table-user" role="columnheader">User</div>
+            <div class="session-table-board" role="columnheader">Board</div>
+            <div class="session-table-length" role="columnheader">Length</div>
+            <div class="session-table-talks" role="columnheader">Talks</div>
+            <div class="session-table-speech" role="columnheader">Speech</div>
+            <div class="session-table-stability" role="columnheader">Stability</div>
+            <div class="session-table-status" role="columnheader">Status</div>
+            <div class="session-table-actions" role="columnheader">
+                <span class="visually-hidden">Actions</span>
+            </div>
+        </div>
+        {% for row in rows %}
+        {% include "web/components/session_row.html" %}
+        {% empty %}
+        <p class="session-table-empty">
+            {% if query %}No session matches &ldquo;{{ query }}&rdquo;.{% else %}No sessions here yet.{% endif %}
+        </p>
+        {% endfor %}
+    </div>
+</section>
+
+{# New session, and editing one from the table (the pencil). #}
+{% include "web/components/new_session_dialog.html" %}
+{# Deleting a session from the table (the bin). #}
+{% include "web/components/confirm_dialog.html" %}
+{% endblock %}

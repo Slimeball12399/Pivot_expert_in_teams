@@ -181,6 +181,55 @@ STATIC_URL = 'static/'
 STATIC_ROOT = BASE_DIR / 'staticfiles'
 
 
+# File storage
+# https://docs.djangoproject.com/en/6.1/ref/settings/#storages
+# Every stored file (talk audio, later exports) goes through the "files"
+# storage, an S3-compatible object store (MinIO in docker-compose);
+# core.models.File keeps the metadata and the key. Code only uses
+# django.core.files.storage.storages["files"], so another backend (e.g. a
+# local folder with FileSystemStorage) is only a settings change here.
+# "default" and "staticfiles" are Django's own defaults, repeated because
+# defining STORAGES replaces all of them.
+
+if not os.environ.get("S3_BUCKET", "").strip():
+    raise ImproperlyConfigured("File storage needs S3_BUCKET in .env.")
+
+FILES_STORAGE = {
+    "BACKEND": "storages.backends.s3.S3Storage",
+    "OPTIONS": {
+        "bucket_name": os.environ["S3_BUCKET"].strip(),
+        "endpoint_url": os.environ.get("S3_ENDPOINT", "http://localhost:9090"),
+        # Falls back to the MinIO root login; use a dedicated app user outside development.
+        "access_key": os.environ.get("S3_ACCESS_KEY") or os.environ.get("MINIO_USER"),
+        "secret_key": os.environ.get("S3_SECRET_KEY") or os.environ.get("MINIO_PASSWORD"),
+        "region_name": os.environ.get("S3_REGION", "us-east-1"),  # MinIO accepts any; used for signing
+        "signature_version": "s3v4",
+        "addressing_style": "path",  # MinIO serves http://host/bucket/key
+        "default_acl": None,  # objects stay private
+        "file_overwrite": False,  # keys are UUIDs, so a clash is a bug, not an overwrite
+        "querystring_auth": True,  # url() returns signed, expiring links
+        "querystring_expire": 3600,  # seconds
+    },
+}
+
+STORAGES = {
+    "default": {"BACKEND": "django.core.files.storage.FileSystemStorage"},
+    "staticfiles": {"BACKEND": "django.contrib.staticfiles.storage.StaticFilesStorage"},
+    "files": FILES_STORAGE,
+}
+
+
+# Voice analysis
+# The tool core.services.VoiceAnalysis runs (the mock for now, the real
+# extractor later), and the Python that runs it, e.g. a separate venv when the
+# tool has its own packages. A relative script path is relative to Server/.
+# Empty: the mock next to Server, and this Python.
+
+VOICE_ANALYSIS_SCRIPT = str(BASE_DIR / (
+    os.environ.get("VOICE_ANALYSIS_SCRIPT", "").strip() or "../VoiceMock/FeatureExtractor.py"))
+VOICE_ANALYSIS_PYTHON = os.environ.get("VOICE_ANALYSIS_PYTHON", "").strip() or sys.executable
+
+
 # Email
 # https://docs.djangoproject.com/en/6.1/topics/email/#topic-email-configuration
 # SEND_EMAILS in .env:
