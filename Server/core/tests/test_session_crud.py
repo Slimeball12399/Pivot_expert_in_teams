@@ -1,5 +1,6 @@
 import uuid
-from datetime import datetime, timedelta
+from datetime import UTC, datetime, timedelta
+from unittest import mock
 
 from django.core.exceptions import ValidationError
 from django.test import TestCase
@@ -12,6 +13,8 @@ from core.services.SessionsService import (
     INVALID_PAGE,
     INVALID_TRANSITION,
     NOT_ADMIN,
+    SESSION_FILTERS,
+    SESSION_PERIODS,
     SESSION_NOT_YOURS,
     SPEAKER_ALREADY_LIVE,
     SPEAKER_INACTIVE,
@@ -21,6 +24,7 @@ from core.services.SessionsService import (
     create_session,
     end_session,
     get_session,
+    get_sessions,
     list_sessions,
     start_session,
     update_session,
@@ -109,6 +113,96 @@ class CreateSessionTests(SessionServiceTestCase):
                                   trainer=self.trainer.user, speaker_id=self.speaker.user_id)
 
         self.assertFalse(Session.objects.exists())
+
+
+class GetSessionsTests(SessionServiceTestCase):
+    """get_sessions(): the Sessions page's rows."""
+
+    def test_filters(self):
+        finished = self.make_session(Session.Status.FINISHED)
+        planned = self.make_session()
+        cancelled = self.make_session(Session.Status.CANCELLED)
+        aborted = self.make_session(Session.Status.ABORTED)
+        self.make_session(Session.Status.LIVE)  # in none of them
+        self.make_session(Session.Status.FINISHED, speaker=self.other_speaker)  # another trainer's
+
+        cases = {
+            "past": [finished],
+            "upcoming": [planned],
+            "discarded": [aborted, cancelled],  # newest first
+        }
+        self.assertEqual(set(cases), set(SESSION_FILTERS))  # a new filter needs a case here
+        for status, expected in cases.items():
+            with self.subTest(status):
+                self.assertEqual(list(get_sessions(self.trainer, status)), expected)
+        with self.subTest("an unknown status"):
+            with self.assertRaises(ValueError):
+                get_sessions(self.trainer, "live")
+
+    def test_search_by_speaker(self):
+        maja = make_speaker("maja@example.com", self.trainer,
+                            first_name="Maja", last_name="Holm").speaker_profile
+        hers = self.make_session(Session.Status.FINISHED, speaker=maja)
+        mikkels = self.make_session(Session.Status.FINISHED)
+
+        cases = [
+            ("first name, any part", "aj", [hers]),
+            ("last name", "holm", [hers]),
+            ("email", "maja@", [hers]),
+            ("surrounding spaces", "  maja ", [hers]),
+            ("nothing matches", "zzz", []),
+            ("empty: every session", "", [mikkels, hers]),
+        ]
+        for label, query, expected in cases:
+            with self.subTest(label, query=query):
+                self.assertEqual(list(get_sessions(self.trainer, "past", query)), expected)
+
+    def test_period(self):
+        """Calendar periods in UTC, as if it were Wednesday 17 June 2026, 12:00."""
+        def at(*args):
+            return datetime(*args, tzinfo=UTC)
+
+        with mock.patch("core.services.SessionsService.timezone.now", return_value=at(2026, 6, 17, 12)):
+            this_week = self.make_session(Session.Status.FINISHED, started_at=at(2026, 6, 15))  # Monday 00:00
+            last_week = self.make_session(Session.Status.FINISHED, started_at=at(2026, 6, 14, 23, 59))  # Sunday
+            this_month = self.make_session(Session.Status.FINISHED, started_at=at(2026, 6, 1))
+            this_year = self.make_session(Session.Status.FINISHED, started_at=at(2026, 1, 1))
+            last_year = self.make_session(Session.Status.FINISHED, started_at=at(2025, 12, 31, 23, 59))
+            rest_of_week = self.make_session(scheduled_at=at(2026, 6, 21, 23, 59))  # Sunday
+            next_week = self.make_session(scheduled_at=at(2026, 6, 22))  # Monday
+            next_month = self.make_session(scheduled_at=at(2026, 7, 1))
+
+            # period: (past, upcoming)
+            cases = {
+                "all": ({this_week, last_week, this_month, this_year, last_year},
+                        {rest_of_week, next_week, next_month}),
+                "week": ({this_week}, {rest_of_week}),
+                "month": ({this_week, last_week, this_month}, {rest_of_week, next_week}),
+                "year": ({this_week, last_week, this_month, this_year},
+                         {rest_of_week, next_week, next_month}),
+            }
+            self.assertEqual(set(cases), set(SESSION_PERIODS))  # a new period needs a case here
+            for period, (past, upcoming) in cases.items():
+                with self.subTest(period):
+                    self.assertEqual(set(get_sessions(self.trainer, "past", period=period)), past)
+                    self.assertEqual(set(get_sessions(self.trainer, "upcoming", period=period)), upcoming)
+            with self.subTest("an unknown period"):
+                with self.assertRaises(ValueError):
+                    get_sessions(self.trainer, period="today")
+
+        with self.subTest("date: started, else scheduled, else created"):
+            unscheduled = self.make_session()
+            dates = {session.pk: session.date for session in get_sessions(self.trainer, "upcoming")}
+            self.assertEqual(dates[next_week.pk], next_week.scheduled_at)
+            self.assertEqual(dates[unscheduled.pk], unscheduled.created_at)
+            self.assertEqual(get_sessions(self.trainer).get(pk=this_week.pk).date, this_week.started_at)
+
+    def test_talk_count_leaves_out_discarded_talks(self):
+        session = self.make_session(Session.Status.FINISHED)
+        now = timezone.now()
+        for status in [Talk.Status.COMPLETED, Talk.Status.COMPLETED, Talk.Status.DISCARDED]:
+            Talk.objects.create(session=session, status=status, started_at=now)
+        self.assertEqual(get_sessions(self.trainer).get().talk_count, 2)
 
 
 class ListSessionsTests(SessionServiceTestCase):

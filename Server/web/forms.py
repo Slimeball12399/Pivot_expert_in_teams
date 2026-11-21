@@ -1,8 +1,9 @@
-"""Forms for the logged-out web pages.
+"""Forms for the web pages.
 
 They only check the input's shape (an email, the right number of digits,
 two matching passwords). The rules themselves (is the code right, is the
-password strong enough) live in accounts.services, shared with the API.
+password strong enough, is the speaker yours) live in the services
+(accounts.services, core.services), shared with the API.
 """
 
 from django import forms
@@ -54,4 +55,29 @@ class NewPasswordForm(forms.Form):
         new, confirm = cleaned.get("new_password"), cleaned.get("confirm_password")
         if new and confirm and new != confirm:
             self.add_error("confirm_password", "The passwords don't match.")
+        return cleaned
+
+
+class SessionCreateForm(forms.Form):
+    """New session dialog: who the session is with, whether the live feedback
+    also goes to their phone, and whether it starts now or later (then with a
+    time, sent as UTC by new-session-dialog.js). Whether the speaker is yours
+    and the time is in the future is create_session()'s job."""
+
+    speaker_id = forms.UUIDField(error_messages={
+        "required": "Choose a user.",
+        "invalid": "Choose a user.",
+    })
+    stream_on_phone = forms.BooleanField(required=False)
+    start = forms.ChoiceField(
+        choices=[("now", "Now"), ("later", "Later")],
+        error_messages={"required": "Choose now or later.", "invalid_choice": "Choose now or later."})
+    scheduled_at = forms.DateTimeField(
+        required=False, error_messages={"invalid": "Enter a valid date and time."})
+
+    def clean(self):
+        cleaned = super().clean()
+        if (cleaned.get("start") == "later" and cleaned.get("scheduled_at") is None
+                and "scheduled_at" not in self.errors):
+            self.add_error("scheduled_at", "Choose a date and time.")
         return cleaned

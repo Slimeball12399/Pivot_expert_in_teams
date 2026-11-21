@@ -11,11 +11,12 @@ session; the functions that change one also check the admin role first.
 """
 import uuid
 from collections.abc import Iterable
-from datetime import datetime
+from datetime import datetime, timedelta
 
 from django.core.exceptions import ValidationError
 from django.db import IntegrityError, transaction
-from django.db.models import Prefetch
+from django.db.models import Count, Prefetch, Q
+from django.db.models.functions import Coalesce
 from django.utils import timezone
 
 from accounts.models import SpeakerProfile, User
@@ -34,6 +35,15 @@ SPEAKER_ALREADY_LIVE = "speaker_already_live"
 UNCHANGED = object()
 INVALID_FILTER = "invalid_filter"
 INVALID_PAGE = "invalid_page"
+
+# The Sessions page's filters (get_sessions): the session statuses each lists.
+SESSION_FILTERS = {
+    "past": [Session.Status.FINISHED],
+    "upcoming": [Session.Status.NOT_STARTED],
+    "discarded": [Session.Status.CANCELLED, Session.Status.ABORTED],
+}
+# ... and its time filter: the calendar period (UTC) the session's date is in.
+SESSION_PERIODS = ["all", "week", "month", "year"]
 
 
 # --- Create ---
@@ -117,6 +127,62 @@ def list_sessions(
 
     return list(sessions.select_related("trainer__user", "speaker__user")
                 .order_by("-created_at")[offset:offset + limit])
+
+
+def get_sessions(trainer, status="past", query="", period="all"):
+    """The trainer's sessions for the Sessions page, newest first, the way
+    accounts.services.invites.get_users() gives the Users page its rows.
+    `trainer` is an AdminProfile.
+
+    status, one of SESSION_FILTERS:
+      past       finished
+      upcoming   not started yet
+      discarded  cancelled or aborted
+    A live session is in none of them.
+
+    `query` searches the speaker's first name, last name and email (any
+    part).
+
+    Each session has `date`: when it started, else when it is scheduled, else
+    when it was created (the date the page shows), and `talk_count`: its talks
+    without the discarded ones.
+
+    period, one of SESSION_PERIODS: the calendar period, in UTC, that `date`
+    is in, the whole of it (so "week" under upcoming is the rest of this week):
+      all    any time
+      week   this week, Monday to Sunday
+      month  this month
+      year   this year
+    Raises ValueError for an unknown status or period.
+    """
+    if status not in SESSION_FILTERS:
+        raise ValueError(f"Unknown status: {status}")
+    if period not in SESSION_PERIODS:
+        raise ValueError(f"Unknown period: {period}")
+    sessions = (Session.objects
+                .filter(trainer=trainer, status__in=SESSION_FILTERS[status])
+                .annotate(date=Coalesce("started_at", "scheduled_at", "created_at")))
+    if period != "all":
+        today = timezone.now().replace(hour=0, minute=0, second=0, microsecond=0)
+        if period == "week":
+            start = today - timedelta(days=today.weekday())
+            end = start + timedelta(days=7)
+        elif period == "month":
+            start = today.replace(day=1)
+            end = (start + timedelta(days=32)).replace(day=1)
+        else:
+            start = today.replace(month=1, day=1)
+            end = start.replace(year=start.year + 1)
+        sessions = sessions.filter(date__gte=start, date__lt=end)
+    query = query.strip()
+    if query:
+        sessions = sessions.filter(
+            Q(speaker__user__first_name__icontains=query)
+            | Q(speaker__user__last_name__icontains=query)
+            | Q(speaker__user__email__icontains=query))
+    return (sessions.select_related("speaker__user")
+            .annotate(talk_count=Count("talks", filter=~Q(talks__status=Talk.Status.DISCARDED)))
+            .order_by("-created_at"))
 
 def get_session(user: User, session_id: uuid.UUID) -> Session:
     """Returns the session with its talks if `user` may access it; raises

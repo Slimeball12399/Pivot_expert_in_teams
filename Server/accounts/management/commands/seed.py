@@ -7,6 +7,7 @@ Reads from .env (see .env.example):
     SEED_ADMIN_EMAIL     the trainer (an admin), e.g. you
     SEED_SPEAKER_EMAIL   a speaker linked to that trainer
     SEED_INVITE_EMAIL    an email the trainer has invited, not a Pivot user yet
+                         (one that already has an account is skipped)
     SEED_PASSWORD        the password of the trainer and the speaker
     SEED_SECOND_ADMIN_EMAIL  optional: a second trainer ("Second Trainer")
                          who invites the speaker, to try switching trainers
@@ -18,7 +19,14 @@ create_invite(), so its email is printed (SEND_EMAILS=False) or really sent
 
 The speaker gets sessions with the trainer, to try the session and talk
 screens: one finished last week, one cancelled, one finished yesterday and
-one scheduled for tomorrow. Completed talks have a full voice result (score
+one scheduled for tomorrow.
+
+Six demo speakers (DEMO_SPEAKERS, @example.com, so nothing is ever mailed to
+them; same password) are linked to the trainer too, so the Sessions page has
+plenty in every tab. Each gets generated sessions: 3 to 6 finished ones over
+the last 3 months with 1 to 5 talks (some paused, discarded or failed), 2 or
+3 upcoming ones between later today and 2 weeks ahead, and for some of
+them one not scheduled, a cancelled one and an aborted one. Completed talks have a full voice result (score
 0 to 100) and partial results: 30 s windows every 5 s that never span a
 pause, scored -10 to +10. The values are made up but the same on every run.
 No session is left live, so one can be started by hand.
@@ -48,6 +56,16 @@ from accounts.services.invites import create_invite
 from core.models import FullVoiceResult, PartialVoiceResult, Session, Talk
 
 ENV_VARS = ["SEED_ADMIN_EMAIL", "SEED_SPEAKER_EMAIL", "SEED_INVITE_EMAIL", "SEED_PASSWORD"]
+
+# Demo speakers for the Sessions page: (first name, last name, email).
+DEMO_SPEAKERS = [
+    ("Maja", "Holm", "maja.holm@example.com"),
+    ("Rasmus", "Mørk", "rasmus.mork@example.com"),
+    ("Sofie", "Lund", "sofie.lund@example.com"),
+    ("Tobias", "Bach", "tobias.bach@example.com"),
+    ("Emma", "Jensen", "emma.jensen@example.com"),
+    ("Ahmed", "Karimi", "ahmed.karimi@example.com"),
+]
 
 # Placeholders for the fields a speaker must have; change them in the app.
 SPEAKER_DETAILS = {
@@ -91,17 +109,21 @@ class Command(BaseCommand):
                 speaker = self.speaker(
                     values["SEED_SPEAKER_EMAIL"], values["SEED_PASSWORD"], trainer)
                 self.sessions(speaker)
+                for index, (first_name, last_name, email) in enumerate(DEMO_SPEAKERS):
+                    demo = self.speaker(email, values["SEED_PASSWORD"], trainer, first_name, last_name)
+                    self.demo_sessions(demo, index)
                 second_trainer = None
                 if second_admin_email:
                     second_trainer = self.trainer(
                         second_admin_email, values["SEED_PASSWORD"], "Second")
             if User.objects.filter(email__iexact=values["SEED_INVITE_EMAIL"]).exists():
-                raise CommandError(
-                    f"{values['SEED_INVITE_EMAIL']} already has a Pivot account; "
-                    "SEED_INVITE_EMAIL must not.")
-            # Outside the patch: the invite emails are sent as usual.
-            with transaction.atomic():
-                self.invite(trainer, values["SEED_INVITE_EMAIL"])
+                # Already in Pivot (e.g. the invite was accepted): nothing to invite.
+                self.stdout.write(
+                    f"Invite to {values['SEED_INVITE_EMAIL']}: skipped, already has a Pivot account")
+            else:
+                # Outside the patch: the invite emails are sent as usual.
+                with transaction.atomic():
+                    self.invite(trainer, values["SEED_INVITE_EMAIL"])
             # Accepting this one in the app replaces the first trainer.
             if second_trainer is not None:
                 with transaction.atomic():
@@ -124,12 +146,17 @@ class Command(BaseCommand):
         self.verify(user)
         return user.admin_profile
 
-    def speaker(self, email, password, trainer):
+    def speaker(self, email, password, trainer, first_name=None, last_name=None):
+        """The speaker with `email`, created if needed (with SPEAKER_DETAILS,
+        and the names if given), verified and linked to `trainer`."""
         user = User.objects.filter(email__iexact=email).first()
         if user is None:
+            details = dict(SPEAKER_DETAILS)
+            if first_name:
+                details.update(first_name=first_name, last_name=last_name)
             user = register_speaker(
                 email=email, password=password, consents=Consent.Purpose.values,
-                **SPEAKER_DETAILS)
+                **details)
             self.stdout.write(f"Speaker {email}: created")
         elif user.role != User.Role.SPEAKER:
             raise CommandError(f"{email} already exists and is not a speaker.")
@@ -182,6 +209,87 @@ class Command(BaseCommand):
             trainer=trainer, speaker=speaker, status=Session.Status.NOT_STARTED,
             scheduled_at=now + timedelta(days=1))
         self.stdout.write(f"Sessions of {email}: 4 created, with talks and voice results")
+
+    def demo_sessions(self, speaker, index):
+        """Generated sessions of a demo speaker with their trainer, in every
+        status but live (see the module docstring). Skipped when the speaker
+        already has sessions. `index` (the place in DEMO_SPEAKERS) decides
+        who also gets an unscheduled, a cancelled and an aborted one, so
+        every kind is always there. created_at is set a day before each
+        session's date, so the newest-first list reads in date order."""
+        email = speaker.user.email
+        if speaker.sessions.exists():
+            self.stdout.write(f"Sessions of {email}: already there")
+            return
+        rng = random.Random(email)  # the same values on every run, different per speaker
+        now = timezone.now()
+        trainer = speaker.admin
+        between_talks = timedelta(minutes=3)
+        dated = []  # (session, its date), for created_at
+
+        # Finished, over the last 3 months, at a quarter hour during the day.
+        for days_ago in sorted(rng.sample(range(1, 91), rng.randint(3, 6)), reverse=True):
+            started_at = (now - timedelta(days=days_ago)).replace(
+                hour=rng.randint(7, 16), minute=rng.choice([0, 15, 30, 45]), second=0, microsecond=0)
+            session = Session.objects.create(
+                trainer=trainer, speaker=speaker, status=Session.Status.FINISHED,
+                display=rng.choice([Session.Display.WEB, Session.Display.BOTH]),
+                started_at=started_at)
+            start = started_at + timedelta(minutes=2)
+            for _ in range(rng.randint(1, 5)):
+                status = rng.choices(
+                    [Talk.Status.COMPLETED, Talk.Status.DISCARDED, Talk.Status.FAILED],
+                    weights=[8, 1, 1])[0]
+                seconds = rng.randint(60, 420)
+                # Some completed talks pause halfway, for 20 to 90 seconds.
+                pause = ((seconds // 2, rng.randint(20, 90))
+                         if status == Talk.Status.COMPLETED and rng.random() < 0.25 else None)
+                ended = self.talk(rng, session, start, seconds, status, pause)
+                start = ended + between_talks
+            session.ended_at = ended + timedelta(minutes=2)
+            session.save(update_fields=["ended_at"])
+            dated.append((session, started_at))
+
+        # Upcoming: 2 or 3 of later today, about tomorrow and within 2 weeks.
+        moments = [now + timedelta(hours=rng.randint(1, 8)),
+                   now + timedelta(days=1, hours=rng.randint(-3, 3)),
+                   now + timedelta(days=rng.randint(3, 14), hours=rng.randint(-4, 4))]
+        for moment in sorted(rng.sample(moments, rng.randint(2, 3))):
+            # On a quarter hour; at least 1 hour ahead, so still in the future after rounding.
+            scheduled_at = moment.replace(minute=rng.choice([0, 15, 30, 45]), second=0, microsecond=0)
+            session = Session.objects.create(
+                trainer=trainer, speaker=speaker, status=Session.Status.NOT_STARTED,
+                display=rng.choice([Session.Display.WEB, Session.Display.BOTH]),
+                scheduled_at=scheduled_at)
+            dated.append((session, scheduled_at))
+        # Every third speaker: one to start on the spot, without a time (created now).
+        if index % 3 == 1:
+            Session.objects.create(trainer=trainer, speaker=speaker, status=Session.Status.NOT_STARTED)
+
+        # Every second speaker a cancelled one (no data), every third an
+        # aborted one (a failed open talk).
+        if index % 2 == 0:
+            scheduled_at = (now - timedelta(days=rng.randint(2, 60))).replace(
+                minute=0, second=0, microsecond=0)
+            dated.append((Session.objects.create(
+                trainer=trainer, speaker=speaker, status=Session.Status.CANCELLED,
+                scheduled_at=scheduled_at), scheduled_at))
+        if index % 3 == 0:
+            started_at = (now - timedelta(days=rng.randint(2, 60))).replace(
+                minute=30, second=0, microsecond=0)
+            session = Session.objects.create(
+                trainer=trainer, speaker=speaker, status=Session.Status.ABORTED,
+                display=Session.Display.WEB, started_at=started_at)
+            ended = self.talk(rng, session, started_at + timedelta(minutes=2), rng.randint(60, 240))
+            ended = self.talk(rng, session, ended + between_talks, rng.randint(30, 120),
+                              Talk.Status.FAILED)
+            session.ended_at = ended
+            session.save(update_fields=["ended_at"])
+            dated.append((session, started_at))
+
+        for session, date in dated:
+            Session.objects.filter(pk=session.pk).update(created_at=min(date - timedelta(days=1), now))
+        self.stdout.write(f"Sessions of {email}: {speaker.sessions.count()} created, with talks and voice results")
 
     def talk(self, rng, session, started_at, seconds, status=Talk.Status.COMPLETED, pause=None):
         """A talk with `seconds` recorded seconds, starting at `started_at`;

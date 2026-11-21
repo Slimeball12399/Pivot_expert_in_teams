@@ -40,7 +40,7 @@
         <nav class="site-nav" id="site-nav" aria-label="Main">{% block nav %}
             <a href="{% url 'web:home' %}" {% if current == "home" %}aria-current="page"{% endif %}>{% heroicon_outline "home" size=20 aria_hidden="true" %}<span class="site-nav-label" data-label="Home">Home</span></a>
             <a href="{% url 'web:users' %}" {% if current == "users" %}aria-current="page"{% endif %}>{% heroicon_outline "users" size=20 aria_hidden="true" %}<span class="site-nav-label" data-label="Users">Users</span></a>
-            <a {% if current == "trainings" %}aria-current="page"{% endif %}>{% heroicon_outline "clock" size=20 aria_hidden="true" %}<span class="site-nav-label" data-label="Trainings">Trainings</span></a>
+            <a href="{% url 'web:sessions' %}" {% if current == "sessions" %}aria-current="page"{% endif %}>{% heroicon_outline "clock" size=20 aria_hidden="true" %}<span class="site-nav-label" data-label="Trainings">Trainings</span></a>
             <a {% if current == "devices" %}aria-current="page"{% endif %}>{% heroicon_outline "wifi" size=20 aria_hidden="true" %}<span class="site-nav-label" data-label="Devices">Devices</span></a>
         {% endblock %}</nav>
         {% endwith %}

@@ -10,7 +10,10 @@
     background: var(--background-raised);
     color: var(--text);
     box-shadow: var(--shadow-dialog);
-    overflow: visible;  /* so a dropdown inside can reach past the bottom edge */
+    /* At most the height of the window; anything taller (a dropdown
+       included) scrolls inside the dialog. */
+    max-height: calc(100dvh - 2rem);
+    overflow-y: auto;
 }
 
 .dialog::backdrop {
@@ -85,6 +88,29 @@
     margin-top: 24px;
 }
 
+/* Icon with the title and text next to it (new session dialog), instead of the icon above. */
+.dialog-head {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    padding-right: 44px;  /* room for the close cross */
+}
+
+.dialog-head .dialog-icon {
+    flex: none;
+    margin-bottom: 0;
+}
+
+.dialog-head-text {
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+}
+
+.dialog-head .dialog-body {
+    margin-top: 4px;
+}
+
 .dialog-actions {
     align-self: stretch;
     display: flex;
@@ -106,4 +132,132 @@
     .dialog-actions .button {
         width: 100%;
     }
+}
+
+/* An input-field or other block hidden in a dialog (display: flex would show it). */
+.dialog-field[hidden] {
+    display: none;
+}
+
+/* New session dialog (web/components/new_session_dialog.html). */
+
+.session-search > svg {
+    position: absolute;
+    left: 12px;
+    color: var(--text-muted);
+    pointer-events: none;
+}
+
+.session-search .input {
+    padding-left: 40px;
+}
+
+.session-search[hidden],
+.session-speaker[hidden] {
+    display: none;
+}
+
+/* The picked user: initials, name and email, and Change. */
+.session-speaker {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    min-height: 44px;
+    padding: 8px 12px;
+    border: 1px solid var(--line);
+    border-radius: 8px;
+}
+
+.session-speaker-initials {
+    display: inline-grid;
+    place-items: center;
+    flex: none;
+    width: 32px;
+    height: 32px;
+    border-radius: 16px;
+    background: var(--rose);
+    color: var(--navy);
+    font-size: 12px;
+    font-weight: 700;
+}
+
+.session-speaker-text {
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+    min-width: 0;
+}
+
+.session-speaker-email {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    font-size: 13px;
+    color: var(--text-muted);
+}
+
+/* A search result: initials, then name and email. */
+.combobox-option .session-speaker-initials + .session-speaker-text {
+    margin-right: auto;
+}
+
+.session-start {
+    margin-inline: 0;
+    padding: 0;
+    border: 0;
+}
+
+.session-start legend {
+    margin-bottom: 8px;
+    padding: 0;
+}
+
+/* Segmented toggle: radio buttons that look like two joined buttons. */
+.segmented {
+    display: inline-flex;
+    padding: 4px;
+    border: 1px solid var(--line);
+    border-radius: 8px;
+}
+
+.segmented-option {
+    position: relative;
+}
+
+.segmented-input {
+    position: absolute;
+    opacity: 0;
+    width: 1px;
+    height: 1px;
+}
+
+.segmented-option span {
+    display: inline-grid;
+    place-items: center;
+    min-width: 88px;
+    height: 36px;
+    padding: 0 16px;
+    border-radius: 6px;
+    font-size: 15px;
+    font-weight: 500;
+    cursor: pointer;
+}
+
+.segmented-option span:hover {
+    background: var(--background);
+}
+
+.segmented-input:checked + span {
+    background: var(--navy);
+    color: var(--paper);
+}
+
+[data-theme="dark"] .segmented-input:checked + span {
+    background: var(--paper);
+    color: var(--navy);
+}
+
+.segmented-input:focus-visible + span {
+    outline: 3px solid var(--text);
+    outline-offset: 1px;
 }

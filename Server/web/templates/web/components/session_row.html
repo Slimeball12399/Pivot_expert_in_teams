@@ -1,0 +1,76 @@
+{% comment %}
+One row of the sessions table (web/sessions.html). Styles in
+web/css/sessions.css. Needs `row`: a Session from get_sessions() (speaker
+with user, status, date, talk_count) with the view's minutes, speech and
+stability. Dates and times are UTC.
+{% endcomment %}
+<div class="session-table-row" role="row">
+    {# A date tile: navy when it ran, light when it's planned, dashed when discarded. #}
+    <div class="session-table-date" role="cell">
+        <span class="session-date session-date-{{ row.status|lower }}">
+            <span class="session-date-month">{{ row.date|date:"M" }}</span>
+            <span class="session-date-day">{{ row.date|date:"j" }}</span>
+        </span>
+    </div>
+    <div class="session-table-user" role="cell">
+        <span class="session-avatar" aria-hidden="true">
+            {{ row.speaker.user.first_name|first }}{{ row.speaker.user.last_name|first }}
+        </span>
+        <span class="session-user">
+            <span class="session-user-name">{{ row.speaker.user.get_full_name }}</span>
+            <span class="session-user-time">{{ row.date|date:"H:i" }}</span>
+        </span>
+    </div>
+    {# No boards yet. #}
+    <div class="session-table-board" role="cell">&ndash;</div>
+    <div class="session-table-length" role="cell">
+        {% if row.minutes is None %}&ndash;{% else %}{{ row.minutes }} min{% endif %}
+    </div>
+    <div class="session-table-talks" role="cell">{{ row.talk_count }}</div>
+    <div class="session-table-speech" role="cell">
+        {% include "web/components/score.html" with value=row.speech measure="speech" %}
+    </div>
+    <div class="session-table-stability" role="cell">
+        {% include "web/components/score.html" with value=row.stability measure="stability" %}
+    </div>
+    <div class="session-table-status" role="cell">
+        {% if row.status == "FINISHED" %}
+        {% include "web/components/badge.html" with text="Finished" tone="success" %}
+        {% elif row.status == "NOT_STARTED" %}
+        {% include "web/components/badge.html" with text="Scheduled" tone="info" %}
+        {% elif row.status == "LIVE" %}
+        {% include "web/components/badge.html" with text="Live" tone="error" %}
+        {% elif row.status == "ABORTED" %}
+        {# Red: it went live but didn't end cleanly. #}
+        {% include "web/components/badge.html" with text="Aborted" tone="error" %}
+        {% else %}
+        {# Cancelled: grey, it never went live. #}
+        {% include "web/components/badge.html" with text=row.get_status_display %}
+        {% endif %}
+    </div>
+    {# Actions by status. None do anything yet: no session page, edit or start flow behind them. #}
+    {% with name=row.speaker.user.get_full_name %}
+    <div class="session-table-actions" role="cell">
+        {% if row.status == "NOT_STARTED" %}
+        <button type="button" class="icon-button" aria-label="Edit session with {{ name }}">
+            {% heroicon_outline "pencil-square" size=20 aria_hidden="true" %}
+        </button>
+        <button type="button" class="icon-button" aria-label="Start session with {{ name }}">
+            {% heroicon_outline "play" size=20 aria_hidden="true" %}
+        </button>
+        {% elif row.status == "FINISHED" %}
+        <button type="button" class="icon-button" aria-label="Delete session with {{ name }}">
+            {% heroicon_outline "trash" size=20 aria_hidden="true" %}
+        </button>
+        <button type="button" class="icon-button" aria-label="Open session with {{ name }}">
+            {% heroicon_outline "eye" size=20 aria_hidden="true" %}
+        </button>
+        {% else %}
+        {# Cancelled or aborted: open only. The eye is always "open", last in the row. #}
+        <button type="button" class="icon-button" aria-label="Open session with {{ name }}">
+            {% heroicon_outline "eye" size=20 aria_hidden="true" %}
+        </button>
+        {% endif %}
+    </div>
+    {% endwith %}
+</div>

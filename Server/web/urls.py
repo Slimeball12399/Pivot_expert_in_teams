@@ -1,6 +1,6 @@
 from django.urls import path
 
-from .views import auth, pages, users
+from .views import auth, pages, sessions, users
 
 app_name = "web"
 
@@ -14,9 +14,9 @@ urlpatterns = [
          users.invite_resend, name="invite_resend"),
     path("users/invites/<uuid:invite_id>/cancel/",
          users.invite_cancel, name="invite_cancel"),
+    path("sessions/", sessions.session_list, name="sessions"),
     path("login/", auth.login, name="login"),
     path("logout/", auth.logout, name="logout"),
-    # Password reset: email -> code -> new password.
     path("forgot-password/", auth.forgot_password, name="forgot_password"),
     path("verify-code/", auth.verify_code, name="verify_code"),
     path("verify-code/resend/", auth.resend_code, name="resend_code"),
