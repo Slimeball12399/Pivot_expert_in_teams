@@ -48,28 +48,38 @@ stability. Dates and times are UTC.
         {% include "web/components/badge.html" with text=row.get_status_display %}
         {% endif %}
     </div>
-    {# Actions by status. None do anything yet: no session page, edit or start flow behind them. #}
+    {# Actions by status. Edit and delete open their dialogs, the eye opens the session (web:session); start does nothing yet. #}
     {% with name=row.speaker.user.get_full_name %}
     <div class="session-table-actions" role="cell">
         {% if row.status == "NOT_STARTED" %}
-        <button type="button" class="icon-button" aria-label="Edit session with {{ name }}">
+        {# Opens the new session dialog in edit mode (new-session-dialog.js) with what the row knows. #}
+        <button type="button" class="icon-button" aria-label="Edit session with {{ name }}"
+            data-edit-session="{% url 'web:session' row.id %}"
+            data-first-name="{{ row.speaker.user.first_name }}" data-last-name="{{ row.speaker.user.last_name }}"
+            data-email="{{ row.speaker.user.email }}" data-display="{{ row.display }}"
+            data-scheduled-at="{% if row.scheduled_at %}{{ row.scheduled_at|date:'c' }}{% endif %}">
             {% heroicon_outline "pencil-square" size=20 aria_hidden="true" %}
         </button>
         <button type="button" class="icon-button" aria-label="Start session with {{ name }}">
             {% heroicon_outline "play" size=20 aria_hidden="true" %}
         </button>
         {% elif row.status == "FINISHED" %}
-        <button type="button" class="icon-button" aria-label="Delete session with {{ name }}">
+        {# Asks first (confirm_dialog.html), then DELETE web:session: it moves to Discarded. #}
+        <button type="button" class="icon-button" aria-label="Delete session with {{ name }}"
+            data-confirm-url="{% url 'web:session' row.id %}" data-confirm-method="DELETE"
+            data-confirm-title="Delete this session?"
+            data-confirm-body="{{ name }}'s session on {{ row.date|date:'j M' }} moves to Discarded and no longer counts in their progress."
+            data-confirm-label="Delete session">
             {% heroicon_outline "trash" size=20 aria_hidden="true" %}
         </button>
-        <button type="button" class="icon-button" aria-label="Open session with {{ name }}">
+        <a class="icon-button" href="{% url 'web:session' row.id %}" aria-label="Open session with {{ name }}">
             {% heroicon_outline "eye" size=20 aria_hidden="true" %}
-        </button>
+        </a>
         {% else %}
         {# Cancelled or aborted: open only. The eye is always "open", last in the row. #}
-        <button type="button" class="icon-button" aria-label="Open session with {{ name }}">
+        <a class="icon-button" href="{% url 'web:session' row.id %}" aria-label="Open session with {{ name }}">
             {% heroicon_outline "eye" size=20 aria_hidden="true" %}
-        </button>
+        </a>
         {% endif %}
     </div>
     {% endwith %}

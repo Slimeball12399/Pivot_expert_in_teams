@@ -70,6 +70,12 @@
     color: var(--navy);
 }
 
+/* Icon tile of a destructive question (the confirm dialog): a red tint. */
+.dialog-icon-danger {
+    background: color-mix(in srgb, var(--red) 18%, var(--background-raised));
+    color: var(--error-text);
+}
+
 .dialog-title {
     margin: 0;
     font-size: 26px;

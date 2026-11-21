@@ -224,7 +224,7 @@
 }
 
 /* Date tile: month over day. Navy when it ran, light blue when it's
-   planned, dashed and muted when discarded (cancelled or aborted). */
+   planned, dashed and muted when discarded (cancelled, aborted or deleted). */
 .session-date {
     box-sizing: border-box;
     display: inline-flex;
@@ -259,7 +259,8 @@
 }
 
 .session-date-cancelled,
-.session-date-aborted {
+.session-date-aborted,
+.session-date-deleted {
     border: 1.5px dashed var(--text-muted);
     background: transparent;
     color: var(--text-muted);

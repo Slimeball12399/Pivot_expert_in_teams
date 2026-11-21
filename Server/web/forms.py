@@ -58,16 +58,13 @@ class NewPasswordForm(forms.Form):
         return cleaned
 
 
-class SessionCreateForm(forms.Form):
-    """New session dialog: who the session is with, whether the live feedback
-    also goes to their phone, and whether it starts now or later (then with a
-    time, sent as UTC by new-session-dialog.js). Whether the speaker is yours
-    and the time is in the future is create_session()'s job."""
+class SessionBaseForm(forms.Form):
+    """The session dialog's shared fields, defined once here: whether the live
+    feedback also goes to the speaker's phone, and whether it starts now or
+    later (then with a time, sent as UTC by new-session-dialog.js). Editing a
+    session uses this form as it is (the speaker can't be changed); "now"
+    removes the schedule. Whether the time is in the future is the services' job."""
 
-    speaker_id = forms.UUIDField(error_messages={
-        "required": "Choose a user.",
-        "invalid": "Choose a user.",
-    })
     stream_on_phone = forms.BooleanField(required=False)
     start = forms.ChoiceField(
         choices=[("now", "Now"), ("later", "Later")],
@@ -81,3 +78,13 @@ class SessionCreateForm(forms.Form):
                 and "scheduled_at" not in self.errors):
             self.add_error("scheduled_at", "Choose a date and time.")
         return cleaned
+
+
+class SessionCreateForm(SessionBaseForm):
+    """New session: the base fields plus who it is with. Whether the speaker
+    is yours is create_session()'s job."""
+
+    speaker_id = forms.UUIDField(error_messages={
+        "required": "Choose a user.",
+        "invalid": "Choose a user.",
+    })

@@ -21,6 +21,7 @@ from core.services.SessionsService import (
     SPEAKER_NOT_YOURS,
     abort_session,
     cancel_session,
+    delete_session,
     create_session,
     end_session,
     get_session,
@@ -123,13 +124,14 @@ class GetSessionsTests(SessionServiceTestCase):
         planned = self.make_session()
         cancelled = self.make_session(Session.Status.CANCELLED)
         aborted = self.make_session(Session.Status.ABORTED)
+        deleted = self.make_session(Session.Status.DELETED)
         self.make_session(Session.Status.LIVE)  # in none of them
         self.make_session(Session.Status.FINISHED, speaker=self.other_speaker)  # another trainer's
 
         cases = {
             "past": [finished],
             "upcoming": [planned],
-            "discarded": [aborted, cancelled],  # newest first
+            "discarded": [deleted, aborted, cancelled],  # newest first
         }
         self.assertEqual(set(cases), set(SESSION_FILTERS))  # a new filter needs a case here
         for status, expected in cases.items():
@@ -463,6 +465,33 @@ class CancelSessionTests(SessionServiceTestCase):
 
         waiting.refresh_from_db()
         self.assertEqual(waiting.status, Session.Status.NOT_STARTED)
+
+
+class DeleteSessionTests(SessionServiceTestCase):
+    def test_deletes_and_keeps_the_row(self):
+        session = self.make_session(Session.Status.FINISHED, started_at=timezone.now())
+        Talk.objects.create(session=session, status=Talk.Status.COMPLETED, started_at=timezone.now())
+        deleted = delete_session(trainer=self.trainer.user, session_id=session.pk)
+
+        self.assertEqual(deleted.status, Session.Status.DELETED)
+        session.refresh_from_db()
+        self.assertEqual(session.status, Session.Status.DELETED)
+        self.assertEqual(session.talks.count(), 1)  # its talks stay too
+
+    def test_rejects(self):
+        finished = self.make_session(Session.Status.FINISHED, started_at=timezone.now())
+        waiting = self.make_session()
+        cases = [
+            ("a speaker", NOT_ADMIN, self.speaker.user, finished.pk),
+            ("another trainer", SESSION_NOT_YOURS, self.other_trainer.user, finished.pk),
+            ("a session that hasn't finished", INVALID_TRANSITION, self.trainer.user, waiting.pk),
+        ]
+        for label, code, user, session_id in cases:
+            with self.subTest(label):
+                self.assertRaisesCode(code, delete_session, trainer=user, session_id=session_id)
+
+        finished.refresh_from_db()
+        self.assertEqual(finished.status, Session.Status.FINISHED)
 
 
 class AbortSessionTests(SessionServiceTestCase):

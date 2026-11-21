@@ -9,7 +9,9 @@ stateDiagram-v2
     NOT_STARTED --> CANCELLED : cancel
     LIVE --> FINISHED : end / set ended_at
     LIVE --> ABORTED : abort [connection timeout] / set ended_at
+    FINISHED --> DELETED : delete (out of progress, the row stays)
     FINISHED --> [*]
+    DELETED --> [*]
     CANCELLED --> [*]
     ABORTED --> [*]
     note right of LIVE : Devices can connect. A talk needs an active connection.

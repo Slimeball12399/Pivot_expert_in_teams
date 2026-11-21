@@ -1,7 +1,7 @@
 """Sessions between an admin (trainer) and one of their speakers.
 
 Status changes only happen through the state machine events (start, end,
-cancel, abort), never through a plain update; see core/LogicGraphs.md.
+cancel, abort, delete), never through a plain update; see core/LogicGraphs.md.
 
 Roles are checked where the request comes in (web: only admins log in;
 api: api.decorators.role_required). Here every query is scoped to the
@@ -40,7 +40,7 @@ INVALID_PAGE = "invalid_page"
 SESSION_FILTERS = {
     "past": [Session.Status.FINISHED],
     "upcoming": [Session.Status.NOT_STARTED],
-    "discarded": [Session.Status.CANCELLED, Session.Status.ABORTED],
+    "discarded": [Session.Status.CANCELLED, Session.Status.ABORTED, Session.Status.DELETED],
 }
 # ... and its time filter: the calendar period (UTC) the session's date is in.
 SESSION_PERIODS = ["all", "week", "month", "year"]
@@ -137,7 +137,7 @@ def get_sessions(trainer, status="past", query="", period="all"):
     status, one of SESSION_FILTERS:
       past       finished
       upcoming   not started yet
-      discarded  cancelled or aborted
+      discarded  cancelled, aborted or deleted
     A live session is in none of them.
 
     `query` searches the speaker's first name, last name and email (any
@@ -328,6 +328,27 @@ def cancel_session(trainer: User, session_id: uuid.UUID) -> Session:
             code=INVALID_TRANSITION)
 
     session.status = Session.Status.CANCELLED
+    session.save(update_fields=["status"])
+    return session
+
+
+@transaction.atomic
+def delete_session(trainer: User, session_id: uuid.UUID) -> Session:
+    """Deletes a finished session (FINISHED -> DELETED) and returns it. Like
+    cancelling, the row stays with its talks and results: it moves to the
+    Sessions page's Discarded tab and no longer counts in the speaker's
+    progress. Only finished sessions; one that hasn't started is cancelled
+    instead."""
+    if trainer.role != User.Role.ADMIN:
+        raise ValidationError("Only admins can manage sessions.", code=NOT_ADMIN)
+    session = get_session(user=trainer, session_id=session_id)
+    if session.status != Session.Status.FINISHED:
+        raise ValidationError(
+            "Only a finished session can be deleted; this one is "
+            f"{session.get_status_display().lower()}.",
+            code=INVALID_TRANSITION)
+
+    session.status = Session.Status.DELETED
     session.save(update_fields=["status"])
     return session
 

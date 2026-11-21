@@ -1,0 +1,51 @@
+{% comment %}
+Confirm dialog: "Are you sure?" before something that can't simply be undone,
+in the style of the other dialogs (icon tile, title, text, Cancel and a red
+button). One per page; confirm-dialog.js opens it from any button that has
+data-confirm-url, and sends that request when confirmed:
+
+  {% include "web/components/confirm_dialog.html" %}
+
+  <button type="button" class="icon-button" aria-label="Delete session"
+      data-confirm-url="{% url 'web:session' session.id %}"
+      data-confirm-method="DELETE"
+      data-confirm-title="Delete this session?"
+      data-confirm-body="It moves to Discarded and no longer counts in progress."
+      data-confirm-label="Delete session">...</button>
+
+  data-confirm-url     where the request goes (required)
+  data-confirm-method  "DELETE" (default), "POST", "PATCH", ...
+  data-confirm-title   the question
+  data-confirm-body    what happens, in one plain sentence
+  data-confirm-label   the red button's text (default "Delete")
+
+On success (a 2xx answer) the page reloads, so a toast the view left shows;
+an error ({"errors": {"__all__": [...]}} or any other failure) shows in the
+dialog, which stays open. The page loads web/css/dialog.css and
+web/js/confirm-dialog.js.
+{% endcomment %}
+<dialog class="dialog" id="confirm-dialog" aria-labelledby="confirm-dialog-title"
+    aria-describedby="confirm-dialog-body">
+    <form class="dialog-panel" method="dialog" novalidate>
+        {# Read by confirm-dialog.js for the X-CSRFToken header. #}
+        {% csrf_token %}
+        <button type="button" class="dialog-close" data-dialog-close aria-label="Close">
+            {% heroicon_outline "x-mark" size=20 aria_hidden="true" %}
+        </button>
+        <div class="dialog-head">
+            <div class="dialog-icon dialog-icon-danger">
+                {% heroicon_outline "exclamation-triangle" size=24 aria_hidden="true" %}
+            </div>
+            <div class="dialog-head-text">
+                <h2 class="dialog-title" id="confirm-dialog-title"></h2>
+                <p class="dialog-body" id="confirm-dialog-body"></p>
+            </div>
+        </div>
+        {# Filled by confirm-dialog.js when the server says no. #}
+        <p class="input-message input-message-error dialog-field" id="confirm-dialog-error" role="alert" hidden></p>
+        <div class="dialog-actions">
+            {% include "web/components/button.html" with text="Cancel" variant="quiet" id="confirm-dialog-cancel" %}
+            {% include "web/components/button.html" with text="Delete" variant="danger" type="submit" id="confirm-dialog-confirm" %}
+        </div>
+    </form>
+</dialog>

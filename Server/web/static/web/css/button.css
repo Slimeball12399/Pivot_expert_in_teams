@@ -35,6 +35,11 @@
     cursor: not-allowed;
 }
 
+/* display: inline-flex above would show a button that has the hidden attribute. */
+.button[hidden] {
+    display: none;
+}
+
 .button-full {
     width: 100%;
 }
@@ -52,6 +57,18 @@
 
 .button-primary:hover:not(:disabled) {
     filter: brightness(1.15);
+}
+
+/* Danger: for destructive actions (the confirm dialog's Delete). The error
+   text colour as the fill (4.5:1 or better with the raised surface colour on
+   it, in both themes; plain red is too light for that). */
+.button-danger {
+    background: var(--error-text);
+    color: var(--background-raised);
+}
+
+.button-danger:hover:not(:disabled) {
+    filter: brightness(1.1);
 }
 
 /* Quiet: outlined, for the second choice next to a primary button (Cancel). */

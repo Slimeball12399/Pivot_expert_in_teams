@@ -12,6 +12,7 @@
 <link rel="stylesheet" href="{% static 'web/css/user-table.css' %}">
 <script src="{% static 'web/js/new-session-dialog.js' %}" defer></script>
 <script src="{% static 'web/js/filter-menu.js' %}" defer></script>
+<script src="{% static 'web/js/confirm-dialog.js' %}" defer></script>
 {% endblock %}
 
 {% block content %}
@@ -71,5 +72,8 @@
     </div>
 </section>
 
+{# New session, and editing one from the table (the pencil). #}
 {% include "web/components/new_session_dialog.html" %}
+{# Deleting a session from the table (the bin). #}
+{% include "web/components/confirm_dialog.html" %}
 {% endblock %}

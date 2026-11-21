@@ -7,6 +7,7 @@
 //   div.timeline.setTime(seconds)          move the playhead line and dot
 //   div.timeline.setData(points, markers, secondPoints)
 //                                          replace the data (markers and secondPoints optional)
+//   div.timeline.setConfig(config)         replace the whole config (axis, band, data), e.g. another talk
 // Colours come from the CSS variables in base.css. They are read again and the
 // chart redrawn whenever the theme switches (data-theme on <html>, see theme.js).
 document.addEventListener("DOMContentLoaded", function () {
@@ -268,6 +269,17 @@ document.addEventListener("DOMContentLoaded", function () {
                     },
                     series: series
                 });
+            },
+            // A whole new config (another talk on the session page): a new time
+            // axis, band and data, redrawn from scratch.
+            setConfig: function (newConfig) {
+                config = newConfig;
+                y = config.y || { min: 0, max: 100, interval: 20 };
+                points = config.points || [];
+                markers = config.markers || [];
+                secondPoints = config.second_points || [];
+                currentTime = config.time === undefined ? null : config.time;
+                draw();
             }
         };
 

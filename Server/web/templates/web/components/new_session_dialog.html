@@ -6,6 +6,11 @@ Opens with a button id="new-session-open" on the page:
   {% include "web/components/button.html" with text="New session" icon="plus" id="new-session-open" %}
   {% include "web/components/new_session_dialog.html" %}
 
+It is also the edit dialog: a button with data-edit-session (the session's
+web:session URL) and data-first-name, -last-name, -email, -display and
+-scheduled-at opens it as "Edit session", with that user fixed, and Save
+sends a PATCH there (see session_row.html).
+
 The page loads in its head: web/css/dialog.css, combobox.css and
 web/js/new-session-dialog.js (checkbox.css and input.css come with base.html).
 Used on the Sessions page (web/sessions.html).
@@ -23,7 +28,7 @@ The search asks web:invite_suggestions with own=1; Start / Save post the form to
             <div class="dialog-icon">{% heroicon_outline "microphone" size=24 aria_hidden="true" %}</div>
             <div class="dialog-head-text">
                 <h2 class="dialog-title" id="new-session-title">New session</h2>
-                <p class="dialog-body">Choose the user and when the session starts.</p>
+                <p class="dialog-body" id="new-session-intro">Choose the user and when the session starts.</p>
             </div>
         </div>
 

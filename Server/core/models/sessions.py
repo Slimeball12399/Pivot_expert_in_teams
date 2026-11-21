@@ -15,6 +15,7 @@ class Session(UUIDModel):
         FINISHED = "FINISHED", "Finished"
         CANCELLED = "CANCELLED", "Cancelled"  # ended before it ever went live, no data
         ABORTED = "ABORTED", "Aborted"  # went live but did not end cleanly, partial data
+        DELETED = "DELETED", "Deleted"  # finished, then taken out by the trainer; the row stays
 
     class Display(models.TextChoices):
         WEB = "WEB", "Browser only"

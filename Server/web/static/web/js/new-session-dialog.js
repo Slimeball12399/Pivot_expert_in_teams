@@ -13,12 +13,23 @@
 // sends scheduled_at as UTC (toISOString).
 // Start / Save post the form to web:sessions: on success the page reloads
 // (with the toast); errors show under their field and the dialog stays open.
+// Edit mode: a button with data-edit-session (the session's URL) opens the
+// same dialog as "Edit session" with the row's user (fixed, no Change), phone
+// choice and time filled in. Save sends the form as a PATCH to that URL (with
+// the CSRF token in X-CSRFToken); "Now" there removes the schedule. Closing
+// puts it back to a new session.
 document.addEventListener("DOMContentLoaded", function () {
     var dialog = document.getElementById("new-session-dialog");
-    var opener = document.getElementById("new-session-open");
-    if (!dialog || !opener) {
+    if (!dialog) {
         return;
     }
+    var opener = document.getElementById("new-session-open");
+    var title = document.getElementById("new-session-title");
+    var titleText = title.textContent;
+    var intro = document.getElementById("new-session-intro");
+    var introText = intro.textContent;
+    var token = dialog.querySelector("[name=csrfmiddlewaretoken]").value;
+    var editUrl = null;  // the session's URL while editing, else null
     var form = dialog.querySelector("form");
     var search = document.getElementById("new-session-search");
     var input = document.getElementById("new-session-speaker");
@@ -187,7 +198,8 @@ document.addEventListener("DOMContentLoaded", function () {
     function updateStart() {
         var later = form.elements.start.value === "later";
         timeField.hidden = !later;
-        submit.textContent = later ? "Save" : "Start";
+        // Editing only saves; a new session starts now or is saved for later.
+        submit.textContent = editUrl || later ? "Save" : "Start";
         if (later) {
             // The earliest choice is now, in local time ("YYYY-MM-DDTHH:MM").
             var now = new Date();
@@ -219,9 +231,15 @@ document.addEventListener("DOMContentLoaded", function () {
         scheduledAt.value = form.elements.start.value === "later" && time.value
             ? new Date(time.value).toISOString() : "";
         submit.disabled = true;
-        fetch(form.action, {
+        // New: POST the form (with its CSRF token). Edit: the same fields as a
+        // PATCH body; Django only reads the token from the header then.
+        fetch(editUrl || form.action, editUrl ? {
+            method: "PATCH",
+            body: new URLSearchParams(new FormData(form)),
+            headers: {"Accept": "application/json", "X-CSRFToken": token},
+        } : {
             method: "POST",
-            body: new FormData(form),  // includes the CSRF token
+            body: new FormData(form),
             headers: {"Accept": "application/json"},
         })
             .then(function (response) {
@@ -276,9 +294,33 @@ document.addEventListener("DOMContentLoaded", function () {
         });
     });
 
-    opener.addEventListener("click", function () {
-        dialog.showModal();
-        input.focus();
+    if (opener) {
+        opener.addEventListener("click", function () {
+            dialog.showModal();
+            input.focus();
+        });
+    }
+
+    document.querySelectorAll("[data-edit-session]").forEach(function (button) {
+        button.addEventListener("click", function () {
+            var data = button.dataset;
+            editUrl = data.editSession;
+            title.textContent = "Edit session";
+            intro.textContent = "Change where the feedback shows and when the session starts.";
+            pick({id: "", first_name: data.firstName, last_name: data.lastName, email: data.email});
+            change.hidden = true;  // the user can't be changed
+            phone.checked = data.display === "BOTH";
+            form.elements.start.value = data.scheduledAt ? "later" : "now";
+            if (data.scheduledAt) {
+                // UTC from the server, shown in local time ("YYYY-MM-DDTHH:MM").
+                var local = new Date(data.scheduledAt);
+                local.setMinutes(local.getMinutes() - local.getTimezoneOffset());
+                time.value = local.toISOString().slice(0, 16);
+            }
+            updateStart();
+            dialog.showModal();
+            phone.focus();
+        });
     });
 
     // A click on the dialog element itself is a click on the backdrop.
@@ -293,6 +335,11 @@ document.addEventListener("DOMContentLoaded", function () {
         clearErrors();
         unpick();
         form.reset();
+        // Back to a new session.
+        editUrl = null;
+        title.textContent = titleText;
+        intro.textContent = introText;
+        change.hidden = false;
         updateStart();
         submit.disabled = false;
     });
