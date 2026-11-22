@@ -1,42 +1,42 @@
-"""python manage.py run_live: starts the live process, which holds the WebRTC
-connections (live.Services.ConnectionService) for as long as it runs.
+"""python manage.py run_live: starts the live process in development, which
+holds the WebRTC connections and serves the internal API Django calls
+(live/views.py), on LIVE_INTERNAL_HOST and LIVE_INTERNAL_PORT.
 
-For now it only starts and waits: the internal API Django calls (offer,
-answer, close) comes next and runs inside run() below. Stop it with Ctrl+C;
-open connections are closed on the way out.
+It runs uvicorn with pivot/live_asgi.py (its own settings, pivot/settings_live.py,
+and exactly one worker) in a process of its own: this command's process is
+already set up with the web settings and can't switch. Ctrl+C stops both;
+open connections and recordings are closed on the way out (live_asgi).
 
-Runs next to the web server, not inside it: in Docker as the "live" service
-(docker-compose.yml), in development from the venv in a second terminal.
+In Docker the "live" service starts the same uvicorn command directly.
 """
 
-import asyncio
+import os
+import subprocess
+import sys
 
 from django.conf import settings
 from django.core.management.base import BaseCommand
-
-from live.Services.ConnectionService import ConnectionService
 
 
 class Command(BaseCommand):
     help = "Run the live process: the WebRTC connections of live sessions."
 
     def handle(self, *args, **options):
-        # The shared working folder (FILES_DIR); talk recordings go in it later.
-        settings.FILES_DIR.mkdir(parents=True, exist_ok=True)
-        try:
-            asyncio.run(self.run())
-        except KeyboardInterrupt:
-            self.stdout.write("Live process stopped.")
-
-    async def run(self):
-        service = ConnectionService(ice_servers=settings.RTC_ICE_SERVERS)
-        self.stdout.write(self.style.SUCCESS("Live process running. Ctrl+C to stop."))
-        self.stdout.write(f"  ICE servers: {', '.join(service.ice_servers) or 'none'}")
+        self.stdout.write(self.style.SUCCESS(
+            f"Live process on http://{settings.LIVE_INTERNAL_HOST}:{settings.LIVE_INTERNAL_PORT}."
+            " Ctrl+C to stop."))
+        self.stdout.write(f"  ICE servers: {', '.join(settings.RTC_ICE_SERVERS) or 'none'}"
+                          f"{' (relay only)' if settings.RTC_RELAY_ONLY else ''}")
         self.stdout.write(f"  Files: {settings.FILES_DIR}")
+        process = subprocess.Popen(
+            [sys.executable, "-m", "uvicorn", "pivot.live_asgi:application",
+             "--host", settings.LIVE_INTERNAL_HOST, "--port", str(settings.LIVE_INTERNAL_PORT),
+             "--workers", "1", "--lifespan", "on"],
+            env={**os.environ, "DJANGO_SETTINGS_MODULE": "pivot.settings_live"})
         try:
-            # Until the internal API serves requests here: wait forever.
-            await asyncio.Event().wait()
-        finally:
-            # Ctrl+C cancels the wait: close what is still open.
-            for connection in list(service.connections.values()):
-                await connection.close()
+            process.wait()
+        except KeyboardInterrupt:
+            # uvicorn got the Ctrl+C too and shuts down by itself (closing the
+            # connections and recordings): wait for it to finish.
+            process.wait()
+            self.stdout.write("Live process stopped.")

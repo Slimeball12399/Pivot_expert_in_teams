@@ -239,12 +239,30 @@ VOICE_ANALYSIS_PYTHON = os.environ.get("VOICE_ANALYSIS_PYTHON", "").strip() or s
 
 RTC_ICE_SERVERS = [url.strip() for url in os.environ.get("RTC_ICE_SERVERS", "").split(",")
                    if url.strip()]
+# Signs the short-lived TURN credentials (live/turn.py); the coturn service has
+# the same secret. Empty: no credentials, so no TURN.
+TURN_SECRET = os.environ.get("TURN_SECRET", "").strip()
+# Only relayed connections, through the TURN server in RTC_ICE_SERVERS: on the
+# VPS, where the live process stays inside Docker's network and coturn is the
+# only way in from the internet. False (default): direct, as on localhost.
+RTC_RELAY_ONLY = os.environ.get("RTC_RELAY_ONLY", "False").lower() == "true"
 
 # Working files the web and live processes share (talk recordings while a talk
 # runs, later more). In Docker it is the "files" folder next to manage.py,
 # mounted from FILES_HOST_DIR on the host (docker-compose.yml); outside Docker
 # the same folder. FILES_DIR in .env points somewhere else.
 FILES_DIR = Path(os.environ.get("FILES_DIR", "").strip() or BASE_DIR / "files")
+
+# The live process's internal API (live/views.py, served by pivot/live_asgi.py):
+# where run_live listens, where Django reaches it, and the secret every request
+# carries. Localhost by default: both processes on the same machine, nothing
+# outside can reach it. In Docker, server reaches it as http://live:8100
+# (docker-compose.yml). The token is required to start the live process.
+LIVE_INTERNAL_HOST = os.environ.get("LIVE_INTERNAL_HOST", "").strip() or "127.0.0.1"
+LIVE_INTERNAL_PORT = int(os.environ.get("LIVE_INTERNAL_PORT", "").strip() or 8100)
+LIVE_INTERNAL_URL = (os.environ.get("LIVE_INTERNAL_URL", "").strip()
+                     or f"http://{LIVE_INTERNAL_HOST}:{LIVE_INTERNAL_PORT}")
+LIVE_INTERNAL_TOKEN = os.environ.get("LIVE_INTERNAL_TOKEN", "").strip()
 
 
 # Email

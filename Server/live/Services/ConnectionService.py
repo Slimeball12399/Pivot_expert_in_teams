@@ -19,13 +19,25 @@ the methods check after awaiting that theirs is still the current one.
 """
 
 import asyncio
+import logging
 import uuid
 
-from aiortc import RTCConfiguration, RTCIceServer, RTCPeerConnection, RTCSessionDescription
+from aiortc import (
+    RTCConfiguration,
+    RTCIceServer,
+    RTCIceTransportPolicy,
+    RTCPeerConnection,
+    RTCSessionDescription,
+)
 from django.core.exceptions import ValidationError
 from django.utils import timezone
 
 from live.models import Connection
+from live.Services.AudioService import AudioService
+from live.Services.CommandsService import Command, CommandsService
+from live.turn import LIVE_TTL_SECONDS, turn_credentials
+
+logger = logging.getLogger(__name__)
 
 # Error codes (ValidationError.code) the internal API turns into responses.
 CONNECTION_NOT_FOUND = "connection_not_found"
@@ -36,9 +48,21 @@ CONNECTION_REPLACED = "connection_replaced"
 class ConnectionService:
     """The live process's current connections, and what can be done with them."""
 
-    def __init__(self, ice_servers: list[str], offer_timeout: float = 30):
+    def __init__(self, ice_servers: list[str], commands: CommandsService, audio: AudioService,
+                 turn_secret: str = "", relay_only: bool = False, offer_timeout: float = 30):
         # STUN/TURN server URLs every peer is made with (settings.RTC_ICE_SERVERS).
         self.ice_servers = ice_servers
+        # Signs the peers' own TURN credentials (settings.TURN_SECRET).
+        self.turn_secret = turn_secret
+        # Only relayed paths, through the TURN server (settings.RTC_RELAY_ONLY):
+        # on the VPS, where the live process isn't reachable from outside and
+        # coturn is the only way in. Off locally, where it connects directly.
+        self.relay_only = relay_only
+        # Runs what arrives on the connections' control channels, and pauses
+        # the talk when a trainer's connection drops.
+        self.commands = commands
+        # Reads the trainer's audio track into the session's recording.
+        self.audio = audio
         # Seconds an offer may wait to be answered and connected before it is thrown away.
         self.offer_timeout = offer_timeout
         # The current connections, by (session_id, kind) (Connection.key).
@@ -56,8 +80,17 @@ class ConnectionService:
         (aiortc gathers them all before setLocalDescription returns), so no
         trickle ICE. Not connected within offer_timeout seconds: closed and removed.
         """
+        # TURN needs credentials, made fresh for each peer; STUN doesn't.
+        ice_servers = []
+        for url in self.ice_servers:
+            if url.startswith(("turn:", "turns:")) and self.turn_secret:
+                username, credential = turn_credentials(self.turn_secret, "live", LIVE_TTL_SECONDS)
+                ice_servers.append(RTCIceServer(urls=url, username=username, credential=credential))
+            else:
+                ice_servers.append(RTCIceServer(urls=url))
         peer = RTCPeerConnection(RTCConfiguration(
-            iceServers=[RTCIceServer(urls=url) for url in self.ice_servers]))
+            iceServers=ice_servers,
+            iceTransportPolicy=RTCIceTransportPolicy.RELAY if self.relay_only else RTCIceTransportPolicy.ALL))
         if kind == Connection.Kind.TRAINER_AUDIO:
             peer.addTransceiver("audio", direction="recvonly")
         connection = Connection(
@@ -77,10 +110,22 @@ class ConnectionService:
                 return
             if peer.connectionState == "connected":
                 connection.mark_connected(timezone.now())
-            elif peer.connectionState in ("disconnected", "failed"):
-                # Pausing the open talk and the reconnect timeout come with
-                # the talk side (CommandsService).
-                connection.mark_disconnected(timezone.now())
+            elif (peer.connectionState in ("disconnected", "failed")
+                    and connection.state != Connection.State.DISCONNECTED):
+                await self.connection_dropped(connection)
+
+        @peer.on("track")
+        def on_track(track):
+            # The trainer's mic. The reading task lives as long as the track;
+            # kept on the connection, so it isn't garbage collected meanwhile.
+            if (track.kind == "audio" and connection.kind == Connection.Kind.TRAINER_AUDIO
+                    and self.connections.get(connection.key) is connection):
+                connection.audio_task = asyncio.create_task(self.audio.read(connection, track))
+
+        @connection.channel.on("message")
+        async def on_message(message):
+            if self.connections.get(connection.key) is connection:
+                await self.commands.handle(connection, message)
 
         async def expire():
             await asyncio.sleep(self.offer_timeout)
@@ -97,6 +142,28 @@ class ConnectionService:
                                   code=CONNECTION_REPLACED)
         connection.expiry = asyncio.create_task(expire())
         return peer.localDescription.sdp
+
+    async def connection_dropped(self, connection: Connection):
+        """The connection was lost: marks it disconnected and, for the
+        trainer's, runs the pause_talk command, the same as the trainer
+        pausing, so the dropped stretch doesn't count as recorded. The trainer
+        resumes after reconnecting; the reconnect timeout comes later. No
+        reply: the channel is gone. No talk going on, or a paused one, is
+        fine: then there is nothing to pause.
+
+        The pause starts now, a few seconds after the last audio arrived (ICE
+        takes that long to notice); with the audio side it becomes the time
+        of the last frame."""
+        connection.mark_disconnected(timezone.now())
+        if connection.kind != Connection.Kind.TRAINER_AUDIO:
+            return
+        try:
+            await self.commands.run_command(connection, Command.PAUSE_TALK)
+        except ValidationError:
+            # no_open_talk, or invalid_transition for a talk already paused.
+            pass
+        except Exception:
+            logger.exception("Pausing the talk of dropped %s failed", connection)
 
     async def accept_answer(self, session_id: uuid.UUID, user_id: uuid.UUID,
                             kind: Connection.Kind, sdp: str) -> Connection:

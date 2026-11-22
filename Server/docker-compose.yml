@@ -5,6 +5,7 @@ services:
     environment:
       POSTGRES_HOST: db
       POSTGRES_PORT: "5432"   # containers talk to db on its internal port
+      LIVE_INTERNAL_URL: http://live:8100   # the live process's internal API, by its service name
     ports:
       - "127.0.0.1:8000:8000"   # HTTP / API (only via NGINX on the VPS)
       - "9000:9000/udp"     # live board telemetry (SCRUM-178)
@@ -23,22 +24,21 @@ services:
   # The live process (python manage.py run_live): WebRTC connections of live
   # sessions. Same image as server, its own process, so deploying the web
   # server never drops a live talk.
+  # Nothing published: nothing outside Docker's network reaches it. Django
+  # calls its internal API as live:8100; the browsers' WebRTC traffic comes in
+  # through coturn (RTC_RELAY_ONLY=True with a turn: URL in RTC_ICE_SERVERS),
+  # which relays it to here.
   live:
     build: .
-    command: python manage.py run_live
+    # One worker, always: the connections live in this process's memory.
+    # 0.0.0.0 is Docker's network (for server); nothing is published, so not
+    # the internet.
+    command: python -m uvicorn pivot.live_asgi:application --host 0.0.0.0 --port 8100 --workers 1 --lifespan on
     env_file: .env
-    # Host networking: aiortc puts the machine's real address in its offers and
-    # receives the audio on random UDP ports (Ubuntu's 32768-60999, open them
-    # in ufw), which Docker's port mapping can't follow. On the host network
-    # the compose names (db, minio) don't resolve, so it uses the ports the
-    # other services publish on localhost.
-    # Linux (the VPS) only: in development on Windows, run
-    # `python manage.py run_live` from the venv instead.
-    network_mode: host
     environment:
-      POSTGRES_HOST: 127.0.0.1
-      POSTGRES_PORT: ${POSTGRES_PORT:-5432}
-      S3_ENDPOINT: http://127.0.0.1:9090
+      DJANGO_SETTINGS_MODULE: pivot.settings_live
+      POSTGRES_HOST: db
+      POSTGRES_PORT: "5432"
     volumes:
       - ${FILES_HOST_DIR:-./files}:/Server/files   # the same working files as server
     restart: unless-stopped
@@ -90,12 +90,14 @@ services:
       - "127.0.0.1:9090:9000"   # S3 API (localhost only)
       - "127.0.0.1:9091:9091"   # web console (localhost only)
 
-  # TURN/STUN server for WebRTC (coturn), for trainers whose network blocks a
-  # direct connection to the live process. Only on the VPS: it starts with
-  # `docker compose --profile turn up -d`, a plain `docker compose up` (local
-  # development) leaves it out. Browsers get short-lived credentials from
-  # Django, made with TURN_SECRET (use-auth-secret), so strangers can't use
-  # it as a free relay.
+  # TURN/STUN server for WebRTC (coturn): the only way in from the internet
+  # to the live process. Both sides use it as a relay: the browser sends its
+  # audio here, the live process (inside Docker's network, RTC_RELAY_ONLY)
+  # picks it up here. Needed on the VPS, so start it there with
+  # `docker compose --profile turn up -d`; a plain `docker compose up` (local
+  # development, where the browser reaches run_live directly) leaves it out.
+  # Credentials are short-lived, made from TURN_SECRET (use-auth-secret,
+  # live/turn.py), so strangers can't use it as a free relay.
   # Firewall (ufw) on the VPS: 3478 udp+tcp, 5349 tcp, 61000:65535 udp.
   coturn:
     image: coturn/coturn:latest
