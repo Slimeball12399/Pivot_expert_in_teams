@@ -11,8 +11,10 @@
 // Now / Later: Later shows the date and time and the button says Save; Now
 // hides them and the button says Start. The picker is in local time; the form
 // sends scheduled_at as UTC (toISOString).
-// Start / Save post the form to web:sessions: on success the page reloads
-// (with the toast); errors show under their field and the dialog stays open.
+// Start / Save post the form to web:sessions. On success Start then starts the
+// new session: it posts to live_url from the answer (web:session_live), which
+// opens the live screen. Save reloads the page (with the toast). Errors show
+// under their field and the dialog stays open.
 // Edit mode: a button with data-edit-session (the session's URL) opens the
 // same dialog as "Edit session" with the row's user (fixed, no Change), phone
 // choice and time filled in. Save sends the form as a PATCH to that URL (with
@@ -249,7 +251,21 @@ document.addEventListener("DOMContentLoaded", function () {
             })
             .then(function (result) {
                 if (result.ok) {
-                    window.location.reload();
+                    if (!editUrl && form.elements.start.value === "now") {
+                        // A plain form post, so the browser follows the redirect to the live screen.
+                        var start = document.createElement("form");
+                        start.method = "post";
+                        start.action = result.data.live_url;
+                        var csrf = document.createElement("input");
+                        csrf.type = "hidden";
+                        csrf.name = "csrfmiddlewaretoken";
+                        csrf.value = token;
+                        start.append(csrf);
+                        document.body.append(start);
+                        start.submit();
+                    } else {
+                        window.location.reload();
+                    }
                     return;
                 }
                 var errors = result.data.errors || {};

@@ -7,7 +7,7 @@ stateDiagram-v2
     [*] --> NOT_STARTED : create
     NOT_STARTED --> LIVE : start / set started_at
     NOT_STARTED --> CANCELLED : cancel
-    LIVE --> FINISHED : end / set ended_at
+    LIVE --> FINISHED : end, or no reconnect within 10 min / set ended_at
     LIVE --> ABORTED : abort [connection timeout] / set ended_at
     FINISHED --> DELETED : delete / discard its talks (out of progress, the rows stay)
     FINISHED --> [*]
@@ -29,8 +29,8 @@ stateDiagram-v2
     PAUSED --> PROCESSING : finish / set duration, upload audio
     RECORDING --> DISCARDED : discard
     PAUSED --> DISCARDED : discard
-    RECORDING --> FAILED : upload failed or session aborted
-    PAUSED --> FAILED : session aborted
+    RECORDING --> FAILED : upload failed, or no reconnect within 10 min
+    PAUSED --> FAILED : no reconnect within 10 min
     PROCESSING --> COMPLETED : analysis_done / save voice results
     PROCESSING --> FAILED : analysis_failed / set error
     FAILED --> PROCESSING : retry [audio exists]
@@ -73,7 +73,7 @@ flowchart LR
     E --> SF([Session FINISHED])
 ```
 
-Processing runs in the background, so the trainer can start the next talk without waiting for the analysis. If the connection drops during a talk, the talk is paused and the flow goes back to establishing the connection; once reconnected the talk resumes, and if it times out the session is aborted.
+Processing runs in the background, so the trainer can start the next talk without waiting for the analysis. If the connection drops during a talk, the talk is paused and the flow goes back to establishing the connection; once reconnected the talk resumes; if the trainer doesn't reconnect within 10 minutes the session is finished and the talk fails.
 
 ### Establish connection
 

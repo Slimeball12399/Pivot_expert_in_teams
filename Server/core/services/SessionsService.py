@@ -288,10 +288,13 @@ def start_session(trainer: User, session_id: uuid.UUID) -> Session:
 
 
 @transaction.atomic
-def end_session(trainer: User, session_id: uuid.UUID) -> Session:
+def end_session(trainer: User, session_id: uuid.UUID,
+                open_talk_status: str = Talk.Status.PROCESSING) -> Session:
     """Ends a live session (LIVE -> FINISHED), sets ended_at and returns it.
-    A talk still recording or paused is finished at the same moment
-    (-> PROCESSING, with its duration), as if the trainer had finished it."""
+    A talk still recording or paused is closed at the same moment, with its
+    duration: -> PROCESSING, as if the trainer had finished it, or
+    open_talk_status: FAILED when the live process ends the session because
+    the trainer's connection didn't come back in time."""
     if trainer.role != User.Role.ADMIN:
         raise ValidationError("Only admins can manage sessions.", code=NOT_ADMIN)
     session = get_session(user=trainer, session_id=session_id)
@@ -305,7 +308,7 @@ def end_session(trainer: User, session_id: uuid.UUID) -> Session:
     # From get_session's prefetch, so the returned session shows the change.
     for talk in session.talks.all():
         if talk.status in (Talk.Status.RECORDING, Talk.Status.PAUSED):
-            talk.close(Talk.Status.PROCESSING, now)
+            talk.close(open_talk_status, now)
     session.status = Session.Status.FINISHED
     session.ended_at = now
     session.save(update_fields=["status", "ended_at"])

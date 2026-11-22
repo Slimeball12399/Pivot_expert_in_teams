@@ -13,6 +13,12 @@ and kind: a new offer for the same session and kind replaces the old peer (a
 reload or a reconnect), so a second tab can't open a second mic. Only the user
 the offer was made for can answer it, and only once.
 
+A trainer whose connection drops has reconnect_timeout seconds (10 minutes)
+to connect again; if no connection of theirs comes up by then, the session
+is finished: its open talk failed (Talk FAILED, its recording closed), the
+connections closed. The timer lives in this process only: a live restart
+forgets it.
+
 All of it runs on the live process's one event loop, so no locks: but every
 await is a point where another request can replace the same connection, so
 the methods check after awaiting that theirs is still the current one.
@@ -22,6 +28,7 @@ import asyncio
 import logging
 import uuid
 
+from asgiref.sync import sync_to_async
 from aiortc import (
     RTCConfiguration,
     RTCIceServer,
@@ -32,6 +39,9 @@ from aiortc import (
 from django.core.exceptions import ValidationError
 from django.utils import timezone
 
+from accounts.models import User
+from core.models import Session, Talk
+from core.services.SessionsService import end_session
 from live.models import Connection
 from live.Services.AudioService import AudioService
 from live.Services.CommandsService import Command, CommandsService
@@ -49,7 +59,8 @@ class ConnectionService:
     """The live process's current connections, and what can be done with them."""
 
     def __init__(self, ice_servers: list[str], commands: CommandsService, audio: AudioService,
-                 turn_secret: str = "", relay_only: bool = False, offer_timeout: float = 30):
+                 turn_secret: str = "", relay_only: bool = False, offer_timeout: float = 30,
+                 reconnect_timeout: float = 600):
         # STUN/TURN server URLs every peer is made with (settings.RTC_ICE_SERVERS).
         self.ice_servers = ice_servers
         # Signs the peers' own TURN credentials (settings.TURN_SECRET).
@@ -65,8 +76,12 @@ class ConnectionService:
         self.audio = audio
         # Seconds an offer may wait to be answered and connected before it is thrown away.
         self.offer_timeout = offer_timeout
+        # Seconds a dropped trainer has to connect again before the session is finished.
+        self.reconnect_timeout = reconnect_timeout
         # The current connections, by (session_id, kind) (Connection.key).
         self.connections: dict[tuple[uuid.UUID, Connection.Kind], Connection] = {}
+        # The running reconnect timers (time_out), by the dropped connection's key.
+        self.timeouts: dict[tuple[uuid.UUID, Connection.Kind], asyncio.Task] = {}
 
     async def create_offer(self, session_id: uuid.UUID, user_id: uuid.UUID,
                            kind: Connection.Kind) -> str:
@@ -110,6 +125,10 @@ class ConnectionService:
                 return
             if peer.connectionState == "connected":
                 connection.mark_connected(timezone.now())
+                # Back in time: the session goes on.
+                timeout = self.timeouts.pop(connection.key, None)
+                if timeout is not None:
+                    timeout.cancel()
             elif (peer.connectionState in ("disconnected", "failed")
                     and connection.state != Connection.State.DISCONNECTED):
                 await self.connection_dropped(connection)
@@ -146,8 +165,9 @@ class ConnectionService:
     async def connection_dropped(self, connection: Connection):
         """The connection was lost: marks it disconnected and, for the
         trainer's, runs the pause_talk command, the same as the trainer
-        pausing, so the dropped stretch doesn't count as recorded. The trainer
-        resumes after reconnecting; the reconnect timeout comes later. No
+        pausing, so the dropped stretch doesn't count as recorded, and starts
+        the reconnect timer (time_out): the trainer resumes after
+        reconnecting, or after reconnect_timeout the session is finished. No
         reply: the channel is gone. No talk going on, or a paused one, is
         fine: then there is nothing to pause.
 
@@ -157,6 +177,10 @@ class ConnectionService:
         connection.mark_disconnected(timezone.now())
         if connection.kind != Connection.Kind.TRAINER_AUDIO:
             return
+        # One timer per drop: a connection that drops again before coming back keeps it.
+        if connection.key not in self.timeouts:
+            self.timeouts[connection.key] = asyncio.create_task(
+                self.time_out(connection.session_id, connection.user_id))
         try:
             await self.commands.run_command(connection, Command.PAUSE_TALK)
         except ValidationError:
@@ -185,9 +209,45 @@ class ConnectionService:
         await connection.peer.setRemoteDescription(RTCSessionDescription(sdp=sdp, type="answer"))
         return connection
 
+    async def time_out(self, session_id: uuid.UUID, user_id: uuid.UUID):
+        """The reconnect timer of a dropped trainer: after reconnect_timeout
+        seconds without a connection of theirs coming up (that cancels it),
+        the session is finished, in the same order as Finish session: the
+        open talk's recording is closed (its file stays, complete), the
+        session's connections closed, then end_session() with that talk
+        FAILED instead of processed (end_session is where a recording will
+        be uploaded). A session that isn't live any more (the trainer ended
+        it meanwhile) is left as it is."""
+        await asyncio.sleep(self.reconnect_timeout)
+        self.timeouts.pop((session_id, Connection.Kind.TRAINER_AUDIO), None)
+
+        # The talk going on, if the session is still live (Django's async ORM).
+        open_talks = [talk_id async for talk_id in Talk.objects.filter(
+            session_id=session_id, session__status=Session.Status.LIVE,
+            status__in=[Talk.Status.RECORDING, Talk.Status.PAUSED]).values_list("id", flat=True)]
+        for talk_id in open_talks:
+            self.audio.finish_recording(talk_id)
+        await self.close_session(session_id)
+        try:
+            trainer = await User.objects.aget(pk=user_id)
+            await sync_to_async(end_session)(trainer, session_id, open_talk_status=Talk.Status.FAILED)
+        except ValidationError:
+            # Not live any more: nothing to finish.
+            return
+        except Exception:
+            logger.exception("Finishing session %s after the reconnect timeout failed", session_id)
+            return
+        logger.info("Session %s finished: the trainer didn't reconnect within %s s",
+                    session_id, self.reconnect_timeout)
+
     async def close_session(self, session_id: uuid.UUID) -> bool:
         """Closes and removes every connection of the session (ending or
-        aborting it), and returns whether there was one."""
+        aborting it), stops its reconnect timer, and returns whether there
+        was a connection."""
+        for key in [key for key in self.timeouts if key[0] == session_id]:
+            timeout = self.timeouts.pop(key)
+            if timeout is not asyncio.current_task():
+                timeout.cancel()
         connections = [connection for connection in self.connections.values()
                        if connection.session_id == session_id]
         for connection in connections:

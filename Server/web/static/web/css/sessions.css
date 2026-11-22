@@ -164,6 +164,11 @@
     font-variant-numeric: tabular-nums;
 }
 
+/* The play button's form (it posts) lays out like the other buttons. */
+.session-table-actions form {
+    display: contents;
+}
+
 .session-table-actions {
     display: flex;
     justify-content: flex-end;
@@ -315,9 +320,166 @@
     font-variant-numeric: tabular-nums;
 }
 
-/* The empty div above the table takes no room until it has content. */
+/* The div above the table takes no room until it has a card. */
 .sessions-top:empty {
     display: none;
+}
+
+/* Session cards (session_card.html), as in the design: white, rounded, a
+   coloured edge on the left (red live, blue upcoming). */
+.sessions-top {
+    container: sessions-top / inline-size;
+}
+
+.session-card {
+    box-sizing: border-box;
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    min-width: 0;
+    background: var(--background-raised);
+    border-radius: 12px;
+}
+
+.session-card-live {
+    gap: 18px;
+    padding: 18px 22px;
+    border-left: 6px solid var(--red);
+    border-radius: 16px;
+}
+
+.session-card-upcoming {
+    flex: 1 1 0;
+    padding: 14px 16px;
+    border-left: 5px solid var(--blue);
+}
+
+.session-card-avatar {
+    width: 52px;
+    height: 52px;
+    border-radius: 26px;
+    font-size: 16px;
+}
+
+.session-card-avatar-small {
+    width: 40px;
+    height: 40px;
+    border-radius: 20px;
+    font-size: 13px;
+}
+
+.session-card-text {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    min-width: 0;
+}
+
+.session-card-label {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    color: var(--error-text);
+}
+
+.session-card-dot {
+    width: 10px;
+    height: 10px;
+    border-radius: 5px;
+    background: var(--red);
+}
+
+.session-card-name {
+    margin: 0;
+    font-family: "Jost", sans-serif;
+    font-size: 24px;
+    font-weight: 600;
+}
+
+.session-card-person {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    font-size: 16px;
+}
+
+.session-card-meta {
+    font-size: 14px;
+    color: var(--text-muted);
+}
+
+.session-card-upcoming .session-card-meta {
+    font-size: 13px;
+}
+
+.session-card-clock {
+    margin-right: 12px;
+    font-family: "Jost", sans-serif;
+    font-size: 32px;
+    font-weight: 600;
+    font-variant-numeric: tabular-nums;
+}
+
+.session-card-when {
+    flex: none;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    width: 72px;
+}
+
+.session-card-time {
+    font-family: "Jost", sans-serif;
+    font-size: 24px;
+    font-weight: 600;
+    font-variant-numeric: tabular-nums;
+}
+
+.session-card-soon {
+    font-size: 12px;
+    text-align: center;
+    color: var(--text-muted);
+}
+
+.session-cards-next {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.session-cards-title {
+    margin: 0;
+    font-family: "Jost", sans-serif;
+    font-size: 22px;
+    font-weight: 600;
+}
+
+/* The upcoming ones side by side; where two don't fit, only the first. */
+.session-cards {
+    display: flex;
+    gap: 12px;
+}
+
+@container sessions-top (width < 760px) {
+    .session-card-upcoming:nth-child(n + 2) {
+        display: none;
+    }
+}
+
+/* Narrow: the live card's clock goes, the rest wraps. */
+@container sessions-top (width < 560px) {
+    .session-card-live {
+        flex-wrap: wrap;
+    }
+
+    .session-card-clock {
+        display: none;
+    }
 }
 
 /* No rows (none yet, or nothing matches the search). */

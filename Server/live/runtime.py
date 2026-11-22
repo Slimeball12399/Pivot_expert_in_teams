@@ -16,12 +16,16 @@ AUDIO = AudioService(settings.FILES_DIR)
 COMMANDS = CommandsService(AUDIO)
 CONNECTIONS = ConnectionService(
     ice_servers=settings.RTC_ICE_SERVERS, commands=COMMANDS, audio=AUDIO,
-    turn_secret=settings.TURN_SECRET, relay_only=settings.RTC_RELAY_ONLY)
+    turn_secret=settings.TURN_SECRET, relay_only=settings.RTC_RELAY_ONLY,
+    reconnect_timeout=settings.LIVE_RECONNECT_SECONDS)
 
 
 async def close():
     """The process stops: close the open connections, then the recordings.
     The recordings' files stay, so their talks can go on after a restart."""
+    for timeout in CONNECTIONS.timeouts.values():
+        timeout.cancel()
+    CONNECTIONS.timeouts.clear()
     for connection in list(CONNECTIONS.connections.values()):
         await connection.close()
     CONNECTIONS.connections.clear()

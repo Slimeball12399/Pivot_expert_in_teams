@@ -1,0 +1,71 @@
+{% comment %}
+The talk screen's content, while a talk goes on: stability now (the polar
+chart) and the live voice graph with pace and pitch variation. Only on the
+live screen (live.html), next to session_content.html, so its ids start with
+live- (session_content has a voice-chart of its own). Its script comes with
+it: web/js/talk.js, demo data for now (deferred, so it runs after the chart
+scripts).
+
+  {% include "web/content/talk_content.html" %}
+
+Needs from the view: live_voice_config (the live voice graph,
+LIVE_VOICE_CHART in web/views/sessions.py). The page loads ECharts, timeline-chart.css,
+score-card.css, polar-chart.css, voice-measure.css and talk.css, and
+timeline-chart.js and polar-chart.js.
+{% endcomment %}
+{% load static %}
+<section class="talk-graphs">
+    <div class="charts">
+        <section class="score-card stability stability-now" aria-labelledby="live-stability-now-title">
+            <div class="stability-now-head">
+                <div class="stability-now-score-block">
+                    <h2 id="live-stability-now-title">Stability now</h2>
+                    <span class="stability-now-score" id="live-stability-score">66</span>
+                </div>
+                <div class="stability-now-summary">
+                    <span class="live-status good" id="live-stability-status">In target range</span>
+                    <span class="stability-now-meta" id="live-stability-meta">Session average 63 · best 71</span>
+                </div>
+            </div>
+            <div class="stability-now-plot">
+                {% include "web/components/polar_chart.html" with id="live-balance-polar" max=10 trail=40 %}
+            </div>
+            <div class="data-grid">
+                <div class="data">
+                    <h4>Sway area</h4>
+                    <h3 id="live-sway-area">10.1</h3><span>cm²</span>
+                </div>
+                <div class="data">
+                    <h4>Sway speed</h4>
+                    <h3 id="live-sway-speed">11.8</h3><span>mm/s</span>
+                </div>
+                <div class="data">
+                    <h4>Time centred</h4>
+                    <h3 id="live-time-centred">76</h3><span>%</span>
+                </div>
+            </div>
+        </section>
+        <section class="score-card live-talk" aria-labelledby="live-voice-title">
+            <div class="voice-head">
+                <h2 id="live-voice-title">Voice</h2>
+                <span class="live-voice-updated" id="live-voice-updated">Updated 0.1 s ago</span>
+            </div>
+            <div class="scores">
+                <div class="voice-measures">
+                    {% include "web/components/voice_measure.html" with id="live-pace" name="Pace" line="solid" score=1.6 raw="4.8 syl/s" status="On pace" level="good" %}
+                    {% include "web/components/voice_measure.html" with id="live-pitch" name="Pitch variation" line="dashed" score=3.5 raw="6 st" status="Lively" level="good" %}
+                </div>
+                <div class="voice-plot">
+                    {% include "web/components/timeline_chart.html" with id="live-voice-chart" config=live_voice_config %}
+                </div>
+                {# The graph's legend: the same line swatches as the cards, and the band. #}
+                <div class="score-scale">
+                    <span class="score-scale-level score-scale-line">Pace</span>
+                    <span class="score-scale-level score-scale-line score-scale-dashed">Pitch variation</span>
+                    <span class="score-scale-level score-scale-range">Optimal -5 to 5</span>
+                </div>
+            </div>
+        </section>
+    </div>
+</section>
+<script src="{% static 'web/js/talk.js' %}" defer></script>{# demo data, see talk.js #}

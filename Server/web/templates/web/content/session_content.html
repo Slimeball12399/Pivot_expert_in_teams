@@ -1,0 +1,175 @@
+{% comment %}
+The session's content: the voice and stability cards of one talk, the talk
+slider and the "Talks in this session" card, on the session page
+(session.html), which puts the header around it.
+
+Only the frame is rendered here. What changes (the graphs, the scores, the
+talk rows) web/js/session.js draws from the session's JSON: the same as
+GET web:session with Accept: application/json, in the page as
+<script id="session-data"> (json_script). A row is a copy of
+<template id="talk-row-template">, filled in with textContent. The eye in a
+row shows that talk in the graphs (web:talk, JSON); session.js comes with
+this file (deferred, so it runs after the chart scripts).
+
+  {% include "web/content/session_content.html" %}
+
+Needs from the view: session (the Session) and, on the session page
+(web.views.sessions.session, GET), data (its JSON). Without data (the live
+screen) nothing is drawn until a script calls content.session.refresh(). The page loads ECharts, timeline-chart.css,
+score-ring.css, score-card.css, user-table.css and session.css, and
+timeline-chart.js and score-ring.js. Its ids (voice-chart, talk-slider, ...)
+are plain: one per page. session.js only looks inside [data-session-content].
+{% endcomment %}
+{% load static %}
+{% if data %}{{ data|json_script:"session-data" }}{% endif %}
+<section class="talk-stats" data-session-content data-session-url="{% url 'web:session' session.id %}">
+    <div class="graphs">
+        <section class="score-card voice">
+            <div class="graph">
+                <h3>Voice dynamics</h3>
+                <div class="graph-plot">
+                    {% include "web/components/timeline_chart.html" with id="voice-chart" measure="speech" %}
+                </div>
+                <div class="score-scale">
+                    <span class="score-scale-level score-scale-range">Your usual range</span>
+                    <span class="score-scale-level score-scale-below">Below usual</span>
+                    <span class="score-scale-level score-scale-good">Good</span>
+                    <span class="score-scale-level score-scale-excellent">Excellent</span>
+                </div>
+            </div>
+            <div class="score">
+                {% include "web/components/score_ring.html" with id="voice-score" measure="speech" label="Speech" %}
+                <div class="data-grid">
+                    <div class="data good">
+                        <h4>Pitch Range</h4>
+                        <h3>78</h3>
+                    </div>
+                    <div class="data good">
+                        <h4>Loudness</h4>
+                        <h3>84</h3>
+                    </div>
+                    <div class="data bad">
+                        <h4>Pause Rhythm</h4>
+                        <h3>72</h3>
+                    </div>
+                    <div class="data good">
+                        <h4>Final Falls</h4>
+                        <h3>70</h3>
+                    </div>
+                </div>
+            </div>
+        </section>
+        <section class="score-card stability">
+            <div class="graph">
+                <h3>Stability over the talk</h3>
+                <div class="graph-plot">
+                    {% include "web/components/timeline_chart.html" with id="stability-chart" measure="stability" %}
+                </div>
+                <div class="score-scale">
+                    <span class="score-scale-level score-scale-range">Your usual range</span>
+                    <span class="score-scale-level score-scale-below">Below usual</span>
+                    <span class="score-scale-level score-scale-good">Good</span>
+                    <span class="score-scale-level score-scale-excellent">Excellent</span>
+                </div>
+            </div>
+            <div class="score">
+                {% include "web/components/score_ring.html" with id="stability-score" measure="stability" label="Stability" %}
+                <div class="data-grid">
+                    <div class="data good">
+                        <h4>Sway Area</h4>
+                        <h3>10.1</h3><span>cm^2</span>
+                    </div>
+                    <div class="data bad">
+                        <h4>Sway Speed</h4>
+                        <h3>12.4</h3><span>mm/s</span>
+                    </div>
+                    <div class="data good">
+                        <h4>Time Centered</h4>
+                        <h3>74</h3><span>%</span>
+                    </div>
+                    <div class="data bad">
+                        <h4>Max Lean</h4>
+                        <h3>2.6</h3><span>cm</span>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+    </div>
+    <div class="talk-timeline">
+        <div class="talk-timeline-head">
+            <span class="talk-timeline-label">
+                {% heroicon_outline "microphone" size=20 aria_hidden="true" %}
+                Talk timeline
+            </span>
+            <span class="talk-time">
+                <span id="talk-time"></span>
+                <span class="talk-time-total" id="talk-time-total"></span>
+            </span>
+        </div>
+        <input class="talk-slider" id="talk-slider" type="range" min="0" max="60" step="0.5" value="0" aria-label="Position in the talk">
+    </div>
+
+    {# The session's talks, drawn by session.js from the JSON. The eye shows that talk in the graphs above (web:talk); the one shown is aria-current. #}
+    <section class="session-talks" aria-labelledby="session-talks-title">
+        <div class="session-talks-head">
+            <h2 class="session-talks-title" id="session-talks-title">Talks in this session</h2>
+            {# The same as in the header: while live. Does nothing yet. #}
+            {% if session.status == "LIVE" %}
+            {% with number=session.talks.all|length|add:1|stringformat:"d" %}{% with label="Start talk "|add:number %}
+            {% include "web/components/button.html" with text=label icon="play" id="talks-start-talk" %}
+            {% endwith %}{% endwith %}
+            {% endif %}
+        </div>
+        <div class="talk-table" role="table" aria-label="Talks">
+            <div class="talk-table-row talk-table-head" role="row">
+                <div role="columnheader">Talk</div>
+                <div class="talk-table-started" role="columnheader">Started</div>
+                <div class="talk-table-length" role="columnheader">Length</div>
+                <div class="talk-table-speech" role="columnheader">Speech</div>
+                <div class="talk-table-stability" role="columnheader">Stability</div>
+                <div class="talk-table-actions" role="columnheader">
+                    <span class="visually-hidden">Actions</span>
+                </div>
+            </div>
+            <div role="rowgroup" data-talk-rows></div>
+        </div>
+    </section>
+
+    {# One talk row, copied and filled in by session.js for each talk (data-field: what goes where). #}
+    <template id="talk-row-template">
+        <div class="talk-table-row" role="row" data-talk-row>
+            <div class="talk-table-name" role="cell" data-field="name"></div>
+            <div class="talk-table-muted talk-table-started" role="cell" data-field="started"></div>
+            <div class="talk-table-muted talk-table-length" role="cell" data-field="length"></div>
+            {# A score bar: the score, then a line as long as it (--value); a dash for no score. #}
+            <div class="talk-table-speech" role="cell">
+                <span class="score-bar score-bar-speech" data-score="speech">
+                    <span class="visually-hidden" data-field="label"></span>
+                    <span class="score-bar-num" aria-hidden="true" data-field="value"></span>
+                    <span class="score-bar-track" aria-hidden="true"><span class="score-bar-fill"></span></span>
+                </span>
+            </div>
+            <div class="talk-table-stability" role="cell">
+                <span class="score-bar score-bar-stability" data-score="stability">
+                    <span class="visually-hidden" data-field="label"></span>
+                    <span class="score-bar-num" aria-hidden="true" data-field="value"></span>
+                    <span class="score-bar-track" aria-hidden="true"><span class="score-bar-fill"></span></span>
+                </span>
+            </div>
+            <div class="talk-table-actions" role="cell">
+                {# Does nothing yet. #}
+                <button type="button" class="icon-button" data-field="delete">
+                    {% heroicon_outline "trash" size=20 aria_hidden="true" %}
+                </button>
+                <button type="button" class="icon-button" data-field="show">
+                    {% heroicon_outline "eye" size=20 aria_hidden="true" %}
+                </button>
+            </div>
+        </div>
+    </template>
+    <template id="talk-empty-template">
+        <p class="talk-table-empty">No talks yet.</p>
+    </template>
+</section>
+<script src="{% static 'web/js/session.js' %}" defer></script>

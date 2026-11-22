@@ -75,7 +75,11 @@ class CommandsService:
             data = json.loads(message)
         except (TypeError, ValueError):
             data = None
+        # Only a number id is sent back: the browser matches replies to its
+        # commands by it, so anything else gets null (bool is an int, but no id).
         command_id = data.get("id") if isinstance(data, dict) else None
+        if not isinstance(command_id, int) or isinstance(command_id, bool):
+            command_id = None
 
         if not isinstance(data, dict) or not isinstance(command_id, int) or data.get("type") not in Command:
             reply = {"type": "error", "code": INVALID_COMMAND,

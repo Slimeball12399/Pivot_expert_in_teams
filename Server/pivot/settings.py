@@ -263,6 +263,9 @@ LIVE_INTERNAL_PORT = int(os.environ.get("LIVE_INTERNAL_PORT", "").strip() or 810
 LIVE_INTERNAL_URL = (os.environ.get("LIVE_INTERNAL_URL", "").strip()
                      or f"http://{LIVE_INTERNAL_HOST}:{LIVE_INTERNAL_PORT}")
 LIVE_INTERNAL_TOKEN = os.environ.get("LIVE_INTERNAL_TOKEN", "").strip()
+# Seconds a trainer whose connection dropped has to reconnect before the live
+# process finishes the session (and its open talk fails). Default 10 minutes.
+LIVE_RECONNECT_SECONDS = int(os.environ.get("LIVE_RECONNECT_SECONDS", "").strip() or 600)
 
 
 # Email

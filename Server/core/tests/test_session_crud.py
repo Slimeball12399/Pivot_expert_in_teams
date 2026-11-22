@@ -395,6 +395,15 @@ class EndSessionTests(SessionServiceTestCase):
         session.refresh_from_db()
         self.assertEqual(session.status, Session.Status.FINISHED)
 
+    def test_fails_the_open_talk_when_asked(self):
+        # The live process, when the trainer's connection didn't come back in time.
+        session = self.make_session(Session.Status.LIVE, started_at=timezone.now())
+        talk = Talk.objects.create(session=session, status=Talk.Status.PAUSED, started_at=timezone.now())
+        end_session(trainer=self.trainer.user, session_id=session.pk, open_talk_status=Talk.Status.FAILED)
+        talk.refresh_from_db()
+        self.assertEqual(talk.status, Talk.Status.FAILED)
+        self.assertIsNotNone(talk.duration)
+
     def test_finishes_the_open_talk_at_the_same_moment(self):
         for status in (Talk.Status.RECORDING, Talk.Status.PAUSED):
             with self.subTest(status):

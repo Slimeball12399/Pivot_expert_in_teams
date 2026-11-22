@@ -1,4 +1,5 @@
 from datetime import timedelta
+from unittest import mock
 
 from django.conf import settings
 from django.test import TestCase
@@ -7,9 +8,10 @@ from django.utils import timezone
 
 from accounts.tests.utils import make_speaker, make_trainer
 from core.models import FullVoiceResult, Session, Talk
+from live.client import LIVE_UNAVAILABLE, LiveError
 
 # GET /talks/<id>/: one talk's graphs as JSON, for the session page's talks
-# card. The HTTP layer only: what get_talk_graphs() returns is tested in
+# card; POST /talks/<id>/finish/: End talk on the live screen. The HTTP layer only: what get_talk_graphs() returns is tested in
 # core/tests/test_graphs_service.py, get_talk() in core/tests/test_talk_crud.py.
 
 
@@ -61,3 +63,77 @@ class TalkGraphsViewTests(TestCase):
 
         with self.subTest("only GET"):
             self.assertEqual(self.client.post(self.url).status_code, 405)
+
+
+class TalkFinishViewTests(TestCase):
+    """POST /talks/<id>/finish/: End talk. finish_talk's rules are in
+    core/tests/test_talk_crud.py; the live process is mocked (LiveClient)."""
+
+    @classmethod
+    def setUpTestData(cls):
+        cls.trainer = make_trainer("anne@example.com")
+        cls.speaker = make_speaker("mikkel@example.com", trainer=cls.trainer)
+        cls.session = Session.objects.create(
+            trainer=cls.trainer, speaker=cls.speaker.speaker_profile, status=Session.Status.LIVE,
+            started_at=timezone.now() - timedelta(minutes=5))
+
+    def setUp(self):
+        self.client.force_login(self.trainer.user)
+        patcher = mock.patch("web.views.talks.LiveClient")
+        self.live_client = patcher.start().return_value
+        self.addCleanup(patcher.stop)
+        self.talk = Talk.objects.create(session=self.session, status=Talk.Status.RECORDING,
+                                        started_at=timezone.now() - timedelta(seconds=30))
+        self.url = reverse("web:talk_finish", args=[self.talk.id])
+
+    def test_finishes_it_and_stops_its_recording(self):
+        self.assertEqual(self.url, f"/talks/{self.talk.id}/finish/")
+        response = self.client.post(self.url)
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.json(), {"id": str(self.talk.id)})
+        self.talk.refresh_from_db()
+        self.assertEqual(self.talk.status, Talk.Status.PROCESSING)
+        self.live_client.stop_recording.assert_called_once_with(self.talk.id)
+
+    def test_the_recording_stops_before_the_talk_is_finished(self):
+        # finish_talk will upload the recording, so it must be closed by then.
+        seen = []
+        self.live_client.stop_recording.side_effect = lambda talk_id: seen.append(
+            Talk.objects.get(pk=talk_id).status)
+        self.client.post(self.url)
+        self.assertEqual(seen, [Talk.Status.RECORDING])
+
+    def test_finished_even_when_the_live_process_cant_say_so(self):
+        cases = [("nothing recording it", LiveError("not_recording", "Not recording.", 404)),
+                 ("not reachable", LiveError(LIVE_UNAVAILABLE, "Can't be reached."))]
+        for label, error in cases:
+            with self.subTest(label):
+                # One talk going on at a time: the one before is done.
+                Talk.objects.filter(session=self.session).update(status=Talk.Status.COMPLETED)
+                talk = Talk.objects.create(session=self.session, status=Talk.Status.RECORDING,
+                                           started_at=timezone.now())
+                self.live_client.stop_recording.side_effect = error
+                if error.status is None:
+                    # Unreachable: logged, so the test checks the log and keeps the output clean.
+                    with self.assertLogs("web.views.talks", "WARNING"):
+                        response = self.client.post(reverse("web:talk_finish", args=[talk.id]))
+                else:
+                    response = self.client.post(reverse("web:talk_finish", args=[talk.id]))
+                self.assertEqual(response.status_code, 200)
+                talk.refresh_from_db()
+                self.assertEqual(talk.status, Talk.Status.PROCESSING)
+
+    def test_rejects(self):
+        with self.subTest("not going on: 409, the live process isn't asked"):
+            Talk.objects.filter(pk=self.talk.pk).update(status=Talk.Status.COMPLETED)
+            self.assertEqual(self.client.post(self.url).status_code, 409)
+            self.live_client.stop_recording.assert_not_called()
+        with self.subTest("someone else's: 404"):
+            self.client.force_login(make_trainer("bo@example.com").user)
+            self.assertEqual(self.client.post(self.url).status_code, 404)
+        with self.subTest("a speaker: not allowed"):
+            self.client.force_login(self.speaker)
+            self.assertEqual(self.client.post(self.url).status_code, 403)
+        with self.subTest("only POST"):
+            self.client.force_login(self.trainer.user)
+            self.assertEqual(self.client.get(self.url).status_code, 405)

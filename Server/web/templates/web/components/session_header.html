@@ -3,18 +3,18 @@ Session header: the app bar of the session (and later the talk) page, in place
 of the site header (override {% block header %} with it). A back arrow to the
 Sessions page, "<user> · Session" with the board, the number of talks and how
 long the session has run under it, the session's status next to it, and on
-the right what can be done now: Start session before it starts; Start talk
-(when a talk can be started) and Finish session while it is live; Delete
-session once it has finished. None of them do anything yet. Styles in
+the right what can be done now: Start session before it starts (it posts to
+web:session_live); Start talk and Finish session while it is live; Delete
+session once it has finished. Finish session asks first (the page includes
+confirm_dialog.html and confirm-dialog.js). Everything comes from the session: how long
+it has run is filled in by web/js/session-header.js (to now, every second,
+while it has no end yet), so the page loads that script. Styles in
 web/css/header.css; the back arrow is an icon button (web/css/user-table.css).
 
-  {% include "web/components/session_header.html" with session=session talk_count=talks|length elapsed=elapsed can_start_talk=can_start_talk next_talk=next_talk %}
+  {% include "web/components/session_header.html" with session=session %}
 
-  session         the Session (speaker with user, status)
-  talk_count      its talks, without discarded ones
-  elapsed         "m:ss" or "h:mm:ss" from start to end, or to now while live; None before it starts
-  can_start_talk  True when start_talk() would allow it: live, and no talk recording or paused
-  next_talk       the number the next talk gets
+  session   the Session from get_session (speaker with user, status, its
+            talks without discarded ones)
 {% endcomment %}
 <header class="site-header session-header">
     <a class="icon-button session-header-back" href="{% url 'web:sessions' %}" aria-label="Back to sessions">
@@ -24,8 +24,8 @@ web/css/header.css; the back arrow is an icon button (web/css/user-table.css).
         <span class="session-header-title">{{ session.speaker.user.get_full_name }} &middot; Session</span>
         <span class="session-header-meta">
             {# No boards yet. #}
-            Board &ndash; &middot; {{ talk_count }} talk{{ talk_count|pluralize }}
-            {% if elapsed %}&middot; {{ elapsed }}{% if session.status == "LIVE" %} so far{% endif %}{% endif %}
+            {% with talk_count=session.talks.all|length %}Board &ndash; &middot; <span data-session-talk-count>{{ talk_count }} talk{{ talk_count|pluralize }}</span>{% endwith %}
+            {% if session.started_at %}&middot; <span data-session-elapsed data-started-at="{{ session.started_at|date:'c' }}"{% if session.ended_at %} data-ended-at="{{ session.ended_at|date:'c' }}"{% endif %}></span>{% endif %}
         </span>
     </div>
     {# A dot and the status in bold, in the dot's colour (no pill, unlike the tables' badges). #}
@@ -34,14 +34,24 @@ web/css/header.css; the back arrow is an icon button (web/css/user-table.css).
     </span>
     <div class="session-header-actions">
         {% if session.status == "NOT_STARTED" %}
-        {% include "web/components/button.html" with text="Start session" icon="play" id="session-start" %}
+        {# Starts it (POST web:session_live), then its live screen. #}
+        <form method="post" action="{% url 'web:session_live' session.id %}">
+            {% csrf_token %}
+            {% include "web/components/button.html" with text="Start session" icon="play" id="session-start" type="submit" %}
+        </form>
         {% elif session.status == "LIVE" %}
-        {% if can_start_talk %}
-        {% with number=next_talk|stringformat:"d" %}{% with label="Start talk "|add:number %}
+        {% with number=session.talks.all|length|add:1|stringformat:"d" %}{% with label="Start talk "|add:number %}
         {% include "web/components/button.html" with text=label icon="play" id="session-start-talk" %}
         {% endwith %}{% endwith %}
-        {% endif %}
-        {% include "web/components/button.html" with text="Finish session" variant="quiet" icon="stop" id="session-finish" %}
+        {# Asks first (confirm_dialog.html, which the page includes), then POST web:session_finish. #}
+        <button type="button" class="button button-quiet" id="session-finish"
+            data-confirm-url="{% url 'web:session_finish' session.id %}" data-confirm-method="POST"
+            data-confirm-title="Finish this session?"
+            data-confirm-body="It ends for {{ session.speaker.user.get_full_name }}. A talk still going on is finished with it."
+            data-confirm-label="Finish session">
+            {% heroicon_outline "stop" size=20 aria_hidden="true" %}
+            Finish session
+        </button>
         {% elif session.status == "FINISHED" %}
         {% include "web/components/button.html" with text="Delete session" variant="quiet" icon="trash" id="session-delete" %}
         {% endif %}

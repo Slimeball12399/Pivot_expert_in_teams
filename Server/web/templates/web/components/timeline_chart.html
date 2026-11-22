@@ -6,8 +6,14 @@ timeline-chart.css and timeline-chart.js once (see demo.html).
 
   {% include "web/components/timeline_chart.html" with id="stability-chart" config=stability_config %}
 
-  id      unique id on the page (required)
-  config  dict from the view:
+  {% include "web/components/timeline_chart.html" with id="voice-chart" measure="speech" %}
+
+  id       unique id on the page (required)
+  measure  "speech" or "stability", for a chart without config (the colour until
+           its config comes)
+  config   dict from the view, optional: without it the chart starts empty and
+           the page's script gives it one (timeline.setConfig, e.g. from the
+           page's JSON):
             measure  "speech" or "stability" (sets the colour; stability is dashed)
             x        {"min", "max", "interval", "window"} in seconds: max is the talk length;
                      window (optional) is how much is shown at a time, e.g. 60 = one minute,
@@ -27,7 +33,11 @@ timeline-chart.css and timeline-chart.js once (see demo.html).
 Other code moves the playhead with
 document.getElementById(id).timeline.setTime(seconds).
 {% endcomment %}
+{% if config %}
 {% with config_id=id|add:"-config" %}
 <div class="timeline-chart" id="{{ id }}" data-timeline-chart="{{ config_id }}"></div>
 {{ config|json_script:config_id }}
 {% endwith %}
+{% else %}
+<div class="timeline-chart" id="{{ id }}" data-timeline-chart data-measure="{{ measure|default:'speech' }}"></div>
+{% endif %}

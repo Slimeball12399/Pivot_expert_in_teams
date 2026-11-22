@@ -346,3 +346,38 @@
 .session-header-actions:empty {
     display: none;
 }
+
+/* The live screen shows one of its two headers (live.js). */
+.session-header[hidden] {
+    display: none;
+}
+
+/* Talk header (talk_header.html): the talk's state and its clock. */
+.session-header-status-recording {
+    --status-dot: var(--red);
+    --status-text: var(--error-text);
+}
+
+.session-header-status-paused {
+    --status-dot: var(--yellow);
+    --status-text: var(--text);
+}
+
+.talk-header-clock {
+    flex: none;
+    font-family: "Jost", sans-serif;
+    font-size: 30px;
+    font-weight: 600;
+    font-variant-numeric: tabular-nums;
+}
+
+/* Pause and Resume: one button, one of its two labels shown. */
+.button-label {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.button-label[hidden] {
+    display: none;
+}

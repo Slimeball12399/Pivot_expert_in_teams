@@ -1,0 +1,60 @@
+{% extends "web/base.html" %}
+{% load static %}
+
+{% block title %}Live · Pivot{% endblock %}
+
+{% block head %}
+<script src="https://cdn.jsdelivr.net/npm/echarts@5/dist/echarts.min.js"></script>
+{# Both views' styles: the session content (as on the session page) and the talk content. #}
+<link rel="stylesheet" href="{% static 'web/css/timeline-chart.css' %}">
+<link rel="stylesheet" href="{% static 'web/css/score-ring.css' %}">
+<link rel="stylesheet" href="{% static 'web/css/score-card.css' %}">
+<link rel="stylesheet" href="{% static 'web/css/user-table.css' %}">{# the icon buttons #}
+<link rel="stylesheet" href="{% static 'web/css/session.css' %}">
+<link rel="stylesheet" href="{% static 'web/css/polar-chart.css' %}">
+<link rel="stylesheet" href="{% static 'web/css/voice-measure.css' %}">
+<link rel="stylesheet" href="{% static 'web/css/talk.css' %}">
+<link rel="stylesheet" href="{% static 'web/css/dialog.css' %}">
+<link rel="stylesheet" href="{% static 'web/css/live.css' %}">
+{% endblock %}
+
+{# Two app bars, one shown (live.js): the session's, and the talk's while a talk goes on. #}
+{% block header %}
+{% include "web/components/session_header.html" with session=session %}
+{% include "web/components/talk_header.html" with session=session %}
+{% endblock %}
+
+{% block content %}
+{# The live session's screen. live.js connects to the live process by itself (web:session_connect: the offer, then the answer). Until the first connection is up the loading screen shows; then the content, fetched fresh (the session's JSON, web:session): the session view, or the talk view while a talk goes on. The status shows as a bar above it when the connection drops. #}
+<div class="live-screen" data-live-screen data-session-id="{{ session.id }}"
+    data-connect-url="{% url 'web:session_connect' session.id %}" data-csrf-token="{{ csrf_token }}">
+    <div class="live-loading" data-live-loading>
+        <span class="live-spinner" aria-hidden="true"></span>
+        <p class="live-connection-status" data-live-connection-status data-state="connecting" role="status">
+            <span data-live-connection-text>Connecting&hellip;</span>
+        </p>
+    </div>
+    <p class="live-message" data-live-message role="alert" hidden></p>
+    <div class="live-content" data-live-content hidden>
+        <div class="live-view" data-live-view="session">
+            {% include "web/content/session_content.html" %}
+        </div>
+        <div class="live-view" data-live-view="talk" hidden>
+            {% include "web/content/talk_content.html" %}
+        </div>
+    </div>
+</div>
+
+{# Finish session, from either header. #}
+{% include "web/components/confirm_dialog.html" %}
+{% endblock %}
+
+{% block scripts %}
+{# session_content.html and talk_content.html bring session.js and talk.js. #}
+<script src="{% static 'web/js/timeline-chart.js' %}"></script>
+<script src="{% static 'web/js/score-ring.js' %}"></script>
+<script src="{% static 'web/js/polar-chart.js' %}"></script>
+<script src="{% static 'web/js/session-header.js' %}"></script>
+<script src="{% static 'web/js/confirm-dialog.js' %}"></script>
+<script src="{% static 'web/js/live.js' %}"></script>
+{% endblock %}

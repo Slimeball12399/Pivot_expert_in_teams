@@ -48,7 +48,7 @@ stability. Dates and times are UTC.
         {% include "web/components/badge.html" with text=row.get_status_display %}
         {% endif %}
     </div>
-    {# Actions by status. Edit and delete open their dialogs, the eye opens the session (web:session); start does nothing yet. #}
+    {# Actions by status. Edit and delete open their dialogs, the eye opens the session (web:session), play starts it (POST web:session_live) and opens its live screen. #}
     {% with name=row.speaker.user.get_full_name %}
     <div class="session-table-actions" role="cell">
         {% if row.status == "NOT_STARTED" %}
@@ -60,9 +60,12 @@ stability. Dates and times are UTC.
             data-scheduled-at="{% if row.scheduled_at %}{{ row.scheduled_at|date:'c' }}{% endif %}">
             {% heroicon_outline "pencil-square" size=20 aria_hidden="true" %}
         </button>
-        <button type="button" class="icon-button" aria-label="Start session with {{ name }}">
-            {% heroicon_outline "play" size=20 aria_hidden="true" %}
-        </button>
+        <form method="post" action="{% url 'web:session_live' row.id %}">
+            {% csrf_token %}
+            <button type="submit" class="icon-button" aria-label="Start session with {{ name }}">
+                {% heroicon_outline "play" size=20 aria_hidden="true" %}
+            </button>
+        </form>
         {% elif row.status == "FINISHED" %}
         {# Asks first (confirm_dialog.html), then DELETE web:session: it and its talks move to Discarded. #}
         <button type="button" class="icon-button" aria-label="Delete session with {{ name }}"

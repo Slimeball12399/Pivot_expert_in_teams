@@ -13,6 +13,7 @@
 <script src="{% static 'web/js/new-session-dialog.js' %}" defer></script>
 <script src="{% static 'web/js/filter-menu.js' %}" defer></script>
 <script src="{% static 'web/js/confirm-dialog.js' %}" defer></script>
+<script src="{% static 'web/js/session-header.js' %}" defer></script>
 {% endblock %}
 
 {% block content %}
@@ -41,8 +42,19 @@
         </div>
     </div>
 
-    {# Content still to be decided. #}
-    <div class="sessions-top"></div>
+    {# The session cards (session_card.html): the live session to reconnect to, else the next two upcoming ones side by side (only the first where both don't fit). Empty without either. #}
+    <div class="sessions-top">{% if live %}
+        {% include "web/components/session_card.html" with session=live kind="live" %}
+    {% elif upcoming %}
+        <section class="session-cards-next" aria-labelledby="session-cards-next-title">
+            <h2 class="session-cards-title" id="session-cards-next-title">Up next</h2>
+            <div class="session-cards">
+                {% for next in upcoming %}
+                {% include "web/components/session_card.html" with session=next kind="upcoming" %}
+                {% endfor %}
+            </div>
+        </section>
+    {% endif %}</div>
 
     {# Its own row, as on the Users page: the Filters button and the selected status and time as tags. #}
     {% include "web/components/filter_menu.html" with id="session-filters" groups=filter_groups %}

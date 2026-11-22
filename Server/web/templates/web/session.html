@@ -10,156 +10,24 @@
 <link rel="stylesheet" href="{% static 'web/css/score-card.css' %}">
 <link rel="stylesheet" href="{% static 'web/css/user-table.css' %}">{# the icon buttons #}
 <link rel="stylesheet" href="{% static 'web/css/session.css' %}">
+<link rel="stylesheet" href="{% static 'web/css/dialog.css' %}">
 {% endblock %}
 
 {# The session's own app bar in place of the site header. #}
 {% block header %}
-{% include "web/components/session_header.html" with session=session talk_count=talks|length elapsed=elapsed can_start_talk=can_start_talk next_talk=next_talk %}
+{% include "web/components/session_header.html" with session=session %}
 {% endblock %}
 
 {% block content %}
-<section class="talk-stats">
-    <div class="graphs">
-        <section class="score-card voice">
-            <div class="graph">
-                <h3>Voice dynamics</h3>
-                <div class="graph-plot">
-                    {% include "web/components/timeline_chart.html" with id="voice-chart" config=voice_config %}
-                </div>
-                <div class="score-scale">
-                    <span class="score-scale-level score-scale-range">Your usual range</span>
-                    <span class="score-scale-level score-scale-below">Below usual</span>
-                    <span class="score-scale-level score-scale-good">Good</span>
-                    <span class="score-scale-level score-scale-excellent">Excellent</span>
-                </div>
-            </div>
-            <div class="score">
-                {% include "web/components/score_ring.html" with id="voice-score" measure="speech" value=speech_score label="Speech" %}
-                <div class="data-grid">
-                    <div class="data good">
-                        <h4>Pitch Range</h4>
-                        <h3>78</h3>
-                    </div>
-                    <div class="data good">
-                        <h4>Loudness</h4>
-                        <h3>84</h3>
-                    </div>
-                    <div class="data bad">
-                        <h4>Pause Rhythm</h4>
-                        <h3>72</h3>
-                    </div>
-                    <div class="data good">
-                        <h4>Final Falls</h4>
-                        <h3>70</h3>
-                    </div>
-                </div>
-            </div>
-        </section>
-        <section class="score-card stability">
-            <div class="graph">
-                <h3>Stability over the talk</h3>
-                <div class="graph-plot">
-                    {% include "web/components/timeline_chart.html" with id="stability-chart" config=stability_config %}
-                </div>
-                <div class="score-scale">
-                    <span class="score-scale-level score-scale-range">Your usual range</span>
-                    <span class="score-scale-level score-scale-below">Below usual</span>
-                    <span class="score-scale-level score-scale-good">Good</span>
-                    <span class="score-scale-level score-scale-excellent">Excellent</span>
-                </div>
-            </div>
-            <div class="score">
-                {% include "web/components/score_ring.html" with id="stability-score" measure="stability" value=stability_score label="Stability" %}
-                <div class="data-grid">
-                    <div class="data good">
-                        <h4>Sway Area</h4>
-                        <h3>10.1</h3><span>cm^2</span>
-                    </div>
-                    <div class="data bad">
-                        <h4>Sway Speed</h4>
-                        <h3>12.4</h3><span>mm/s</span>
-                    </div>
-                    <div class="data good">
-                        <h4>Time Centered</h4>
-                        <h3>74</h3><span>%</span>
-                    </div>
-                    <div class="data bad">
-                        <h4>Max Lean</h4>
-                        <h3>2.6</h3><span>cm</span>
-                    </div>
-                </div>
-            </div>
-        </section>
-
-    </div>
-    <div class="talk-timeline">
-        <div class="talk-timeline-head">
-            <span class="talk-timeline-label">
-                {% heroicon_outline "microphone" size=20 aria_hidden="true" %}
-                Talk timeline
-            </span>
-            <span class="talk-time">
-                <span id="talk-time"></span>
-                <span class="talk-time-total" id="talk-time-total"></span>
-            </span>
-        </div>
-        <input class="talk-slider" id="talk-slider" type="range" min="0" max="{{ stability_config.x.max }}" step="0.5" value="{{ stability_config.time }}" aria-label="Position in the talk">
-    </div>
-
-    {# The session's talks. The eye shows that talk in the graphs above (session.js fetches web:talk); the one shown is aria-current. #}
-    <section class="session-talks" aria-labelledby="session-talks-title">
-        <div class="session-talks-head">
-            <h2 class="session-talks-title" id="session-talks-title">Talks in this session</h2>
-            {# The same as in the header: only when a talk can be started. Does nothing yet. #}
-            {% if can_start_talk %}
-            {% with number=next_talk|stringformat:"d" %}{% with label="Start talk "|add:number %}
-            {% include "web/components/button.html" with text=label icon="play" id="talks-start-talk" %}
-            {% endwith %}{% endwith %}
-            {% endif %}
-        </div>
-        <div class="talk-table" role="table" aria-label="Talks">
-            <div class="talk-table-row talk-table-head" role="row">
-                <div role="columnheader">Talk</div>
-                <div class="talk-table-started" role="columnheader">Started</div>
-                <div class="talk-table-length" role="columnheader">Length</div>
-                <div class="talk-table-speech" role="columnheader">Speech</div>
-                <div class="talk-table-stability" role="columnheader">Stability</div>
-                <div class="talk-table-actions" role="columnheader">
-                    <span class="visually-hidden">Actions</span>
-                </div>
-            </div>
-            {% for row in talks %}
-            <div class="talk-table-row" role="row" data-talk-row="{{ row.id }}"{% if row.id == talk.id %} aria-current="true"{% endif %}>
-                <div class="talk-table-name" role="cell">Talk {{ row.number }}</div>
-                <div class="talk-table-muted talk-table-started" role="cell">{{ row.started_at|date:"H:i" }}</div>
-                <div class="talk-table-muted talk-table-length" role="cell">{% if row.length %}{{ row.length }}{% else %}&ndash;{% endif %}</div>
-                <div class="talk-table-speech" role="cell">
-                    {% include "web/components/score_bar.html" with value=row.speech measure="speech" %}
-                </div>
-                <div class="talk-table-stability" role="cell">
-                    {% include "web/components/score_bar.html" with value=row.stability measure="stability" %}
-                </div>
-                <div class="talk-table-actions" role="cell">
-                    {# Does nothing yet. #}
-                    <button type="button" class="icon-button" aria-label="Delete talk {{ row.number }}">
-                        {% heroicon_outline "trash" size=20 aria_hidden="true" %}
-                    </button>
-                    <button type="button" class="icon-button" data-talk-url="{% url 'web:talk' row.id %}"
-                        aria-label="Show talk {{ row.number }}">
-                        {% heroicon_outline "eye" size=20 aria_hidden="true" %}
-                    </button>
-                </div>
-            </div>
-            {% empty %}
-            <p class="talk-table-empty">No talks yet.</p>
-            {% endfor %}
-        </div>
-    </section>
-</section>
+{% include "web/content/session_content.html" %}
+{# Finish session in the header (a live session). #}
+{% include "web/components/confirm_dialog.html" %}
 {% endblock %}
 
 {% block scripts %}
+<script src="{% static 'web/js/session-header.js' %}"></script>
+<script src="{% static 'web/js/confirm-dialog.js' %}"></script>
+{# session_content.html brings session.js. #}
 <script src="{% static 'web/js/timeline-chart.js' %}"></script>
 <script src="{% static 'web/js/score-ring.js' %}"></script>
-<script src="{% static 'web/js/session.js' %}"></script>
 {% endblock %}

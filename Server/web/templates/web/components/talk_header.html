@@ -1,0 +1,53 @@
+{% comment %}
+Talk header: the live screen's app bar while a talk goes on, in place of the
+session header (live.js shows one or the other), as in the design: a back
+arrow, "<user> · Talk n", where the feedback shows, the talk's state
+(Recording, red; Paused, yellow), how long it has recorded (large, without
+the pauses, counting while it records), and Pause / Resume, End talk and
+Finish session. live.js fills in the talk and runs the buttons: Pause and
+Resume go to the live process on the connection, End talk is POST
+web:talk_finish, Finish session asks first (confirm_dialog.html) and is
+POST web:session_finish. Styles in web/css/header.css.
+
+  {% include "web/components/talk_header.html" with session=session %}
+
+  session  the Session (speaker with user, display)
+{% endcomment %}
+{% with user=session.speaker.user %}
+<header class="site-header session-header talk-header" data-talk-header hidden>
+    <a class="icon-button session-header-back" href="{% url 'web:sessions' %}" aria-label="Back to sessions">
+        {% heroicon_outline "chevron-left" size=24 aria_hidden="true" %}
+    </a>
+    <div class="session-header-text">
+        <span class="session-header-title">{{ user.get_full_name }} &middot; <span data-talk-name>Talk</span></span>
+        {# No boards yet. #}
+        <span class="session-header-meta">
+            Board &ndash; &middot; showing on this device{% if session.display == "BOTH" %} and {{ user.first_name }}&rsquo;s phone{% endif %}
+        </span>
+    </div>
+    <span class="session-header-status session-header-status-recording" data-talk-status>Recording</span>
+    <span class="talk-header-clock" data-talk-clock>0:00</span>
+    <div class="session-header-actions">
+        <button type="button" class="button button-quiet" id="talk-pause">
+            <span class="button-label" data-talk-pause-label="pause">
+                {% heroicon_outline "pause" size=20 aria_hidden="true" %} Pause
+            </span>
+            <span class="button-label" data-talk-pause-label="resume" hidden>
+                {% heroicon_outline "play" size=20 aria_hidden="true" %} Resume
+            </span>
+        </button>
+        <button type="button" class="button button-quiet" id="talk-end">
+            {% heroicon_outline "check" size=20 aria_hidden="true" %}
+            End talk
+        </button>
+        <button type="button" class="button button-primary" id="talk-finish-session"
+            data-confirm-url="{% url 'web:session_finish' session.id %}" data-confirm-method="POST"
+            data-confirm-title="Finish this session?"
+            data-confirm-body="It ends for {{ user.get_full_name }}, and the talk going on is finished with it."
+            data-confirm-label="Finish session">
+            {% heroicon_outline "stop" size=20 aria_hidden="true" %}
+            Finish session
+        </button>
+    </div>
+</header>
+{% endwith %}

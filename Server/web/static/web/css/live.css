@@ -1,0 +1,79 @@
+/* Live screen (web/live.html): the loading screen while it connects, the
+   status bar when the connection drops later, and the message line. The
+   session content brings its own styles (session.css). */
+
+.live-loading {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 1rem;
+    min-height: 50vh;
+    padding: 2rem 1rem;
+}
+
+.live-loading[hidden],
+.live-message[hidden],
+.live-content[hidden],
+.live-view[hidden] {
+    display: none;
+}
+
+/* With the content showing, the same element is a slim bar above it. */
+.live-screen[data-has-content] .live-loading {
+    flex-direction: row;
+    min-height: 0;
+    gap: 8px;
+    padding: 0.5rem 1rem;
+    border-bottom: 1px solid var(--line);
+    background: var(--background-raised);
+}
+
+.live-spinner {
+    width: 40px;
+    height: 40px;
+    border: 4px solid var(--line);
+    border-top-color: var(--text);
+    border-radius: 50%;
+    animation: live-spin 0.9s linear infinite;
+}
+
+.live-screen[data-has-content] .live-spinner {
+    width: 16px;
+    height: 16px;
+    border-width: 2px;
+}
+
+@keyframes live-spin {
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .live-spinner {
+        animation-duration: 3s;
+    }
+}
+
+/* A stop (not live, no microphone): no spinner, the text in the error colour. */
+.live-loading:has([data-state="stopped"]) .live-spinner {
+    display: none;
+}
+
+.live-connection-status {
+    margin: 0;
+    font-weight: 700;
+    color: var(--text-muted);
+}
+
+.live-connection-status[data-state="stopped"] {
+    color: var(--error-text);
+}
+
+.live-message {
+    margin: 0;
+    padding: 0.5rem 1rem;
+    font-weight: 600;
+    color: var(--error-text);
+}

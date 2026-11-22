@@ -72,7 +72,9 @@ class Talk(UUIDModel):
         PAUSED = "PAUSED", "Paused"  # each pause is a TalkPause row
         PROCESSING = "PROCESSING", "Processing"  # audio uploaded, STT/analysis running
         COMPLETED = "COMPLETED", "Completed"
-        FAILED = "FAILED", "Failed"  # upload lost or analysis crashed
+        # Upload lost, analysis crashed, or cut off: the trainer's connection
+        # didn't come back in time (its audio up to the drop is kept).
+        FAILED = "FAILED", "Failed"
         DISCARDED = "DISCARDED", "Discarded"  # trainer threw the talk away
 
     session = models.ForeignKey(Session, on_delete=models.CASCADE, related_name="talks")

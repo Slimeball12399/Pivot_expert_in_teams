@@ -1,0 +1,69 @@
+{% comment %}
+Session card, above the sessions table (web/sessions.html), as in the design:
+
+- live: the session going on, with a red edge: "Live now", the user, when
+  it started and where the feedback shows, how long it has run (counting,
+  web/js/session-header.js) and Reconnect, which opens its live screen
+  (GET web:session_live).
+- upcoming: one of the next sessions, with a blue edge: its time (and how
+  soon, or its day), the user and Start, which starts it and opens the live
+  screen (POST web:session_live, like the play button in the table).
+
+Styles in web/css/sessions.css. Times are UTC, like the table's.
+
+  {% include "web/components/session_card.html" with session=live kind="live" %}
+  {% include "web/components/session_card.html" with session=next kind="upcoming" %}
+
+  session  a Session with speaker and user; for live also talk_count
+  kind     "live" or "upcoming"
+  now      the time now (the view's), for "in 25 minutes"
+{% endcomment %}
+{% with user=session.speaker.user %}
+{% url 'web:session_live' session.id as live_url %}
+{% if kind == "live" %}
+<section class="session-card session-card-live" aria-labelledby="session-card-{{ session.id }}">
+    <span class="session-avatar session-card-avatar" aria-hidden="true">{{ user.first_name|first }}{{ user.last_name|first }}</span>
+    <span class="session-card-text">
+        <span class="session-card-label">
+            <span class="session-card-dot" aria-hidden="true"></span>
+            Live now &middot; {{ session.talk_count }} talk{{ session.talk_count|pluralize }}
+        </span>
+        <h2 class="session-card-name" id="session-card-{{ session.id }}">{{ user.get_full_name }}</h2>
+        {# No boards yet. #}
+        <span class="session-card-meta">
+            Board &ndash; &middot; started {{ session.started_at|date:"H:i" }} &middot;
+            {% if session.display == "BOTH" %}on this device and {{ user.first_name }}&rsquo;s phone{% else %}on this device{% endif %}
+        </span>
+    </span>
+    {% if session.started_at %}
+    <span class="session-card-clock" data-session-elapsed data-elapsed-plain
+        data-started-at="{{ session.started_at|date:'c' }}"></span>
+    {% endif %}
+    {% include "web/components/button.html" with text="Reconnect" icon="arrow-path" href=live_url %}
+</section>
+{% else %}
+<div class="session-card session-card-upcoming">
+    <span class="session-card-when">
+        {% if session.scheduled_at %}
+        <span class="session-card-time">{{ session.scheduled_at|date:"H:i" }}</span>
+        <span class="session-card-soon">
+            {% if session.scheduled_at <= now %}Due now{% elif session.scheduled_at|date:"Ymd" == now|date:"Ymd" %}in {{ session.scheduled_at|timeuntil:now }}{% else %}{{ session.scheduled_at|date:"D j M" }}{% endif %}
+        </span>
+        {% else %}
+        <span class="session-card-time">&ndash;</span>
+        <span class="session-card-soon">No time set</span>
+        {% endif %}
+    </span>
+    <span class="session-avatar session-card-avatar-small" aria-hidden="true">{{ user.first_name|first }}{{ user.last_name|first }}</span>
+    <span class="session-card-text">
+        <strong class="session-card-person">{{ user.get_full_name }}</strong>
+        {# No boards yet. #}
+        <span class="session-card-meta">Board &ndash;</span>
+    </span>
+    <form method="post" action="{{ live_url }}">
+        {% csrf_token %}
+        {% include "web/components/button.html" with text="Start" type="submit" %}
+    </form>
+</div>
+{% endif %}
+{% endwith %}

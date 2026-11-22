@@ -2,7 +2,9 @@
 // optionally with a second one on the same axes (config.second_points, a dashed
 // line in the text colour), with the target band, marker dots and a playhead,
 // drawn with ECharts.
-// Each [data-timeline-chart] div names the JSON script holding its config.
+// Each [data-timeline-chart] div names the JSON script holding its config, or
+// names none: then it starts empty (one minute, no data, data-measure for the
+// colour) and gets its config from the page's own data with setConfig.
 // After setup the div gets controls for other code (slider, transcript, live data):
 //   div.timeline.setTime(seconds)          move the playhead line and dot
 //   div.timeline.setData(points, markers, secondPoints)
@@ -32,11 +34,10 @@ document.addEventListener("DOMContentLoaded", function () {
     var containers = document.querySelectorAll("[data-timeline-chart]");
 
     containers.forEach(function (container) {
-        var configElement = document.getElementById(container.dataset.timelineChart);
-        if (!configElement) {
-            return;
-        }
-        var config = JSON.parse(configElement.textContent);
+        var configElement = container.dataset.timelineChart
+            ? document.getElementById(container.dataset.timelineChart) : null;
+        var config = configElement ? JSON.parse(configElement.textContent)
+            : { measure: container.dataset.measure || "speech", x: { min: 0, max: 60, interval: 10 } };
         var y = config.y || { min: 0, max: 100, interval: 20 };
         var points = config.points || [];
         var markers = config.markers || [];
