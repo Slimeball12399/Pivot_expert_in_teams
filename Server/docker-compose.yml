@@ -11,10 +11,39 @@ services:
       - "9001:9001"         # TCP batch ingestion (SCRUM-183)
     volumes:
       - ${STATIC_HOST_DIR:-./staticfiles}:/Server/staticfiles   # collectstatic output, served by NGINX
+      - ${FILES_HOST_DIR:-./files}:/Server/files   # working files shared with live (FILES_DIR)
     depends_on:
       db:
         condition: service_healthy
       timeseries:
+        condition: service_healthy
+      minio:
+        condition: service_started
+
+  # The live process (python manage.py run_live): WebRTC connections of live
+  # sessions. Same image as server, its own process, so deploying the web
+  # server never drops a live talk.
+  live:
+    build: .
+    command: python manage.py run_live
+    env_file: .env
+    # Host networking: aiortc puts the machine's real address in its offers and
+    # receives the audio on random UDP ports (Ubuntu's 32768-60999, open them
+    # in ufw), which Docker's port mapping can't follow. On the host network
+    # the compose names (db, minio) don't resolve, so it uses the ports the
+    # other services publish on localhost.
+    # Linux (the VPS) only: in development on Windows, run
+    # `python manage.py run_live` from the venv instead.
+    network_mode: host
+    environment:
+      POSTGRES_HOST: 127.0.0.1
+      POSTGRES_PORT: ${POSTGRES_PORT:-5432}
+      S3_ENDPOINT: http://127.0.0.1:9090
+    volumes:
+      - ${FILES_HOST_DIR:-./files}:/Server/files   # the same working files as server
+    restart: unless-stopped
+    depends_on:
+      db:
         condition: service_healthy
       minio:
         condition: service_started
@@ -60,6 +89,51 @@ services:
     ports:
       - "127.0.0.1:9090:9000"   # S3 API (localhost only)
       - "127.0.0.1:9091:9091"   # web console (localhost only)
+
+  # TURN/STUN server for WebRTC (coturn), for trainers whose network blocks a
+  # direct connection to the live process. Only on the VPS: it starts with
+  # `docker compose --profile turn up -d`, a plain `docker compose up` (local
+  # development) leaves it out. Browsers get short-lived credentials from
+  # Django, made with TURN_SECRET (use-auth-secret), so strangers can't use
+  # it as a free relay.
+  # Firewall (ufw) on the VPS: 3478 udp+tcp, 5349 tcp, 61000:65535 udp.
+  coturn:
+    image: coturn/coturn:latest
+    profiles: ["turn"]
+    # Host networking: it must see the VPS's public IP and the relay ports
+    # directly (Docker's port mapping can't map a range this big well).
+    network_mode: host
+    restart: unless-stopped
+    volumes:
+      # Let's Encrypt for TURN over TLS (5349); without a certificate, TLS is off.
+      # The whole folder: live/<domain>/ only holds symlinks into archive/.
+      - ${TURN_CERT_DIR:-./certs}:/certs:ro
+    command:
+      - -n                                   # no config file: everything is here
+      - --listening-port=3478
+      - --tls-listening-port=5349
+      - --external-ip=${TURN_EXTERNAL_IP}
+      - --realm=${TURN_REALM}
+      - --use-auth-secret
+      - --static-auth-secret=${TURN_SECRET}
+      - --cert=/certs/live/${TURN_REALM}/fullchain.pem
+      - --pkey=/certs/live/${TURN_REALM}/privkey.pem
+      # Relay ports, above Ubuntu's ephemeral range (32768-60999) that the
+      # live process's aiortc picks its own ports from, so they never clash.
+      - --min-port=61000
+      - --max-port=65535
+      - --fingerprint
+      - --no-cli
+      - --no-multicast-peers
+      # Never relay into private or local networks (the VPS's own Docker
+      # network included): a TURN server must not be a way into them.
+      - --denied-peer-ip=0.0.0.0-0.255.255.255
+      - --denied-peer-ip=10.0.0.0-10.255.255.255
+      - --denied-peer-ip=100.64.0.0-100.127.255.255
+      - --denied-peer-ip=127.0.0.0-127.255.255.255
+      - --denied-peer-ip=169.254.0.0-169.254.255.255
+      - --denied-peer-ip=172.16.0.0-172.31.255.255
+      - --denied-peer-ip=192.168.0.0-192.168.255.255
 
 volumes:
   pgdata:

@@ -62,7 +62,9 @@ INSTALLED_APPS = [
 
     'core',
     'web',
-    'api'
+    'api',
+    # The live process (python manage.py run_live): WebRTC connections. Needs aiortc.
+    'live',
 ]
 
 MIDDLEWARE = [
@@ -228,6 +230,21 @@ STORAGES = {
 VOICE_ANALYSIS_SCRIPT = str(BASE_DIR / (
     os.environ.get("VOICE_ANALYSIS_SCRIPT", "").strip() or "../VoiceMock/FeatureExtractor.py"))
 VOICE_ANALYSIS_PYTHON = os.environ.get("VOICE_ANALYSIS_PYTHON", "").strip() or sys.executable
+
+
+# Live (WebRTC)
+# STUN/TURN servers the live process and the browser use, comma-separated in
+# .env, e.g. "turn:203.0.113.7:3478". Empty (the default): none, which is fine
+# while the live process has a public address (the VPS) or runs on localhost.
+
+RTC_ICE_SERVERS = [url.strip() for url in os.environ.get("RTC_ICE_SERVERS", "").split(",")
+                   if url.strip()]
+
+# Working files the web and live processes share (talk recordings while a talk
+# runs, later more). In Docker it is the "files" folder next to manage.py,
+# mounted from FILES_HOST_DIR on the host (docker-compose.yml); outside Docker
+# the same folder. FILES_DIR in .env points somewhere else.
+FILES_DIR = Path(os.environ.get("FILES_DIR", "").strip() or BASE_DIR / "files")
 
 
 # Email

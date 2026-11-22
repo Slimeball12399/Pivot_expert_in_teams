@@ -6,3 +6,5 @@ __pycache__/
 node_modules/
 .DS_Store
 staticfiles/
+# Working files shared by the web and live processes (FILES_DIR)
+files/
