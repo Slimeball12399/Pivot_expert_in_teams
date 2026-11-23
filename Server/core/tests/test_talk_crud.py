@@ -1,4 +1,5 @@
 import uuid
+from unittest import mock
 from datetime import timedelta
 from pathlib import Path
 
@@ -239,6 +240,24 @@ class FinishTalkTests(TalkServiceTestCase):
                 with FilesService().open(talk.audio) as stored:
                     self.assertIn(b"\x01\x00" * 100, stored.read())  # the PCM's samples
                 self.assertFalse(pcm.exists())
+
+    @override_settings(STORAGES=IN_MEMORY_STORAGES)
+    def test_the_analysis_is_enqueued_after_the_commit(self):
+        talk = self.talk_of(seconds=3)
+        with mock.patch("core.services.TalksService.analyse_talk") as task:
+            with self.captureOnCommitCallbacks(execute=False) as callbacks:
+                finish_talk(trainer=self.trainer.user, talk_id=talk.pk, audio=self.wav_upload(seconds=3))
+            task.enqueue.assert_not_called()  # not before the commit
+            for callback in callbacks:
+                callback()
+        task.enqueue.assert_called_once_with(str(talk.id))
+
+    def test_no_audio_no_analysis(self):
+        talk = self.talk_of(seconds=3)
+        with mock.patch("core.services.TalksService.analyse_talk") as task, \
+                self.captureOnCommitCallbacks(execute=True):
+            finish_talk(trainer=self.trainer.user, talk_id=talk.pk)
+        task.enqueue.assert_not_called()
 
     @override_settings(STORAGES=IN_MEMORY_STORAGES)
     def test_without_a_confirmed_recording_nothing_is_deleted(self):

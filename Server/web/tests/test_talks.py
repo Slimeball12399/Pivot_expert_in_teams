@@ -130,12 +130,18 @@ class TalkFinishViewTests(TestCase):
     def test_the_browsers_recording_and_the_live_processs_go_to_finish_talk(self):
         self.live_client.stop_recording.return_value = Path("/files/recordings/x.pcm")
         audio = SimpleUploadedFile("talk.webm", b"webm", content_type="audio/webm")
-        with mock.patch("web.views.talks.finish_talk", return_value=self.talk) as finishing:
+        seen = {}
+
+        def finishing(**kwargs):
+            # Read during the call: Django closes the upload once the request is done.
+            seen.update(kwargs, content=kwargs["audio"].read())
+            return self.talk
+
+        with mock.patch("web.views.talks.finish_talk", side_effect=finishing):
             response = self.client.post(self.url, {"audio": audio})
         self.assertEqual(response.status_code, 200)
-        kwargs = finishing.call_args.kwargs
-        self.assertEqual(kwargs["audio"].read(), b"webm")
-        self.assertEqual(kwargs["recording"], Path("/files/recordings/x.pcm"))
+        self.assertEqual(seen["content"], b"webm")
+        self.assertEqual(seen["recording"], Path("/files/recordings/x.pcm"))
 
     def test_a_file_that_isnt_audio_we_take(self):
         for label, audio in [("not audio", SimpleUploadedFile("talk.txt", b"hi", content_type="text/plain")),

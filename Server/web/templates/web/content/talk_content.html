@@ -3,8 +3,9 @@ The talk screen's content, while a talk goes on: stability now (the polar
 chart) and the live voice graph with pace and pitch variation. Only on the
 live screen (live.html), next to session_content.html, so its ids start with
 live- (session_content has a voice-chart of its own). Its script comes with
-it: web/js/talk.js, demo data for now (deferred, so it runs after the chart
-scripts).
+it: web/js/talk.js, demo data for the stability chart for now (deferred, so
+it runs after the chart scripts). The voice graph and cards are live.js's:
+the live voice windows from the live process.
 
   {% include "web/content/talk_content.html" %}
 
@@ -48,12 +49,13 @@ timeline-chart.js and polar-chart.js.
         <section class="score-card live-talk" aria-labelledby="live-voice-title">
             <div class="voice-head">
                 <h2 id="live-voice-title">Voice</h2>
-                <span class="live-voice-updated" id="live-voice-updated">Updated 0.1 s ago</span>
+                {# live.js: "Updated 3 s ago", from when the last window was recorded. #}
+                <span class="live-voice-updated" id="live-voice-updated">No voice data yet</span>
             </div>
             <div class="scores">
                 <div class="voice-measures">
-                    {% include "web/components/voice_measure.html" with id="live-pace" name="Pace" line="solid" score=1.6 raw="4.8 syl/s" status="On pace" level="good" %}
-                    {% include "web/components/voice_measure.html" with id="live-pitch" name="Pitch variation" line="dashed" score=3.5 raw="6 st" status="Lively" level="good" %}
+                    {% include "web/components/voice_measure.html" with id="live-pace" name="Pace" line="solid" score=0 raw="–" status="Waiting" level="good" %}
+                    {% include "web/components/voice_measure.html" with id="live-pitch" name="Pitch variation" line="dashed" score=0 raw="–" status="Waiting" level="good" %}
                 </div>
                 <div class="voice-plot">
                     {% include "web/components/timeline_chart.html" with id="live-voice-chart" config=live_voice_config %}
@@ -68,4 +70,4 @@ timeline-chart.js and polar-chart.js.
         </section>
     </div>
 </section>
-<script src="{% static 'web/js/talk.js' %}" defer></script>{# demo data, see talk.js #}
+<script src="{% static 'web/js/talk.js' %}" defer></script>{# demo stability data, see talk.js #}

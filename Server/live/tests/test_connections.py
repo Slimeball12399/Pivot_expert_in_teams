@@ -82,7 +82,8 @@ class ReconnectTimeoutTests(CommandsServiceTestCase):
         self.command(Command.START_TALK)
         talk = Talk.objects.get(session=self.session)
         async_to_sync(self.connections.connection_dropped)(self.connection)
-        self.time_out()
+        with self.assertLogs("live.Services.ConnectionService", "INFO"):
+            self.time_out()
 
         self.session.refresh_from_db()
         talk.refresh_from_db()

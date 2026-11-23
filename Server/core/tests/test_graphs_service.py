@@ -43,7 +43,7 @@ class GetTalkGraphsTests(TestCase):
     def test_graphs_and_metadata(self):
         self.make_talk(58, 60, score=50)
         self.make_talk(56, 60, status=Talk.Status.DISCARDED)  # not counted in the number
-        talk = self.make_talk(50, 400, score=72.6, windows=[(5, 3.5), (0, -2.0)])
+        talk = self.make_talk(50, 400, score=72.6, windows=[(5, 67.5), (0, 40.0)])
         talk.pauses.create(paused_at=talk.started_at + timedelta(seconds=100),
                            resumed_at=talk.started_at + timedelta(seconds=120))
         graphs = self.graphs(talk)
@@ -65,10 +65,10 @@ class GetTalkGraphsTests(TestCase):
             self.assertEqual(graphs["stability_config"]["points"], [])
 
     def test_marker_dots_where_the_line_leaves_the_usual_range(self):
-        # On 0 to 100: 25 and 75 are the band's edges (inside), 20 below, 80 above.
+        # On 0 to 100: 50 is the band's lower edge (inside), 45 and 10 below it.
         talk = self.make_talk(50, 120, score=60,
-                              windows=[(0, 0.0), (5, -5.0), (10, -6.0), (15, 5.0), (20, 6.0)])
-        self.assertEqual(self.graphs(talk)["voice_config"]["markers"], [[10.0, 20.0], [20.0, 80.0]])
+                              windows=[(0, 70.0), (5, 50.0), (10, 45.0), (15, 100.0), (20, 10.0)])
+        self.assertEqual(self.graphs(talk)["voice_config"]["markers"], [[10.0, 45.0], [20.0, 10.0]])
 
     def test_a_talk_without_results(self):
         graphs = self.graphs(self.make_talk(50, 90))

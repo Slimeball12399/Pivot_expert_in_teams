@@ -2,7 +2,17 @@ import os
 import re
 import math
 import random
+import time
 from typing import Optional
+
+# The sex the mock pretends to measure, every time (the server scores every
+# speaker as a man for now). "male" or "female"; None picks one at random per call.
+MOCK_SEX = os.environ.get("MOCK_SEX", "male") or None
+
+# Demo: an erratic stretch of ERRATIC_FOR seconds every ERRATIC_EVERY seconds
+# (clock time). ERRATIC_FOR=0 in the environment turns them off.
+ERRATIC_EVERY = float(os.environ.get("MOCK_ERRATIC_EVERY", "50"))
+ERRATIC_FOR = float(os.environ.get("MOCK_ERRATIC_FOR", "12"))
 
 PROFILES = {
     "male": {
@@ -39,16 +49,41 @@ def mock_features(
     Return a mock feature dict.
 
     duration_s: length of the (pretend) recording, drives pauseCount
-    sex: "male", "female" or None for random
+    sex: "male", "female" or None for MOCK_SEX (random if that is None too)
     seed: set for reproducible output (useful in tests)
+
+    Speaking rate and pitch spread drift slowly with the clock time (waves of
+    about 1.5 to 2.5 minutes, plus a little noise), well outside the usual
+    ranges and back: each window of a live talk is a separate run, and the
+    time is what keeps one window close to the next, so the live graph moves
+    like a real speaker instead of jumping. With a seed they don't drift.
+
+    For demos, every ERRATIC_EVERY seconds there is an erratic stretch of
+    ERRATIC_FOR seconds, alternating between rushing (too fast, pitch all
+    over the place, higher and louder) and freezing (too slow, flat, quiet,
+    more pauses), with big jumps from one window to the next. Not with a seed.
     """
     rng = random.Random(seed)
-    profile = PROFILES[sex or rng.choice(list(PROFILES))]
+    profile = PROFILES[sex or MOCK_SEX or rng.choice(list(PROFILES))]
+    # Seconds on the clock: the slow drift (none with a seed, for tests).
+    t = 0.0 if seed is not None else time.time()
+    # An erratic stretch now? Which kind alternates from one to the next.
+    cycle, phase = divmod(t, ERRATIC_EVERY)
+    erratic = seed is None and phase < ERRATIC_FOR
+    rushing = erratic and int(cycle) % 2 == 0
+    freezing = erratic and not rushing
 
     # --- F0 (pitch) ---
     mean_f0 = _tnorm(rng, *profile["f0_mean"], lo=70, hi=320)
-    # Pitch variability in semitones; lively speakers 3-5 st std, monotone ~1.5
-    std_st = _tnorm(rng, 3.0, 0.8, 1.2, 5.5)
+    if rushing:
+        mean_f0 *= _tnorm(rng, 1.2, 0.08, 1.05, 1.4)   # pitched up under stress
+    # Pitch variability in semitones; lively speakers 3-5 st std, monotone ~1.5.
+    # Drifts from flat (~1 st) to lively (~4 st) and back.
+    std_st = _tnorm(rng, 2.6 + 1.6 * math.sin(t / 23 + 1.3), 0.3, 0.5, 6.0)
+    if rushing:
+        std_st = _tnorm(rng, 6.5, 1.3, 4.5, 9.0)       # all over the place
+    elif freezing:
+        std_st = _tnorm(rng, 0.8, 0.3, 0.3, 1.5)       # flat monotone
     def st_to_hz(st): return mean_f0 * 2 ** (st / 12)
 
     q10 = st_to_hz(-1.28 * std_st)
@@ -77,14 +112,23 @@ def mock_features(
         return _tnorm(rng, 3 + 0.15 * abs(mean_val), 1.0, 1.0, 9.0)
 
     # --- Pauses and rate ---
-    pauses_per_min = _tnorm(rng, 12, 4, 3, 28)
+    pauses_per_min = _tnorm(rng, 22 if freezing else 12, 4, 3, 35)
     pause_count = max(0, round(pauses_per_min * duration_s / 60))
-    mean_pause = _tnorm(rng, 0.65, 0.2, 0.25, 1.6)        # seconds
+    mean_pause = _tnorm(rng, 1.3 if freezing else 0.65, 0.2, 0.25, 2.5)   # seconds
+    # Syllables per second; drifts from slow (~3) to fast (~6.2) and back.
     articulation_rate = _tnorm(
-        rng, 5.0, 0.6, 3.5, 6.8)   # syllables per second
+        rng, 4.6 + 1.6 * math.sin(t / 17), 0.3, 2.0, 8.0)
+    if rushing:
+        articulation_rate = _tnorm(rng, 7.0, 0.8, 5.5, 9.0)
+    elif freezing:
+        articulation_rate = _tnorm(rng, 2.0, 0.5, 1.0, 3.0)
 
     # --- Intensity (normalized amplitude, 0..1 full scale) ---
     rms_mean = _tnorm(rng, 0.06, 0.02, 0.015, 0.15)
+    if rushing:
+        rms_mean = min(rms_mean * 1.8, 0.3)
+    elif freezing:
+        rms_mean *= 0.5
     rms_std = rms_mean * _tnorm(rng, 0.55, 0.12, 0.25, 0.9)
 
     def r(x): return round(x, decimals)

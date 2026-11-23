@@ -45,6 +45,15 @@
 // talk that was going on when the page loaded has no recorder (a reload loses
 // it): it ends without a file, and the server uses its own recording.
 //
+// The live voice feedback: every few seconds the live process analyses the
+// last window of the talk's audio and sends {"type": "voice", "talk_id",
+// "start_at", "end_at", "t", "voice_score", "pace", "pitch", "speaking_rate",
+// "f0_range"} on the channel (live/Services/FeedbackService.py). Each one
+// adds a point to the talk view's voice graph (pace solid, pitch variation
+// dashed, at t seconds into the talk), updates the two cards and the
+// "Updated ... ago" line, which counts from end_at (when that window was
+// recorded) every second. A new talk starts the graph over.
+//
 // The status line says where it is: connecting, connected, reconnecting, or
 // a stop. A connection that fails or
 // drops, or a step that fails, starts over from 2 after a wait that grows
@@ -84,6 +93,11 @@ document.addEventListener("DOMContentLoaded", function () {
     var pauseButton = document.getElementById("talk-pause");
     var endButton = document.getElementById("talk-end");
     var openTalk = null;  // the talk going on, from the session's JSON, or null
+    var voice = {talkId: null, pace: [], pitch: [], endAt: null};  // the live voice graph's data
+    var voiceChart = document.getElementById("live-voice-chart");
+    var paceCard = document.getElementById("live-pace");
+    var pitchCard = document.getElementById("live-pitch");
+    var voiceUpdated = document.getElementById("live-voice-updated");
     var recorder = null;  // {talkId, media (the MediaRecorder), chunks} while a talk records here
     var kept = null;      // {talkId, blob}: a stopped recording whose request failed, sent again
     var clockTimer = null;
@@ -287,6 +301,10 @@ document.addEventListener("DOMContentLoaded", function () {
                             } catch (error) {
                                 return;
                             }
+                            if (data.type === "voice") {
+                                showVoice(data);
+                                return;
+                            }
                             var reply = waiting[data.id];
                             delete waiting[data.id];
                             if (reply) {
@@ -339,6 +357,55 @@ document.addEventListener("DOMContentLoaded", function () {
 
     // A command from a button: the button waits for the reply, then the screen
     // follows the new state (or the refusal shows).
+    // One live voice window: a point on each line, the cards, the time.
+    function showVoice(data) {
+        if (voice.talkId !== data.talk_id) {
+            voice = {talkId: data.talk_id, pace: [], pitch: [], endAt: null};
+        }
+        if (data.pace !== null) {
+            voice.pace.push([data.t, data.pace]);
+        }
+        if (data.pitch !== null) {
+            voice.pitch.push([data.t, data.pitch]);
+        }
+        voice.endAt = Date.parse(data.end_at);
+        if (voiceChart && voiceChart.timeline) {
+            voiceChart.timeline.setData(voice.pace, null, voice.pitch);
+        }
+        updateCard(paceCard, data.pace, data.speaking_rate === null ? "\u2013" : data.speaking_rate.toFixed(1) + " syl/s",
+                   ["Too slow", "On pace", "Too fast"]);
+        updateCard(pitchCard, data.pitch, data.f0_range === null ? "\u2013" : Math.round(data.f0_range) + " Hz",
+                   ["Flat", "Lively", "Too varied"]);
+        updateVoiceTime();
+    }
+
+    // A voice card (voice_measure.html): the score (-10 to +10) places its
+    // dot (--score), with the raw value and a word for it: low, fine
+    // (-5 to +5), high.
+    function updateCard(card, score, raw, words) {
+        if (!card || score === null) {
+            return;
+        }
+        card.style.setProperty("--score", score);
+        card.querySelector(".voice-measure-score").textContent = (score > 0 ? "+" : "") + score.toFixed(1);
+        card.querySelector(".voice-measure-raw").textContent = raw;
+        var status = card.querySelector(".live-status");
+        var fine = Math.abs(score) <= 5;
+        status.textContent = score < -5 ? words[0] : fine ? words[1] : words[2];
+        status.classList.toggle("good", fine);
+        status.classList.toggle("warn", !fine);
+    }
+
+    // "Updated 3 s ago", from when the last window was recorded.
+    function updateVoiceTime() {
+        if (!voiceUpdated || voice.endAt === null) {
+            return;
+        }
+        var seconds = Math.max(0, Math.round((Date.now() - voice.endAt) / 1000));
+        voiceUpdated.textContent = "Updated " + seconds + " s ago";
+    }
+    setInterval(updateVoiceTime, 1000);
+
     // The talk's recording starts: a new recorder on the mic.
     function startRecording(talkId) {
         if (typeof MediaRecorder === "undefined" || !stream) {

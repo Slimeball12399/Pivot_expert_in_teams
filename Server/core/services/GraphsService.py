@@ -7,9 +7,10 @@ The caller has already checked the user may see the talk (get_talk).
 
 from core.models import Talk
 
-# The usual range on the 0 to 100 graph scale, until each speaker has their
-# own from earlier talks: -5 to +5 on the window scores' -10 to +10.
-USUAL_RANGE = {"low": 25, "high": 75}
+# The band on the 0 to 100 graph scale: a window score of 50 or more is good
+# or medium (ScoresService: 50 at the medium edge), under 50 bad. Until each
+# speaker has their own range from earlier talks.
+USUAL_RANGE = {"low": 50, "high": 100}
 
 
 def get_talk_graphs(talk: Talk | None) -> dict:
@@ -20,7 +21,7 @@ def get_talk_graphs(talk: Talk | None) -> dict:
       discarded talks), "started_at", "length" (seconds, pauses included)},
       or None for no talk (then the graphs are empty)
     - `voice_config`: on the same 0 to 100 scale as stability, each partial
-      result's voice_score (-10 to +10, so -10 is 0 and +10 is 100) at the
+      result's voice_score (0 to 100, ScoresService) at the
       start of its window, in seconds from the start of the talk (real time,
       so pauses count; the line starts at 0). The band is the usual range
       (USUAL_RANGE); the points outside it are marker dots, which the chart
@@ -38,7 +39,7 @@ def get_talk_graphs(talk: Talk | None) -> dict:
     if talk is not None:
         points = [
             [round((window.start_at - talk.started_at).total_seconds(), 1),
-             round((window.voice_score + 10) * 5, 1)]
+             round(window.voice_score, 1)]
             for window in talk.partial_voice_results.all() if window.voice_score is not None
         ]
         paused = sum(((pause.resumed_at - pause.paused_at).total_seconds()

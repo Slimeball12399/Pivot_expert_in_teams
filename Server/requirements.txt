@@ -8,6 +8,7 @@ click==8.5.0
 cryptography==50.0.2
 django-environ==0.14.0
 django-phonenumber-field==8.5.0
+django-tasks-db==0.12.0
 Django==6.1.2
 djangorestframework==3.18.3
 djangorestframework_simplejwt==5.5.1

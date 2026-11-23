@@ -10,6 +10,7 @@ its speaker. A session's talks come with get_session.
 """
 import logging
 import tempfile
+from functools import partial
 import uuid
 import wave
 from pathlib import Path
@@ -27,6 +28,7 @@ from accounts.models import User
 from core.models import File, PartialVoiceResult, Session, Talk
 from core.services.FilesService import FilesService
 from core.services.SessionsService import INVALID_TRANSITION, NOT_ADMIN, get_session
+from core.tasks import analyse_talk
 
 # Error codes (ValidationError.code) the web views and the API react to.
 # NOT_ADMIN and INVALID_TRANSITION are the same codes as for sessions.
@@ -123,7 +125,8 @@ def finish_talk(trainer: User, talk_id: uuid.UUID, audio: UploadedFile | None = 
     short browser file is logged and dropped); else, with no PCM, the browser's
     file anyway (the only copy); else nothing (no audio). The PCM is deleted
     once its audio is safely stored: after the commit, whichever of the two
-    was stored. Without a `recording` (the live process didn't confirm it
+    was stored. With audio stored, the analysis is enqueued after the commit
+    too (core/tasks.py, the analysis queue). Without a `recording` (the live process didn't confirm it
     closed the file) nothing is deleted.
 
     The caller checks the browser's file type (FilesService.ALLOWED_TYPES)
@@ -182,6 +185,9 @@ def finish_talk(trainer: User, talk_id: uuid.UUID, audio: UploadedFile | None = 
         # rollback doesn't leave the talk without either.
         if pcm is not None:
             transaction.on_commit(lambda: pcm.unlink(missing_ok=True), robust=True)
+        # The analysis, in the background (core/tasks.py). After the commit,
+        # so the worker never looks for a talk that isn't saved yet.
+        transaction.on_commit(partial(analyse_talk.enqueue, str(talk.id)))
     return talk
 
 

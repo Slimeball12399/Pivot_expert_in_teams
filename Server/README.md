@@ -22,6 +22,7 @@ databases and the object store in Docker:
 |---|---|---|
 | Web app (pages, API) | `python manage.py runserver` | http://127.0.0.1:8000/ |
 | Live process (WebRTC) | `python manage.py run_live` | http://127.0.0.1:8100/ (internal API, only Django calls it) |
+| Worker (background tasks) | `python manage.py db_worker --queue-name analysis` | none: it takes tasks from the database |
 | Postgres, TimescaleDB, MinIO | `docker compose up db timeseries minio minio-init` | localhost:5432, 5433, 9090 |
 
 ### First time
@@ -64,12 +65,13 @@ python manage.py seed           # optional: demo trainer, speakers and sessions
 
 ### Every day
 
-Three terminals, each with the venv activated:
+Four terminals, each with the venv activated:
 
 ```bash
 docker compose up db timeseries minio minio-init   # 1: databases, object store and its bucket
 python manage.py runserver              # 2: the web app
 python manage.py run_live               # 3: the live process
+python manage.py db_worker --queue-name analysis   # 4: the worker: each finished talk's analysis
 ```
 
 - App: http://127.0.0.1:8000/
@@ -80,6 +82,15 @@ Ctrl+C stops it and closes its open connections and recordings. It doesn't
 reload on code changes like `runserver` does: restart it after changing
 anything in `live/`. Without it the web app still works, but the live screen
 (`/sessions/<id>/live/`) can't connect.
+
+### The worker
+
+Each finished talk's analysis runs in the background: `finish_talk` puts a task
+on the `analysis` queue (Django's Tasks framework, the queue is a table in the
+database, `django-tasks-db`), and `db_worker` runs it. For now it logs the
+results in the worker's terminal. Like `run_live` it doesn't reload on code
+changes: restart it after changing `core/tasks.py` or the analysis. It needs
+the voice analysis tool at `VOICE_ANALYSIS_SCRIPT` (`.env`).
 
 ## Common commands
 

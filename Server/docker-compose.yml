@@ -50,6 +50,23 @@ services:
       minio:
         condition: service_started
 
+  # The background worker (python manage.py db_worker, django-tasks-db): runs
+  # the tasks of core/tasks.py, e.g. the analysis of each finished talk. Same
+  # image as server; the queue is a table in db, so nothing else to run.
+  worker:
+    build: .
+    command: python manage.py db_worker --queue-name analysis
+    env_file: .env
+    environment:
+      POSTGRES_HOST: db
+      POSTGRES_PORT: "5432"
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+      minio-init:
+        condition: service_completed_successfully
+
   db:
     image: postgres:17
     environment:

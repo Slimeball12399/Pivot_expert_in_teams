@@ -279,7 +279,7 @@ class SessionPageTests(TestCase):
         FullVoiceResult.objects.create(talk=cls.talk, voice_score=72.6)
         PartialVoiceResult.objects.create(
             talk=cls.talk, start_at=cls.talk.started_at, window_length=timedelta(seconds=30),
-            voice_score=-2.0)
+            voice_score=40.0)
         # Still processing: in the card, not in the graphs.
         Talk.objects.create(
             session=cls.session, status=Talk.Status.PROCESSING,
@@ -746,7 +746,8 @@ class SessionFinishTests(TestCase):
             ("close_session", Talk.objects.get(pk=talk.pk).status, Session.objects.get(pk=session_id).status))
         with mock.patch("web.views.sessions.finish_talk", wraps=finish_talk) as finishing:
             self.client.post(self.url)
-        finishing.assert_called_once_with(trainer=self.trainer.user, talk_id=talk.id)
+        # No browser file, and the mocked live process gave no PCM path.
+        finishing.assert_called_once_with(trainer=self.trainer.user, talk_id=talk.id, audio=None, recording=None)
         self.assertEqual(seen, [
             ("stop_recording", Talk.Status.RECORDING),
             # The talk finished by finish_talk, the session not yet.
@@ -758,11 +759,14 @@ class SessionFinishTests(TestCase):
     def test_the_browsers_recording_goes_to_the_talk_going_on(self):
         talk = Talk.objects.create(session=self.live, status=Talk.Status.RECORDING, started_at=timezone.now())
         audio = SimpleUploadedFile("talk.webm", b"webm", content_type="audio/webm")
-        with mock.patch("web.views.sessions.finish_talk") as finishing:
+        seen = {}
+        # Read during the call: Django closes the upload once the request is done.
+        with mock.patch("web.views.sessions.finish_talk",
+                        side_effect=lambda **kwargs: seen.update(kwargs, content=kwargs["audio"].read())):
             response = self.client.post(self.url, {"audio": audio})
         self.assertEqual(response.status_code, 200)
-        self.assertEqual(finishing.call_args.kwargs["talk_id"], talk.id)
-        self.assertEqual(finishing.call_args.kwargs["audio"].read(), b"webm")
+        self.assertEqual(seen["talk_id"], talk.id)
+        self.assertEqual(seen["content"], b"webm")
 
     def test_a_recording_with_no_talk_going_on(self):
         audio = SimpleUploadedFile("talk.webm", b"webm", content_type="audio/webm")

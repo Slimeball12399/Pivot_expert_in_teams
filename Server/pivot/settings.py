@@ -65,7 +65,31 @@ INSTALLED_APPS = [
     'api',
     # The live process (python manage.py run_live): WebRTC connections. Needs aiortc.
     'live',
+    # The background tasks' queue, in the database (python manage.py db_worker runs them).
+    'django_tasks_db',
 ]
+
+# Background tasks (Django's Tasks framework): enqueued in the database by
+# django-tasks-db, run by its worker, python manage.py db_worker (the
+# "worker" service in docker-compose.yml). Queues: core/tasks.py.
+TASKS = {
+    "default": {
+        "BACKEND": "django_tasks_db.DatabaseBackend",
+        "QUEUES": ["default", "analysis"],
+    },
+}
+
+# Logs: the app's own INFO lines (e.g. an analysis's results, core/tasks.py)
+# in the console of the process that writes them; Django's own stay as they are.
+LOGGING = {
+    "version": 1,
+    "disable_existing_loggers": False,
+    "handlers": {"console": {"class": "logging.StreamHandler"}},
+    "loggers": {
+        "core": {"handlers": ["console"], "level": "INFO"},
+        "live": {"handlers": ["console"], "level": "INFO"},
+    },
+}
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
@@ -266,6 +290,10 @@ LIVE_INTERNAL_TOKEN = os.environ.get("LIVE_INTERNAL_TOKEN", "").strip()
 # Seconds a trainer whose connection dropped has to reconnect before the live
 # process finishes the session (and its open talk fails). Default 10 minutes.
 LIVE_RECONNECT_SECONDS = int(os.environ.get("LIVE_RECONNECT_SECONDS", "").strip() or 600)
+# The live voice windows (live/Services/FeedbackService.py): one every this
+# many seconds per talk recording, once it has at least the minimum recorded.
+LIVE_FEEDBACK_SECONDS = float(os.environ.get("LIVE_FEEDBACK_SECONDS", "").strip() or 5)
+LIVE_FEEDBACK_MIN_SECONDS = float(os.environ.get("LIVE_FEEDBACK_MIN_SECONDS", "").strip() or 10)
 
 
 # Email

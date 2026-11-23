@@ -1,0 +1,238 @@
+{
+  "_about": "Bands for each voice measure the scores are calculated from: good, medium and bad. Inside good (low to high) is good; otherwise inside medium (low to high) is medium; otherwise bad. A null limit means no limit on that side: a band can be two-sided (good 500 to 600, medium 200 to 800: 200 to 500 and 600 to 800 are medium, under 200 or over 800 bad) or one-sided (good from 55 up, medium from 30 up: under 30 bad). Medium always contains good. Placeholder values, to be replaced with the project's own. One entry per measure, keyed like the fields of core/models/results.py (VoiceMeasures, FullVoiceResult), in the measure's unit, per sex (men, women) or the same for everyone (both). 'basis' says where the numbers come from.",
+  "mean_f0": {
+    "label": "Mean F0",
+    "unit": "Hz",
+    "men": {
+      "good": {
+        "low": 94,
+        "high": 136
+      },
+      "medium": {
+        "low": 73,
+        "high": 157
+      }
+    },
+    "women": {
+      "good": {
+        "low": 171,
+        "high": 227
+      },
+      "medium": {
+        "low": 143,
+        "high": 255
+      }
+    },
+    "basis": "Mean speaking F0 of adults: men 115 Hz (SD 21), women 199 Hz (SD 28) (Sydney Voice Lab normative sheet, after Leung et al. 2022). Good: mean plus or minus one SD; medium: two SD."
+  },
+  "f0_range_q90_q10": {
+    "label": "F0 range: Q90 - Q10",
+    "unit": "Hz",
+    "men": {
+      "good": {
+        "low": 55,
+        "high": null
+      },
+      "medium": {
+        "low": 30,
+        "high": null
+      }
+    },
+    "women": {
+      "good": {
+        "low": 90,
+        "high": null
+      },
+      "medium": {
+        "low": 50,
+        "high": null
+      }
+    },
+    "basis": "Placeholder estimate for the spread of pitch in connected speech; no source looked up."
+  },
+  "mean_f1": {
+    "label": "Mean F1",
+    "unit": "Hz",
+    "men": {
+      "good": {
+        "low": 450,
+        "high": 600
+      },
+      "medium": {
+        "low": 375,
+        "high": 675
+      }
+    },
+    "women": {
+      "good": {
+        "low": 500,
+        "high": 700
+      },
+      "medium": {
+        "low": 400,
+        "high": 800
+      }
+    },
+    "basis": "Placeholder: rough averages over the vowels of running speech; women's formants are higher (shorter vocal tract)."
+  },
+  "mean_f2": {
+    "label": "Mean F2",
+    "unit": "Hz",
+    "men": {
+      "good": {
+        "low": 1300,
+        "high": 1600
+      },
+      "medium": {
+        "low": 1150,
+        "high": 1750
+      }
+    },
+    "women": {
+      "good": {
+        "low": 1500,
+        "high": 1900
+      },
+      "medium": {
+        "low": 1300,
+        "high": 2100
+      }
+    },
+    "basis": "Placeholder: rough averages over the vowels of running speech."
+  },
+  "mean_f3": {
+    "label": "Mean F3",
+    "unit": "Hz",
+    "men": {
+      "good": {
+        "low": 2300,
+        "high": 2700
+      },
+      "medium": {
+        "low": 2100,
+        "high": 2900
+      }
+    },
+    "women": {
+      "good": {
+        "low": 2600,
+        "high": 3100
+      },
+      "medium": {
+        "low": 2350,
+        "high": 3350
+      }
+    },
+    "basis": "Placeholder: rough averages over the vowels of running speech."
+  },
+  "h1_h2_corrected": {
+    "label": "H1*-H2*",
+    "unit": "dB",
+    "men": {
+      "good": {
+        "low": null,
+        "high": 3
+      },
+      "medium": {
+        "low": null,
+        "high": 6
+      }
+    },
+    "women": {
+      "good": {
+        "low": null,
+        "high": 6
+      },
+      "medium": {
+        "low": null,
+        "high": 10
+      }
+    },
+    "basis": "Placeholder: formant-corrected H1*-H2* (related to the open quotient); usually higher for women (breathier phonation)."
+  },
+  "h1_a3_corrected": {
+    "label": "H1*-A3*",
+    "unit": "dB",
+    "men": {
+      "good": {
+        "low": null,
+        "high": 17
+      },
+      "medium": {
+        "low": null,
+        "high": 24
+      }
+    },
+    "women": {
+      "good": {
+        "low": null,
+        "high": 21
+      },
+      "medium": {
+        "low": null,
+        "high": 28
+      }
+    },
+    "basis": "Placeholder: formant-corrected H1*-A3* (related to spectral tilt)."
+  },
+  "mean_speaking_rate": {
+    "label": "Mean speaking rate",
+    "unit": "syllables/s",
+    "both": {
+      "good": {
+        "low": 3.5,
+        "high": 5.5
+      },
+      "medium": {
+        "low": 2.5,
+        "high": 6.5
+      }
+    },
+    "basis": "Conversational speech averages about 196 words per minute (111 to 291 across conversations), roughly 4 to 5 syllables per second; speaking rate includes the pauses."
+  },
+  "mean_pause_duration": {
+    "label": "Mean pause duration",
+    "unit": "s",
+    "both": {
+      "good": {
+        "low": 0.3,
+        "high": 0.9
+      },
+      "medium": {
+        "low": 0.15,
+        "high": 1.2
+      }
+    },
+    "basis": "Placeholder for pauses within a talk; very short gaps (under about 0.15 to 0.25 s) usually don't count as pauses. Medium starts at 0.15 s, the shortest gap that counts as a pause."
+  },
+  "pause_frequency": {
+    "label": "Pause frequency",
+    "unit": "pauses/min",
+    "both": {
+      "good": {
+        "low": 8,
+        "high": 20
+      },
+      "medium": {
+        "low": 2,
+        "high": 26
+      }
+    },
+    "basis": "Placeholder."
+  },
+  "spl_dbfs": {
+    "label": "Sound pressure level derived from RMS",
+    "unit": "dBFS",
+    "both": {
+      "good": {
+        "low": -22.5,
+        "high": null
+      },
+      "medium": {
+        "low": -30,
+        "high": null
+      }
+    },
+    "basis": "Placeholder. The analysis gives RMS relative to full scale (dBFS), not calibrated dB SPL, so this depends on the microphone and its gain. Calibrated conversational speech is about 60 to 77 dB SPL."
+  }
+}

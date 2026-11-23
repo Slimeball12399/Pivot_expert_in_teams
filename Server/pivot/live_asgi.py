@@ -44,6 +44,8 @@ async def application(scope, receive, send):
                         " without them nothing could connect.")
                 # The shared working folder (FILES_DIR); the recordings go in it.
                 settings.FILES_DIR.mkdir(parents=True, exist_ok=True)
+                # The live voice windows, every LIVE_FEEDBACK_SECONDS.
+                runtime.FEEDBACK.start()
             except Exception as error:
                 await send({"type": "lifespan.startup.failed", "message": str(error)})
                 return
