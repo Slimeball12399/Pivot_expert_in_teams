@@ -1,7 +1,9 @@
 from datetime import timedelta
+from pathlib import Path
 from unittest import mock
 
 from django.conf import settings
+from django.core.files.uploadedfile import SimpleUploadedFile
 from django.test import TestCase
 from django.urls import reverse
 from django.utils import timezone
@@ -82,6 +84,8 @@ class TalkFinishViewTests(TestCase):
         patcher = mock.patch("web.views.talks.LiveClient")
         self.live_client = patcher.start().return_value
         self.addCleanup(patcher.stop)
+        # Nothing recorded by default (the real one gives the PCM's path).
+        self.live_client.stop_recording.return_value = None
         self.talk = Talk.objects.create(session=self.session, status=Talk.Status.RECORDING,
                                         started_at=timezone.now() - timedelta(seconds=30))
         self.url = reverse("web:talk_finish", args=[self.talk.id])
@@ -122,6 +126,28 @@ class TalkFinishViewTests(TestCase):
                 self.assertEqual(response.status_code, 200)
                 talk.refresh_from_db()
                 self.assertEqual(talk.status, Talk.Status.PROCESSING)
+
+    def test_the_browsers_recording_and_the_live_processs_go_to_finish_talk(self):
+        self.live_client.stop_recording.return_value = Path("/files/recordings/x.pcm")
+        audio = SimpleUploadedFile("talk.webm", b"webm", content_type="audio/webm")
+        with mock.patch("web.views.talks.finish_talk", return_value=self.talk) as finishing:
+            response = self.client.post(self.url, {"audio": audio})
+        self.assertEqual(response.status_code, 200)
+        kwargs = finishing.call_args.kwargs
+        self.assertEqual(kwargs["audio"].read(), b"webm")
+        self.assertEqual(kwargs["recording"], Path("/files/recordings/x.pcm"))
+
+    def test_a_file_that_isnt_audio_we_take(self):
+        for label, audio in [("not audio", SimpleUploadedFile("talk.txt", b"hi", content_type="text/plain")),
+                             ("empty", SimpleUploadedFile("talk.webm", b"", content_type="audio/webm"))]:
+            with self.subTest(label):
+                response = self.client.post(self.url, {"audio": audio})
+                self.assertEqual(response.status_code, 400)
+                self.assertIn("audio", response.json()["errors"])
+        # Refused before anything changes.
+        self.live_client.stop_recording.assert_not_called()
+        self.talk.refresh_from_db()
+        self.assertEqual(self.talk.status, Talk.Status.RECORDING)
 
     def test_rejects(self):
         with self.subTest("not going on: 409, the live process isn't asked"):

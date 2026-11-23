@@ -5,6 +5,7 @@ from urllib.parse import urlencode
 
 from django.conf import settings
 from django.contrib.messages import get_messages
+from django.core.files.uploadedfile import SimpleUploadedFile
 from django.core.serializers.json import DjangoJSONEncoder
 from django.test import TestCase
 from django.urls import reverse
@@ -630,6 +631,8 @@ class ConnectTests(TestCase):
         patcher = mock.patch("web.views.sessions.LiveClient")
         self.live_client = patcher.start().return_value
         self.addCleanup(patcher.stop)
+        # Nothing recorded by default (the real one gives the PCM's path).
+        self.live_client.stop_recording.return_value = None
         self.offer = {"sdp": "v=0\r\n", "ice_servers": [{"urls": "stun:203.0.113.7:3478"}],
                       "ice_transport_policy": "all"}
         self.live_client.offer.return_value = self.offer
@@ -709,6 +712,8 @@ class SessionFinishTests(TestCase):
         patcher = mock.patch("web.views.sessions.LiveClient")
         self.live_client = patcher.start().return_value
         self.addCleanup(patcher.stop)
+        # Nothing recorded by default (the real one gives the PCM's path).
+        self.live_client.stop_recording.return_value = None
         self.live = Session.objects.create(
             trainer=self.trainer, speaker=self.speaker.speaker_profile, status=Session.Status.LIVE,
             started_at=timezone.now() - timedelta(minutes=5))
@@ -749,6 +754,25 @@ class SessionFinishTests(TestCase):
         ])
         self.live.refresh_from_db()
         self.assertEqual(self.live.status, Session.Status.FINISHED)
+
+    def test_the_browsers_recording_goes_to_the_talk_going_on(self):
+        talk = Talk.objects.create(session=self.live, status=Talk.Status.RECORDING, started_at=timezone.now())
+        audio = SimpleUploadedFile("talk.webm", b"webm", content_type="audio/webm")
+        with mock.patch("web.views.sessions.finish_talk") as finishing:
+            response = self.client.post(self.url, {"audio": audio})
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(finishing.call_args.kwargs["talk_id"], talk.id)
+        self.assertEqual(finishing.call_args.kwargs["audio"].read(), b"webm")
+
+    def test_a_recording_with_no_talk_going_on(self):
+        audio = SimpleUploadedFile("talk.webm", b"webm", content_type="audio/webm")
+        response = self.client.post(self.url, {"audio": audio})
+        self.assertEqual(response.status_code, 409)
+        self.assertEqual(response.json()["errors"]["__all__"], ["There's no talk going on for this recording."])
+        # Refused before anything changes.
+        self.live_client.close_session.assert_not_called()
+        self.live.refresh_from_db()
+        self.assertEqual(self.live.status, Session.Status.LIVE)
 
     def test_finished_even_when_the_live_process_cant_be_reached(self):
         self.live_client.close_session.side_effect = LiveError(LIVE_UNAVAILABLE, "Can't be reached.")

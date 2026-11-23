@@ -1,5 +1,6 @@
 import uuid
 from datetime import timedelta
+from pathlib import Path
 
 from django.conf import settings
 from django.core.exceptions import ValidationError
@@ -150,6 +151,120 @@ class PauseAndResumeTalkTests(TalkServiceTestCase):
 
 
 class FinishTalkTests(TalkServiceTestCase):
+    @override_settings(STORAGES=IN_MEMORY_STORAGES)
+    def test_stores_the_browsers_recording(self):
+        talk = self.make_talk()
+        audio = SimpleUploadedFile("talk.webm", b"webm bytes", content_type="audio/webm")
+        # Not real WebM, and no PCM: stored as the only copy, with a warning.
+        with self.assertLogs("core.services.TalksService", "WARNING"):
+            finished = finish_talk(trainer=self.trainer.user, talk_id=talk.pk, audio=audio)
+        talk.refresh_from_db()
+        self.assertEqual(finished.status, Talk.Status.PROCESSING)
+        self.assertEqual(talk.audio.content_type, "audio/webm")
+        self.assertTrue(talk.audio.key.endswith(".webm"))
+        with FilesService().open(talk.audio) as stored:
+            self.assertEqual(stored.read(), b"webm bytes")
+
+    def pcm_file(self, seconds=1):
+        """A PCM file as the live process writes it: 16 kHz mono 16-bit."""
+        import tempfile
+
+        folder = tempfile.TemporaryDirectory()
+        self.addCleanup(folder.cleanup)
+        pcm = Path(folder.name) / "talk.pcm"
+        pcm.write_bytes(b"\x01\x00" * 16000 * seconds)
+        return pcm
+
+    def wav_upload(self, seconds):
+        """A WAV the way a browser file comes in: decodable audio, `seconds` long."""
+        import io
+        import wave
+
+        buffer = io.BytesIO()
+        with wave.open(buffer, "wb") as wav:
+            wav.setnchannels(1)
+            wav.setsampwidth(2)
+            wav.setframerate(16000)
+            wav.writeframes(b"\x00\x00" * 16000 * seconds)
+        return SimpleUploadedFile("talk.wav", buffer.getvalue(), content_type="audio/wav")
+
+    def talk_of(self, seconds):
+        """A talk going on for `seconds` seconds."""
+        return Talk.objects.create(session=self.live, status=Talk.Status.RECORDING,
+                                   started_at=timezone.now() - timedelta(seconds=seconds))
+
+    @override_settings(STORAGES=IN_MEMORY_STORAGES)
+    def test_else_stores_the_live_processs_recording_as_wav(self):
+        import wave
+
+        pcm = self.pcm_file()
+        talk = self.make_talk()
+        with self.captureOnCommitCallbacks(execute=True):
+            finish_talk(trainer=self.trainer.user, talk_id=talk.pk, recording=pcm)
+        talk.refresh_from_db()
+        self.assertEqual(talk.audio.content_type, "audio/wav")
+        with FilesService().open(talk.audio) as stored, wave.open(stored, "rb") as wav:
+            self.assertEqual((wav.getnchannels(), wav.getsampwidth(), wav.getframerate()), (1, 2, 16000))
+            self.assertEqual(wav.readframes(wav.getnframes()), b"\x01\x00" * 16000)
+        with self.subTest("stored: the PCM is deleted after the commit"):
+            self.assertFalse(pcm.exists())
+
+    @override_settings(STORAGES=IN_MEMORY_STORAGES)
+    def test_an_intact_browser_recording_is_stored_and_the_pcm_deleted(self):
+        pcm = self.pcm_file()
+        talk = self.talk_of(seconds=3)
+        with self.captureOnCommitCallbacks(execute=True):
+            finish_talk(trainer=self.trainer.user, talk_id=talk.pk, audio=self.wav_upload(seconds=3), recording=pcm)
+        talk.refresh_from_db()
+        with FilesService().open(talk.audio) as stored:
+            # The browser's file (silence), not the PCM's samples.
+            self.assertIn(b"\x00\x00" * 100, stored.read())
+        self.assertFalse(pcm.exists())
+
+    @override_settings(STORAGES=IN_MEMORY_STORAGES)
+    def test_a_broken_or_short_browser_recording_gives_way_to_the_pcm(self):
+        cases = [
+            ("doesn't decode", lambda: SimpleUploadedFile("talk.webm", b"not webm", content_type="audio/webm"), 3),
+            ("much shorter than the talk", lambda: self.wav_upload(seconds=1), 60),
+        ]
+        for label, upload, talk_seconds in cases:
+            with self.subTest(label):
+                Talk.objects.filter(session=self.live).update(status=Talk.Status.COMPLETED)
+                pcm = self.pcm_file()
+                talk = self.talk_of(seconds=talk_seconds)
+                with self.assertLogs("core.services.TalksService", "WARNING"), \
+                        self.captureOnCommitCallbacks(execute=True):
+                    finish_talk(trainer=self.trainer.user, talk_id=talk.pk, audio=upload(), recording=pcm)
+                talk.refresh_from_db()
+                with FilesService().open(talk.audio) as stored:
+                    self.assertIn(b"\x01\x00" * 100, stored.read())  # the PCM's samples
+                self.assertFalse(pcm.exists())
+
+    @override_settings(STORAGES=IN_MEMORY_STORAGES)
+    def test_without_a_confirmed_recording_nothing_is_deleted(self):
+        # The live process didn't confirm it closed the file: no path comes in.
+        pcm = self.pcm_file()
+        talk = self.talk_of(seconds=3)
+        with self.captureOnCommitCallbacks(execute=True):
+            finish_talk(trainer=self.trainer.user, talk_id=talk.pk, audio=self.wav_upload(seconds=3))
+        self.assertTrue(pcm.exists())
+
+    @override_settings(STORAGES=IN_MEMORY_STORAGES)
+    def test_the_browsers_recording_wins_and_nothing_means_no_audio(self):
+        with self.subTest("a broken browser file and no PCM: the browser's, the only copy"):
+            talk = self.make_talk()
+            audio = SimpleUploadedFile("talk.ogg", b"ogg", content_type="audio/ogg")
+            with self.assertLogs("core.services.TalksService", "WARNING"):
+                finish_talk(trainer=self.trainer.user, talk_id=talk.pk, audio=audio,
+                            recording=Path("/nowhere/talk.pcm"))
+            talk.refresh_from_db()
+            self.assertEqual(talk.audio.content_type, "audio/ogg")
+        with self.subTest("neither, or a PCM that isn't there: no audio"):
+            talk = self.make_talk()
+            finish_talk(trainer=self.trainer.user, talk_id=talk.pk, recording=Path("/nowhere/talk.pcm"))
+            talk.refresh_from_db()
+            self.assertIsNone(talk.audio)
+
     def test_duration_leaves_out_the_pauses(self):
         with self.subTest("recording: the whole time since the start"):
             talk = self.make_talk(minutes_ago=10)

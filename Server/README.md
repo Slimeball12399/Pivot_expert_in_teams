@@ -22,7 +22,7 @@ databases and the object store in Docker:
 |---|---|---|
 | Web app (pages, API) | `python manage.py runserver` | http://127.0.0.1:8000/ |
 | Live process (WebRTC) | `python manage.py run_live` | http://127.0.0.1:8100/ (internal API, only Django calls it) |
-| Postgres, TimescaleDB, MinIO | `docker compose up db timeseries minio` | localhost:5432, 5433, 9090 |
+| Postgres, TimescaleDB, MinIO | `docker compose up db timeseries minio minio-init` | localhost:5432, 5433, 9090 |
 
 ### First time
 
@@ -46,14 +46,15 @@ Then in `.env`:
   recordings both processes share);
 - `S3_ENDPOINT` must be `http://localhost:9090` (Django runs outside Docker).
 
-Start the services, create the bucket once, then set up the database:
+Start the services (with the bucket), then set up the database:
 
 ```bash
-docker compose up -d db timeseries minio
+docker compose up -d db timeseries minio minio-init
 ```
 
-Create the bucket named in `S3_BUCKET` in the MinIO console
-(http://localhost:9091, log in with `MINIO_USER` / `MINIO_PASSWORD`), then:
+`minio-init` creates the bucket named in `S3_BUCKET` and exits (it does
+nothing if the bucket is already there). The MinIO console is at
+http://localhost:9091 (log in with `MINIO_USER` / `MINIO_PASSWORD`). Then:
 
 ```bash
 python manage.py migrate
@@ -66,7 +67,7 @@ python manage.py seed           # optional: demo trainer, speakers and sessions
 Three terminals, each with the venv activated:
 
 ```bash
-docker compose up db timeseries minio   # 1: databases and object store
+docker compose up db timeseries minio minio-init   # 1: databases, object store and its bucket
 python manage.py runserver              # 2: the web app
 python manage.py run_live               # 3: the live process
 ```

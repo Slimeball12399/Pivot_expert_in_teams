@@ -8,15 +8,23 @@ WebRTC state; these functions only look at the database.
 get_talk reads one talk with all its results, for the session's trainer and
 its speaker. A session's talks come with get_session.
 """
+import logging
+import tempfile
 import uuid
+import wave
+from pathlib import Path
+
+import av
 
 from django.core.exceptions import ValidationError
+from django.core.files import File as DjangoFile
+from django.core.files.uploadedfile import UploadedFile
 from django.db import IntegrityError, transaction
 from django.db.models import Prefetch
 from django.utils import timezone
 
 from accounts.models import User
-from core.models import PartialVoiceResult, Session, Talk
+from core.models import File, PartialVoiceResult, Session, Talk
 from core.services.FilesService import FilesService
 from core.services.SessionsService import INVALID_TRANSITION, NOT_ADMIN, get_session
 
@@ -25,6 +33,18 @@ from core.services.SessionsService import INVALID_TRANSITION, NOT_ADMIN, get_ses
 SESSION_NOT_LIVE = "session_not_live"
 TALK_ALREADY_OPEN = "talk_already_open"
 TALK_NOT_YOURS = "talk_not_yours"
+
+# The live process's recording (live/Services/AudioService.py writes it): raw
+# PCM, 16 kHz, mono, 16-bit. finish_talk wraps it in a WAV header to store it.
+PCM_SAMPLE_RATE = 16000
+PCM_CHANNELS = 1
+PCM_SAMPLE_WIDTH = 2
+# The browser's recording counts as intact when it decodes all the way and is
+# at most this many seconds shorter than the talk (its start and its pauses
+# lag the server's a little).
+INTACT_TOLERANCE_SECONDS = 5
+
+logger = logging.getLogger(__name__)
 
 
 @transaction.atomic
@@ -85,10 +105,30 @@ def resume_talk(trainer: User, talk_id: uuid.UUID) -> Talk:
 
 
 @transaction.atomic
-def finish_talk(trainer: User, talk_id: uuid.UUID) -> Talk:
+def finish_talk(trainer: User, talk_id: uuid.UUID, audio: UploadedFile | None = None,
+                recording: Path | None = None) -> Talk:
     """Finishes a recording or paused talk (-> PROCESSING) and sets its
-    duration: the time recorded, without the pauses. The audio upload and the
-    analysis follow separately."""
+    duration: the time recorded, without the pauses. Its audio is stored with
+    it (FilesService, Talk.audio), for the analysis that follows separately.
+    Two recordings can come with it:
+
+    - `audio`: the browser's own recording (MediaRecorder, as it was sent:
+      WebM, Ogg or MP4), the better one: recorded at the mic, with no network
+      in between. It is used when intact: it decodes all the way (PyAV) and
+      is as long as the talk, give or take INTACT_TOLERANCE_SECONDS;
+    - `recording`: the live process's PCM file (closed by the caller first),
+      stored as a WAV.
+
+    Stored: the browser's file if intact; else the PCM as a WAV (a broken or
+    short browser file is logged and dropped); else, with no PCM, the browser's
+    file anyway (the only copy); else nothing (no audio). The PCM is deleted
+    once its audio is safely stored: after the commit, whichever of the two
+    was stored. Without a `recording` (the live process didn't confirm it
+    closed the file) nothing is deleted.
+
+    The caller checks the browser's file type (FilesService.ALLOWED_TYPES)
+    before anything changes; a file that doesn't fit raises unsupported_type
+    or empty_file here and nothing is finished."""
     talk = _trainers_talk(trainer, talk_id)
     if talk.status not in (Talk.Status.RECORDING, Talk.Status.PAUSED):
         raise ValidationError(
@@ -96,7 +136,52 @@ def finish_talk(trainer: User, talk_id: uuid.UUID) -> Talk:
             f"{talk.get_status_display().lower()}.",
             code=INVALID_TRANSITION)
 
+    # First: the duration the browser's recording is checked against.
     talk.close(Talk.Status.PROCESSING, timezone.now())
+    pcm = recording if recording is not None and recording.exists() else None
+
+    # Is the browser's file intact? Decoded all the way, its length added up
+    # from the audio frames (MediaRecorder's WebM carries no duration).
+    intact = False
+    if audio is not None:
+        seconds = 0.0
+        try:
+            audio.seek(0)
+            with av.open(audio, mode="r") as container:
+                for frame in container.decode(audio=0):
+                    seconds += frame.samples / frame.sample_rate
+            intact = seconds >= talk.duration.total_seconds() - INTACT_TOLERANCE_SECONDS
+        except Exception as error:
+            # Anything PyAV can't read (not audio, cut off, no audio stream).
+            logger.warning("The browser's recording of talk %s doesn't decode: %s", talk.id, error)
+        else:
+            if not intact:
+                logger.warning("The browser's recording of talk %s is %.1f s, the talk %.1f s",
+                               talk.id, seconds, talk.duration.total_seconds())
+        audio.seek(0)
+
+    if audio is not None and (intact or pcm is None):
+        talk.audio = FilesService().create(
+            audio, File.Kind.AUDIO, audio.content_type, talk.session_id, talk.id)
+    elif pcm is not None:
+        with tempfile.TemporaryFile() as wav_file:
+            # wave writes the header (with the length) when it is closed; the
+            # temporary file stays open for the upload.
+            with wave.open(wav_file, "wb") as wav, pcm.open("rb") as samples:
+                wav.setnchannels(PCM_CHANNELS)
+                wav.setsampwidth(PCM_SAMPLE_WIDTH)
+                wav.setframerate(PCM_SAMPLE_RATE)
+                while chunk := samples.read(1024 * 1024):
+                    wav.writeframes(chunk)
+            talk.audio = FilesService().create(
+                DjangoFile(wav_file, name=f"{talk.id}.wav"), File.Kind.AUDIO, "audio/wav",
+                talk.session_id, talk.id)
+    if talk.audio_id is not None:
+        talk.save(update_fields=["audio"])
+        # Stored: the PCM isn't needed any more. After the commit, so a
+        # rollback doesn't leave the talk without either.
+        if pcm is not None:
+            transaction.on_commit(lambda: pcm.unlink(missing_ok=True), robust=True)
     return talk
 
 

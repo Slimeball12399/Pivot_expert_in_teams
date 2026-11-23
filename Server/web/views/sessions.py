@@ -18,7 +18,8 @@ from django.views.decorators.http import require_http_methods
 from django.views.decorators.vary import vary_on_headers
 
 from accounts.models import User
-from core.models import Session, Talk
+from core.models import File, Session, Talk
+from core.services.FilesService import ALLOWED_TYPES
 from core.services.GraphsService import get_talk_graphs
 from core.services.SessionsService import (
     SESSION_FILTERS,
@@ -367,19 +368,25 @@ def session_connect(request, session_id):
 def session_finish(request, session_id):
     """POST: Finish session (the confirm dialog, from the session header or the
     talk header): End talk for a talk still going on, then the session, so a
-    talk finished this way goes the same way as with the End talk button:
+    talk finished this way goes the same way as with the End talk button. It
+    takes the same optional "audio" (the browser's recording of that talk).
 
-    1. the checks, before anything changes: 404 for a session that doesn't
-       exist or isn't yours, 409 for one that isn't live;
+    1. the checks, before anything changes: 400 for a file that isn't audio
+       we take or is empty; 404 for a session that doesn't exist or isn't
+       yours; 409 for one that isn't live, or for a file with no talk going on;
     2. End talk, as talk_finish does it: the live process stops the talk's
-       recording (its file closed, complete), then finish_talk() (-> PROCESSING,
-       where the finished recording will be uploaded);
+       recording (its file closed, complete), then finish_talk() (-> PROCESSING),
+       which stores the browser's file, or else the live process's recording;
     3. the session: the live process closes its connections (and its reconnect
        timer), then end_session() (-> FINISHED). end_session still closes a
        talk left open itself, but here there is none left.
 
     200 {"id"}, with a toast for the reload. A failing live process only goes
     to the log: the talk and the session are finished anyway."""
+    audio = request.FILES.get("audio")
+    if audio is not None and (audio.content_type not in ALLOWED_TYPES[File.Kind.AUDIO] or not audio.size):
+        return JsonResponse({"errors": {"audio": ["Send the talk's recording as WebM, Ogg, MP4 or WAV audio."]}},
+                            status=400)
     try:
         session = get_session(user=request.user, session_id=session_id)
     except ValidationError:
@@ -389,19 +396,22 @@ def session_finish(request, session_id):
     # From get_session's prefetch: the talks without discarded ones. At most one.
     open_talks = [talk.id for talk in session.talks.all()
                   if talk.status in (Talk.Status.RECORDING, Talk.Status.PAUSED)]
+    if audio is not None and not open_talks:
+        return JsonResponse({"errors": {"__all__": ["There's no talk going on for this recording."]}}, status=409)
 
     client = LiveClient()
     # End talk.
     for talk_id in open_talks:
+        recording = None
         try:
-            client.stop_recording(talk_id)
+            recording = client.stop_recording(talk_id)
         except LiveError as error:
             # 404 not_recording: nothing was recording it (a live restart).
             if error.status != 404:
                 logger.warning("Stopping the recording of talk %s failed: %s (%s)",
                                talk_id, error.detail, error.code)
         try:
-            finish_talk(trainer=request.user, talk_id=talk_id)
+            finish_talk(trainer=request.user, talk_id=talk_id, audio=audio, recording=recording)
         except ValidationError:
             # Ended in the moment since the check: end_session closes what is left.
             pass

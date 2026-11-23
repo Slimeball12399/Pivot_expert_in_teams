@@ -14,9 +14,14 @@ from core.models import File
 UNSUPPORTED_TYPE = "unsupported_type"
 EMPTY_FILE = "empty_file"
 
-# Content types accepted per kind, with the extension used in the key.
+# Content types accepted per kind, with the extension used in the key. Audio:
+# WAV (the live process's recording, converted), and what browsers record
+# with MediaRecorder: WebM or Ogg with Opus (Chrome, Firefox), MP4 (Safari).
 ALLOWED_TYPES = {
-    File.Kind.AUDIO: {"audio/wav": "wav", "audio/x-wav": "wav", "audio/wave": "wav"},
+    File.Kind.AUDIO: {
+        "audio/wav": "wav", "audio/x-wav": "wav", "audio/wave": "wav",
+        "audio/webm": "webm", "audio/ogg": "ogg", "audio/mp4": "m4a",
+    },
 }
 
 

@@ -6,6 +6,10 @@
 // token in the X-CSRFToken header. A 2xx answer reloads the page (the view's
 // toast shows then); an error shows in the dialog, which stays open. Closes
 // with Escape, Cancel, the cross or a click on the backdrop.
+// A page can give a button a body for the request: button.confirmBody, a
+// function called on confirm that returns the body (e.g. FormData) or null,
+// or a promise of one; the dialog waits for it, then sends. The live screen's
+// Finish session uses it to send the talk's recording (live.js).
 document.addEventListener("DOMContentLoaded", function () {
     var dialog = document.getElementById("confirm-dialog");
     if (!dialog) {
@@ -29,6 +33,7 @@ document.addEventListener("DOMContentLoaded", function () {
             request = {
                 url: button.dataset.confirmUrl,
                 method: button.dataset.confirmMethod || "DELETE",
+                button: button,
             };
             title.textContent = button.dataset.confirmTitle || "Are you sure?";
             body.textContent = button.dataset.confirmBody || "";
@@ -44,10 +49,14 @@ document.addEventListener("DOMContentLoaded", function () {
         event.preventDefault();
         error.hidden = true;
         confirm.disabled = true;
-        fetch(request.url, {
-            method: request.method,
-            headers: {"X-CSRFToken": token, "Accept": "application/json"},
-        })
+        Promise.resolve(request.button.confirmBody ? request.button.confirmBody() : null)
+            .then(function (requestBody) {
+                return fetch(request.url, {
+                    method: request.method,
+                    headers: {"X-CSRFToken": token, "Accept": "application/json"},
+                    body: requestBody || undefined,
+                });
+            })
             .then(function (response) {
                 if (response.ok) {
                     window.location.reload();

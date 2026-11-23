@@ -34,6 +34,17 @@
 // already going, the connection isn't up) shows in [data-live-message].
 // Commands go as {"id": n, "type": ...}; the reply has the same id.
 //
+// The browser's own recording of each talk: a MediaRecorder on the mic,
+// started when the live process says the talk started, paused and resumed
+// with it (and paused when the connection drops, as the server pauses the
+// talk then), so the file leaves the pauses out, like the server's PCM. One
+// recorder per talk: it gives one continuous file when stopped. End talk
+// stops it and sends the file with the request ("audio", multipart); so does
+// Finish session while a talk goes on (through the confirm dialog's
+// confirmBody). The server then stores it in place of its own recording. A
+// talk that was going on when the page loaded has no recorder (a reload loses
+// it): it ends without a file, and the server uses its own recording.
+//
 // The status line says where it is: connecting, connected, reconnecting, or
 // a stop. A connection that fails or
 // drops, or a step that fails, starts over from 2 after a wait that grows
@@ -73,6 +84,8 @@ document.addEventListener("DOMContentLoaded", function () {
     var pauseButton = document.getElementById("talk-pause");
     var endButton = document.getElementById("talk-end");
     var openTalk = null;  // the talk going on, from the session's JSON, or null
+    var recorder = null;  // {talkId, media (the MediaRecorder), chunks} while a talk records here
+    var kept = null;      // {talkId, blob}: a stopped recording whose request failed, sent again
     var clockTimer = null;
     var csrfToken = screen.dataset.csrfToken;
     var GATHER_MS = 5000;
@@ -187,6 +200,10 @@ document.addEventListener("DOMContentLoaded", function () {
     }
 
     function retry() {
+        // The server pauses the talk on a drop: the recording pauses with it.
+        if (recorder && recorder.media.state === "recording") {
+            recorder.media.pause();
+        }
         closePeer();
         setState("reconnecting", "Reconnecting…");
         clearTimeout(retryTimer);
@@ -322,7 +339,63 @@ document.addEventListener("DOMContentLoaded", function () {
 
     // A command from a button: the button waits for the reply, then the screen
     // follows the new state (or the refusal shows).
-    function command(button, type, failed) {
+    // The talk's recording starts: a new recorder on the mic.
+    function startRecording(talkId) {
+        if (typeof MediaRecorder === "undefined" || !stream) {
+            return;  // no recorder in this browser: the server's recording is used
+        }
+        var media = new MediaRecorder(stream);
+        var chunks = [];
+        media.addEventListener("dataavailable", function (event) {
+            if (event.data.size) {
+                chunks.push(event.data);
+            }
+        });
+        // A chunk a second, so a long talk isn't one buffer at the end.
+        media.start(1000);
+        recorder = {talkId: talkId, media: media, chunks: chunks};
+    }
+
+    // The talk going on's recording, stopped: a promise of
+    // {blob, name} (the file to send), or null with none recorded here.
+    function stopRecording() {
+        if (!openTalk) {
+            return Promise.resolve(null);
+        }
+        if (kept && kept.talkId === openTalk.id) {
+            return Promise.resolve(kept);
+        }
+        if (!recorder || recorder.talkId !== openTalk.id) {
+            return Promise.resolve(null);
+        }
+        var stopping = recorder;
+        recorder = null;
+        return new Promise(function (resolve) {
+            stopping.media.addEventListener("stop", function () {
+                var type = stopping.media.mimeType || "audio/webm";
+                var extension = type.indexOf("mp4") !== -1 ? "m4a" : type.indexOf("ogg") !== -1 ? "ogg" : "webm";
+                kept = {talkId: stopping.talkId, blob: new Blob(stopping.chunks, {type: type}),
+                        name: "talk." + extension};
+                resolve(kept);
+            }, {once: true});
+            stopping.media.stop();
+        });
+    }
+
+    // The request body with the recording in "audio", or null without one.
+    function recordingBody() {
+        return stopRecording().then(function (recording) {
+            if (!recording) {
+                return null;
+            }
+            var body = new FormData();
+            body.append("audio", recording.blob, recording.name);
+            return body;
+        });
+    }
+
+    // ok(reply), when given, runs on the live process's ok, before the refresh.
+    function command(button, type, failed, ok) {
         showMessage("");
         button.disabled = true;
         var sent = send(type, function (reply) {
@@ -330,6 +403,9 @@ document.addEventListener("DOMContentLoaded", function () {
             if (reply.type !== "ok") {
                 showMessage(reply.detail || failed);
                 return;
+            }
+            if (ok) {
+                ok(reply);
             }
             refresh();
         });
@@ -341,15 +417,25 @@ document.addEventListener("DOMContentLoaded", function () {
     // Start talk: the session header's and the talks card's.
     document.querySelectorAll("#session-start-talk, #talks-start-talk").forEach(function (button) {
         button.addEventListener("click", function () {
-            command(button, "start_talk", "Couldn't start the talk.");
+            command(button, "start_talk", "Couldn't start the talk.", function (reply) {
+                startRecording(reply.talk.id);
+            });
         });
     });
 
     pauseButton.addEventListener("click", function () {
         if (openTalk && openTalk.status === "PAUSED") {
-            command(pauseButton, "resume_talk", "Couldn't resume the talk.");
+            command(pauseButton, "resume_talk", "Couldn't resume the talk.", function () {
+                if (recorder && recorder.media.state === "paused") {
+                    recorder.media.resume();
+                }
+            });
         } else {
-            command(pauseButton, "pause_talk", "Couldn't pause the talk.");
+            command(pauseButton, "pause_talk", "Couldn't pause the talk.", function () {
+                if (recorder && recorder.media.state === "recording") {
+                    recorder.media.pause();
+                }
+            });
         }
     });
 
@@ -361,10 +447,15 @@ document.addEventListener("DOMContentLoaded", function () {
         }
         showMessage("");
         endButton.disabled = true;
-        fetch(openTalk.finish_url, {
-            method: "POST",
-            headers: {"Accept": "application/json", "X-CSRFToken": csrfToken},
-        })
+        var url = openTalk.finish_url;
+        recordingBody()
+            .then(function (body) {
+                return fetch(url, {
+                    method: "POST",
+                    headers: {"Accept": "application/json", "X-CSRFToken": csrfToken},
+                    body: body || undefined,
+                });
+            })
             .then(function (response) {
                 if (!response.ok) {
                     return response.json().catch(function () {
@@ -374,6 +465,7 @@ document.addEventListener("DOMContentLoaded", function () {
                             || "Couldn't end the talk.");
                     });
                 }
+                kept = null;  // sent and stored
                 return refresh();
             })
             .catch(function (error) {
@@ -382,6 +474,12 @@ document.addEventListener("DOMContentLoaded", function () {
             .finally(function () {
                 endButton.disabled = false;
             });
+    });
+
+    // Finish session (either header): the confirm dialog sends the talk's
+    // recording with it, if a talk is going on and recorded here.
+    document.querySelectorAll("#session-finish, #talk-finish-session").forEach(function (button) {
+        button.confirmBody = recordingBody;
     });
 
     setState("connecting", "Connecting…");

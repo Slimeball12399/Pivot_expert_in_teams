@@ -20,6 +20,8 @@ services:
         condition: service_healthy
       minio:
         condition: service_started
+      minio-init:
+        condition: service_completed_successfully
 
   # The live process (python manage.py run_live): WebRTC connections of live
   # sessions. Same image as server, its own process, so deploying the web
@@ -89,6 +91,21 @@ services:
     ports:
       - "127.0.0.1:9090:9000"   # S3 API (localhost only)
       - "127.0.0.1:9091:9091"   # web console (localhost only)
+
+  # One-off: creates the bucket the app stores files in (S3_BUCKET) if it isn't
+  # there yet, e.g. after a fresh miniodata volume, then exits; server waits
+  # for it. Running it again changes nothing (--ignore-existing). `mc ready`
+  # first waits until MinIO answers (it may still be starting). mc takes the
+  # server and login from MC_HOST_<alias>. The -dev variant, for its shell.
+  minio-init:
+    image: cgr.dev/chainguard/minio-client:latest-dev
+    environment:
+      MC_HOST_pivot: http://${MINIO_USER}:${MINIO_PASSWORD}@minio:9000
+    entrypoint: ["/bin/sh", "-c"]
+    command: ["mc ready pivot && mc mb --ignore-existing pivot/${S3_BUCKET}"]
+    depends_on:
+      minio:
+        condition: service_started
 
   # TURN/STUN server for WebRTC (coturn): the only way in from the internet
   # to the live process. Both sides use it as a relay: the browser sends its
