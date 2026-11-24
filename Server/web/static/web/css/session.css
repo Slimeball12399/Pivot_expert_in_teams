@@ -91,10 +91,18 @@
    moves the playhead of every chart (js/session.js). The design system has no
    slider, so it is built from its parts: the meter track (6px, rounded, --line),
    ink focus ring its controls use. */
+/* The talk slider in a card of its own, like the score cards above it (white
+   in light mode, raised navy in dark mode), without their coloured top edge. */
 .talk-timeline {
+    box-sizing: border-box;
     display: flex;
     flex-direction: column;
     gap: 0.5rem;
+    padding: 1rem 1.5rem 1.25rem;
+    border: 1px solid var(--line);
+    border-radius: 16px;
+    background: var(--background-raised);
+    box-shadow: var(--shadow-menu);
 }
 
 /* Above the slider: microphone icon and label on the left, the time on the right. */
@@ -185,4 +193,193 @@
     outline: 3px solid var(--text);
     outline-offset: 2px;
     border-radius: 4px;
+}
+
+/* Talks in this session: a card like the talk slider's, with a small table
+   (a grid per row, the same column widths in every row so they line up). */
+.session-talks {
+    box-sizing: border-box;
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+    padding: 1rem 1.5rem 1.25rem;
+    border: 1px solid var(--line);
+    border-radius: 16px;
+    background: var(--background-raised);
+    box-shadow: var(--shadow-menu);
+}
+
+/* The title on the left, Start talk on the right. */
+.session-talks-head {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.5rem 1rem;
+}
+
+.session-talks-title {
+    margin: 0;
+    font-family: "Jost", sans-serif;
+    font-size: 20px;
+    font-weight: 600;
+}
+
+.talk-table {
+    container: talk-table / inline-size;
+    font-size: 14px;
+    line-height: 20px;
+}
+
+.talk-table-row {
+    /* Talk, Started, Length, Speech, Stability, Actions (delete and show) */
+    display: grid;
+    grid-template-columns: 88px 80px 80px minmax(140px, 1fr) minmax(140px, 1fr) 76px;
+    align-items: center;
+    column-gap: 16px;
+    padding: 0 8px;
+    border-top: 1px solid var(--line);
+    border-radius: 8px;
+}
+
+.talk-table-head {
+    border-top: 0;
+}
+
+/* Column headers: the design system's caption style, on one line. */
+.talk-table-head > [role="columnheader"] {
+    padding: 8px 0;
+    font-size: 12px;
+    line-height: 16px;
+    font-weight: 500;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    white-space: nowrap;
+    color: var(--text-muted);
+}
+
+.talk-table-row > [role="cell"] {
+    min-width: 0;
+    padding: 8px 0;
+}
+
+.talk-table-row:not(.talk-table-head):hover {
+    background: var(--background);
+}
+
+/* The talk shown in the graphs. */
+.talk-table-row[aria-current="true"] {
+    background: color-mix(in srgb, var(--rose) 30%, transparent);
+}
+
+.talk-table-name {
+    font-family: "Jost", sans-serif;
+    font-weight: 600;
+    white-space: nowrap;
+}
+
+.talk-table-muted {
+    color: var(--text-muted);
+    white-space: nowrap;
+    font-variant-numeric: tabular-nums;
+}
+
+.talk-table-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 4px;
+}
+
+/* Narrower tables (their own width, a container query) drop things instead
+   of squeezing, in this order:
+     700px and up   everything
+     500 to 699px   the score lines go, only the numbers stay
+     420 to 499px   also without Started
+     340 to 419px   also without Length
+     below 340px    also without Speech and Stability: the talk, delete and view */
+@container talk-table (width < 700px) {
+    .talk-table-row {
+        grid-template-columns: 88px 64px 64px 56px 56px minmax(76px, 1fr);
+    }
+
+    .talk-table .score-bar-track {
+        display: none;
+    }
+}
+
+@container talk-table (width < 500px) {
+    .talk-table-row {
+        grid-template-columns: 88px 64px 56px 56px minmax(76px, 1fr);
+    }
+
+    .talk-table .talk-table-started {
+        display: none;
+    }
+}
+
+@container talk-table (width < 420px) {
+    .talk-table-row {
+        grid-template-columns: 88px 56px 56px minmax(76px, 1fr);
+    }
+
+    .talk-table .talk-table-length {
+        display: none;
+    }
+}
+
+@container talk-table (width < 340px) {
+    .talk-table-row {
+        grid-template-columns: 88px minmax(76px, 1fr);
+    }
+
+    .talk-table .talk-table-speech,
+    .talk-table .talk-table-stability {
+        display: none;
+    }
+}
+
+.talk-table-empty {
+    margin: 0;
+    padding: 16px 8px;
+    color: var(--text-muted);
+}
+
+/* Score bar (web/components/score_bar.html): the number, then a line in the
+   measure's colour, as long as the score (--value, 0 to 100) out of the space
+   next to it. Nothing else: no track behind it. */
+.score-bar {
+    --score-bar-color: var(--speech);
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.score-bar-stability {
+    --score-bar-color: var(--stability);
+}
+
+.score-bar-num {
+    flex: none;
+    width: 2.25rem;
+    font-family: "Jost", sans-serif;
+    font-size: 18px;
+    font-weight: 600;
+    font-variant-numeric: tabular-nums;
+}
+
+.score-bar-none {
+    color: var(--text-muted);
+}
+
+.score-bar-track {
+    flex: 1;
+    height: 8px;
+}
+
+.score-bar-fill {
+    display: block;
+    height: 100%;
+    width: calc(var(--value) * 1%);
+    border-radius: 4px;
+    background: var(--score-bar-color);
 }

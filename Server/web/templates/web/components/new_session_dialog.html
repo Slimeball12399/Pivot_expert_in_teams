@@ -1,0 +1,96 @@
+{% comment %}
+New session dialog (new-session-dialog.js): pick one of your users, whether
+the live feedback also goes to their phone, and start now or later.
+Opens with a button id="new-session-open" on the page:
+
+  {% include "web/components/button.html" with text="New session" icon="plus" id="new-session-open" %}
+  {% include "web/components/new_session_dialog.html" %}
+
+It is also the edit dialog: a button with data-edit-session (the session's
+web:session URL) and data-first-name, -last-name, -email, -display and
+-scheduled-at opens it as "Edit session", with that user fixed, and Save
+sends a PATCH there (see session_row.html).
+
+The page loads in its head: web/css/dialog.css, combobox.css and
+web/js/new-session-dialog.js (checkbox.css and input.css come with base.html).
+Used on the Sessions page (web/sessions.html).
+The search asks web:invite_suggestions with own=1; Start / Save post the form to web:sessions.
+{% endcomment %}
+<dialog class="dialog" id="new-session-dialog" aria-labelledby="new-session-title"
+    data-speakers-url="{% url 'web:invite_suggestions' %}">
+    <form class="dialog-panel" method="post" action="{% url 'web:sessions' %}" novalidate>
+        {% csrf_token %}
+        <button type="button" class="dialog-close" data-dialog-close aria-label="Close">
+            {% heroicon_outline "x-mark" size=20 aria_hidden="true" %}
+        </button>
+        {# The mic icon with the title and the text next to it. #}
+        <div class="dialog-head">
+            <div class="dialog-icon">{% heroicon_outline "microphone" size=24 aria_hidden="true" %}</div>
+            <div class="dialog-head-text">
+                <h2 class="dialog-title" id="new-session-title">New session</h2>
+                <p class="dialog-body" id="new-session-intro">Choose the user and when the session starts.</p>
+            </div>
+        </div>
+
+        <div class="input-field dialog-field" id="new-session-speaker-field">
+            <label class="input-label" for="new-session-speaker">User</label>
+            <div class="input-control combobox session-search" id="new-session-search">
+                {% heroicon_outline "magnifying-glass" size=20 aria_hidden="true" %}
+                <input class="input" id="new-session-speaker" type="search" autocomplete="off"
+                    placeholder="Search your users" role="combobox" aria-autocomplete="list" aria-expanded="false"
+                    aria-controls="new-session-suggestions" aria-describedby="new-session-speaker-hint">
+                <ul class="combobox-list" id="new-session-suggestions" role="listbox" aria-label="Your users" hidden>
+                </ul>
+            </div>
+            {# The picked user, shown instead of the search field. #}
+            <div class="session-speaker" id="new-session-picked" hidden>
+                <span class="session-speaker-initials" id="new-session-picked-initials" aria-hidden="true"></span>
+                <span class="session-speaker-text">
+                    <strong id="new-session-picked-name"></strong>
+                    <span class="session-speaker-email" id="new-session-picked-email"></span>
+                </span>
+                {% include "web/components/button.html" with text="Change" variant="text" id="new-session-change" %}
+            </div>
+            <input type="hidden" name="speaker_id" id="new-session-speaker-id" value="">
+            <p class="input-message" id="new-session-speaker-hint">Type at least 2 letters of a name or email.</p>
+            {# Filled by new-session-dialog.js when the server says no. #}
+            <p class="input-message input-message-error" id="new-session-speaker-error" hidden></p>
+        </div>
+
+        <div class="dialog-field">
+            {% include "web/components/checkbox.html" with id="new-session-phone" name="stream_on_phone" label="Stream to the user's phone" %}
+        </div>
+
+        <fieldset class="dialog-field session-start">
+            <legend class="input-label">Start</legend>
+            <div class="segmented">
+                <label class="segmented-option">
+                    <input class="segmented-input" type="radio" name="start" value="now" checked>
+                    <span>Now</span>
+                </label>
+                <label class="segmented-option">
+                    <input class="segmented-input" type="radio" name="start" value="later">
+                    <span>Later</span>
+                </label>
+            </div>
+        </fieldset>
+
+        {# Only for "Later". The picker is in local time; scheduled_at is sent as UTC. #}
+        <div class="input-field dialog-field" id="new-session-time-field" hidden>
+            <label class="input-label" for="new-session-time">Date and time</label>
+            <div class="input-control">
+                <input class="input" id="new-session-time" type="datetime-local">
+            </div>
+            <input type="hidden" name="scheduled_at" id="new-session-scheduled-at" value="">
+            <p class="input-message input-message-error" id="new-session-time-error" hidden></p>
+        </div>
+
+        {# Any other error from the server. #}
+        <p class="input-message input-message-error dialog-field" id="new-session-error" hidden></p>
+
+        <div class="dialog-actions">
+            {% include "web/components/button.html" with text="Cancel" variant="quiet" id="new-session-cancel" %}
+            {% include "web/components/button.html" with text="Start" type="submit" id="new-session-submit" %}
+        </div>
+    </form>
+</dialog>

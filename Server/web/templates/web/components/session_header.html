@@ -1,0 +1,49 @@
+{% comment %}
+Session header: the app bar of the session (and later the talk) page, in place
+of the site header (override {% block header %} with it). A back arrow to the
+Sessions page, "<user> · Session" with the board, the number of talks and how
+long the session has run under it, the session's status next to it, and on
+the right what can be done now: Start session before it starts; Start talk
+(when a talk can be started) and Finish session while it is live; Delete
+session once it has finished. None of them do anything yet. Styles in
+web/css/header.css; the back arrow is an icon button (web/css/user-table.css).
+
+  {% include "web/components/session_header.html" with session=session talk_count=talks|length elapsed=elapsed can_start_talk=can_start_talk next_talk=next_talk %}
+
+  session         the Session (speaker with user, status)
+  talk_count      its talks, without discarded ones
+  elapsed         "m:ss" or "h:mm:ss" from start to end, or to now while live; None before it starts
+  can_start_talk  True when start_talk() would allow it: live, and no talk recording or paused
+  next_talk       the number the next talk gets
+{% endcomment %}
+<header class="site-header session-header">
+    <a class="icon-button session-header-back" href="{% url 'web:sessions' %}" aria-label="Back to sessions">
+        {% heroicon_outline "chevron-left" size=24 aria_hidden="true" %}
+    </a>
+    <div class="session-header-text">
+        <span class="session-header-title">{{ session.speaker.user.get_full_name }} &middot; Session</span>
+        <span class="session-header-meta">
+            {# No boards yet. #}
+            Board &ndash; &middot; {{ talk_count }} talk{{ talk_count|pluralize }}
+            {% if elapsed %}&middot; {{ elapsed }}{% if session.status == "LIVE" %} so far{% endif %}{% endif %}
+        </span>
+    </div>
+    {# A dot and the status in bold, in the dot's colour (no pill, unlike the tables' badges). #}
+    <span class="session-header-status session-header-status-{{ session.status|lower }}">
+        {% if session.status == "NOT_STARTED" %}Not started{% else %}{{ session.get_status_display }}{% endif %}
+    </span>
+    <div class="session-header-actions">
+        {% if session.status == "NOT_STARTED" %}
+        {% include "web/components/button.html" with text="Start session" icon="play" id="session-start" %}
+        {% elif session.status == "LIVE" %}
+        {% if can_start_talk %}
+        {% with number=next_talk|stringformat:"d" %}{% with label="Start talk "|add:number %}
+        {% include "web/components/button.html" with text=label icon="play" id="session-start-talk" %}
+        {% endwith %}{% endwith %}
+        {% endif %}
+        {% include "web/components/button.html" with text="Finish session" variant="quiet" icon="stop" id="session-finish" %}
+        {% elif session.status == "FINISHED" %}
+        {% include "web/components/button.html" with text="Delete session" variant="quiet" icon="trash" id="session-delete" %}
+        {% endif %}
+    </div>
+</header>

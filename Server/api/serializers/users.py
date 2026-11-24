@@ -1,8 +1,12 @@
+"""Users and their profiles: registering, the user's own profile (GET and
+PATCH /api/me/) and how a trainer is shown."""
+
 from django.core.exceptions import ValidationError as DjangoValidationError
 from rest_framework import serializers
 
 from accounts.models import Consent
 from accounts.services.accounts import register_speaker, update_profile
+
 
 # Base serializers: each field is defined once here, and the input and output
 # serializers below extend them. Change a field here and every serializer that
@@ -54,40 +58,6 @@ class SpeakerRegistrationSerializer(UserBaseSerializer, SpeakerProfileBaseSerial
     def to_representation(self, user):
         """What the endpoint returns after registering."""
         return RegisteredUserSerializer(user).data
-
-
-class EmailSerializer(serializers.Serializer):
-    """Input for the endpoints that only need an email (resend, forgot password)."""
-
-    email = serializers.EmailField()
-
-
-class LoginSerializer(EmailSerializer):
-    """Input for POST /api/auth/login/. The rules run in login_user()."""
-
-    password = serializers.CharField(write_only=True, trim_whitespace=False)
-
-
-class EmailCodeSerializer(EmailSerializer):
-    """Input for the endpoints that check a code from an email."""
-
-    # Spaces are allowed, so "1234 5678" copied from the email works.
-    code = serializers.CharField(max_length=32)
-
-
-class PasswordResetTokenSerializer(serializers.Serializer):
-    """Proof of a right reset code: returned by POST /api/auth/password-reset/verify/
-    and sent back to PUT /api/auth/password-reset/confirm/."""
-
-    uid = serializers.CharField()
-    reset_token = serializers.CharField()
-
-
-class PasswordResetConfirmSerializer(PasswordResetTokenSerializer):
-    """Input for PUT /api/auth/password-reset/confirm/. Password strength is
-    checked inside reset_password(), with the AUTH_PASSWORD_VALIDATORS."""
-
-    new_password = serializers.CharField(write_only=True, trim_whitespace=False)
 
 
 class MeUpdateBaseSerializer(UserBaseSerializer):
@@ -146,28 +116,30 @@ class RegisteredUserSerializer(UserBaseSerializer):
     role = serializers.CharField()
 
 
-class InviteTrainerSerializer(serializers.Serializer):
-    """A trainer (an AdminProfile): their id and name. Who an invitation is
-    from, the trainer an accepted one replaced, or a speaker's current
-    trainer in /api/me/."""
+class ProfileSerializer(serializers.Serializer):
+    """A person as others see them: their user id and name, read from their
+    AdminProfile or SpeakerProfile. E.g. a session's trainer and speaker."""
 
-    id = serializers.UUIDField()
+    id = serializers.UUIDField(source="user_id")
     first_name = serializers.CharField(source="user.first_name")
     last_name = serializers.CharField(source="user.last_name")
+
+
+class InviteTrainerSerializer(ProfileSerializer):
+    """A trainer (an AdminProfile): their user id and name. Who an invitation is
+    from, the trainer an accepted one replaced, or a speaker's current
+    trainer in /api/me/. Its own class so the API docs keep this name."""
 
 
 class SpeakerProfileSerializer(SpeakerProfileBaseSerializer):
     """The "profile" part of GET /api/me/ for a speaker, with their current
     trainer (null when they have none)."""
 
-    id = serializers.UUIDField()
     trainer = InviteTrainerSerializer(source="admin", allow_null=True)
 
 
 class AdminProfileSerializer(serializers.Serializer):
-    """The "profile" part of GET /api/me/ for an admin."""
-
-    id = serializers.UUIDField()
+    """The "profile" part of GET /api/me/ for an admin: nothing yet."""
 
 
 class MeBaseSerializer(RegisteredUserSerializer):
@@ -195,53 +167,3 @@ ME_SERIALIZERS = {"speaker": SpeakerMeSerializer, "admin": AdminMeSerializer}
 def me_data(user):
     """The GET /api/me/ body for `user`, shaped by their role."""
     return ME_SERIALIZERS[user.role](user).data
-
-
-class TokenPairSerializer(serializers.Serializer):
-    """Response of POST /api/auth/login/."""
-
-    access = serializers.CharField()
-    refresh = serializers.CharField()
-
-
-class DetailSerializer(serializers.Serializer):
-    """A plain message, e.g. "If that account exists, we sent a code."."""
-
-    detail = serializers.CharField()
-
-
-class CodedErrorSerializer(DetailSerializer):
-    """Errors the app reacts to by `code`: email_not_verified, invalid_code,
-    invalid_token. `detail` is a message that can be shown as it is."""
-
-    code = serializers.CharField()
-
-
-class HealthSerializer(serializers.Serializer):
-    """Response of GET /api/health/."""
-
-    status = serializers.CharField()
-    database = serializers.ChoiceField(choices=["ok", "down"])
-
-
-# Invites
-
-
-class InviteSerializer(serializers.Serializer):
-    """An open invitation in GET /api/invites/. replaces_trainer is the
-    speaker's current trainer when accepting would replace them (the app
-    warns "this will replace ..." before accepting), else null."""
-
-    id = serializers.UUIDField()
-    trainer = InviteTrainerSerializer(source="invited_by")
-    replaces_trainer = InviteTrainerSerializer(allow_null=True)
-    created_at = serializers.DateTimeField()
-    expires_at = serializers.DateTimeField()
-
-
-class InviteAcceptedSerializer(DetailSerializer):
-    """Response of POST /api/invites/<id>/accept/: the new trainer, and the
-    one they replaced (null when the speaker had none)."""
-
-    trainer = InviteTrainerSerializer()
-    previous_trainer = InviteTrainerSerializer(allow_null=True)

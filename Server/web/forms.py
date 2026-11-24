@@ -1,8 +1,9 @@
-"""Forms for the logged-out web pages.
+"""Forms for the web pages.
 
 They only check the input's shape (an email, the right number of digits,
 two matching passwords). The rules themselves (is the code right, is the
-password strong enough) live in accounts.services, shared with the API.
+password strong enough, is the speaker yours) live in the services
+(accounts.services, core.services), shared with the API.
 """
 
 from django import forms
@@ -55,3 +56,35 @@ class NewPasswordForm(forms.Form):
         if new and confirm and new != confirm:
             self.add_error("confirm_password", "The passwords don't match.")
         return cleaned
+
+
+class SessionBaseForm(forms.Form):
+    """The session dialog's shared fields, defined once here: whether the live
+    feedback also goes to the speaker's phone, and whether it starts now or
+    later (then with a time, sent as UTC by new-session-dialog.js). Editing a
+    session uses this form as it is (the speaker can't be changed); "now"
+    removes the schedule. Whether the time is in the future is the services' job."""
+
+    stream_on_phone = forms.BooleanField(required=False)
+    start = forms.ChoiceField(
+        choices=[("now", "Now"), ("later", "Later")],
+        error_messages={"required": "Choose now or later.", "invalid_choice": "Choose now or later."})
+    scheduled_at = forms.DateTimeField(
+        required=False, error_messages={"invalid": "Enter a valid date and time."})
+
+    def clean(self):
+        cleaned = super().clean()
+        if (cleaned.get("start") == "later" and cleaned.get("scheduled_at") is None
+                and "scheduled_at" not in self.errors):
+            self.add_error("scheduled_at", "Choose a date and time.")
+        return cleaned
+
+
+class SessionCreateForm(SessionBaseForm):
+    """New session: the base fields plus who it is with. Whether the speaker
+    is yours is create_session()'s job."""
+
+    speaker_id = forms.UUIDField(error_messages={
+        "required": "Choose a user.",
+        "invalid": "Choose a user.",
+    })

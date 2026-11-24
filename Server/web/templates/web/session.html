@@ -8,11 +8,16 @@
 <link rel="stylesheet" href="{% static 'web/css/timeline-chart.css' %}">
 <link rel="stylesheet" href="{% static 'web/css/score-ring.css' %}">
 <link rel="stylesheet" href="{% static 'web/css/score-card.css' %}">
+<link rel="stylesheet" href="{% static 'web/css/user-table.css' %}">{# the icon buttons #}
 <link rel="stylesheet" href="{% static 'web/css/session.css' %}">
 {% endblock %}
 
+{# The session's own app bar in place of the site header. #}
+{% block header %}
+{% include "web/components/session_header.html" with session=session talk_count=talks|length elapsed=elapsed can_start_talk=can_start_talk next_talk=next_talk %}
+{% endblock %}
+
 {% block content %}
-<h1>Session</h1>
 <section class="talk-stats">
     <div class="graphs">
         <section class="score-card voice">
@@ -22,10 +27,10 @@
                     {% include "web/components/timeline_chart.html" with id="voice-chart" config=voice_config %}
                 </div>
                 <div class="score-scale">
-                    <span class="score-scale-level score-scale-range">Target range</span>
-                    <span class="score-scale-level score-scale-below">Try more contrast</span>
-                    <span class="score-scale-level score-scale-good">On target</span>
-                    <span class="score-scale-level score-scale-excellent">Try calmer</span>
+                    <span class="score-scale-level score-scale-range">Your usual range</span>
+                    <span class="score-scale-level score-scale-below">Below usual</span>
+                    <span class="score-scale-level score-scale-good">Good</span>
+                    <span class="score-scale-level score-scale-excellent">Excellent</span>
                 </div>
             </div>
             <div class="score">
@@ -100,6 +105,56 @@
         </div>
         <input class="talk-slider" id="talk-slider" type="range" min="0" max="{{ stability_config.x.max }}" step="0.5" value="{{ stability_config.time }}" aria-label="Position in the talk">
     </div>
+
+    {# The session's talks. The eye shows that talk in the graphs above (session.js fetches web:talk); the one shown is aria-current. #}
+    <section class="session-talks" aria-labelledby="session-talks-title">
+        <div class="session-talks-head">
+            <h2 class="session-talks-title" id="session-talks-title">Talks in this session</h2>
+            {# The same as in the header: only when a talk can be started. Does nothing yet. #}
+            {% if can_start_talk %}
+            {% with number=next_talk|stringformat:"d" %}{% with label="Start talk "|add:number %}
+            {% include "web/components/button.html" with text=label icon="play" id="talks-start-talk" %}
+            {% endwith %}{% endwith %}
+            {% endif %}
+        </div>
+        <div class="talk-table" role="table" aria-label="Talks">
+            <div class="talk-table-row talk-table-head" role="row">
+                <div role="columnheader">Talk</div>
+                <div class="talk-table-started" role="columnheader">Started</div>
+                <div class="talk-table-length" role="columnheader">Length</div>
+                <div class="talk-table-speech" role="columnheader">Speech</div>
+                <div class="talk-table-stability" role="columnheader">Stability</div>
+                <div class="talk-table-actions" role="columnheader">
+                    <span class="visually-hidden">Actions</span>
+                </div>
+            </div>
+            {% for row in talks %}
+            <div class="talk-table-row" role="row" data-talk-row="{{ row.id }}"{% if row.id == talk.id %} aria-current="true"{% endif %}>
+                <div class="talk-table-name" role="cell">Talk {{ row.number }}</div>
+                <div class="talk-table-muted talk-table-started" role="cell">{{ row.started_at|date:"H:i" }}</div>
+                <div class="talk-table-muted talk-table-length" role="cell">{% if row.length %}{{ row.length }}{% else %}&ndash;{% endif %}</div>
+                <div class="talk-table-speech" role="cell">
+                    {% include "web/components/score_bar.html" with value=row.speech measure="speech" %}
+                </div>
+                <div class="talk-table-stability" role="cell">
+                    {% include "web/components/score_bar.html" with value=row.stability measure="stability" %}
+                </div>
+                <div class="talk-table-actions" role="cell">
+                    {# Does nothing yet. #}
+                    <button type="button" class="icon-button" aria-label="Delete talk {{ row.number }}">
+                        {% heroicon_outline "trash" size=20 aria_hidden="true" %}
+                    </button>
+                    <button type="button" class="icon-button" data-talk-url="{% url 'web:talk' row.id %}"
+                        aria-label="Show talk {{ row.number }}">
+                        {% heroicon_outline "eye" size=20 aria_hidden="true" %}
+                    </button>
+                </div>
+            </div>
+            {% empty %}
+            <p class="talk-table-empty">No talks yet.</p>
+            {% endfor %}
+        </div>
+    </section>
 </section>
 {% endblock %}
 

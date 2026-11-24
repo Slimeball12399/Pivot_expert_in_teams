@@ -7,6 +7,7 @@ from django.utils.timezone import now
 
 from accounts.models import User, UserInvite
 from accounts.tests.utils import make_invite, make_speaker, make_trainer
+from web.views.users import OWN_SUGGEST_LIMIT
 
 URL = reverse("web:users")
 SUGGESTIONS_URL = reverse("web:invite_suggestions")
@@ -214,4 +215,30 @@ class InviteSuggestionsViewTests(TestCase):
                 response = self.client.get(SUGGESTIONS_URL, {"q": query})
                 self.assertEqual(response.status_code, 200)
                 self.assertEqual(response.json(), {"suggestions": expected})
+
+    def test_own_speakers_for_the_new_session_dialog(self):
+        """own=1: the trainer's own speakers by name or email, with their user
+        id. Which rows get_users() returns is tested in test_trainer_user_view.py."""
+        trainer = make_trainer("anne@example.com")
+        maja = make_speaker("maja@example.com", trainer=trainer, first_name="Maja", last_name="Holm")
+        make_speaker("mads@example.com", first_name="Mads")  # not this trainer's
+        for i in range(6):
+            make_speaker(f"rasmus{i}@example.com", trainer=trainer, first_name="Rasmus")
+        self.client.force_login(trainer.user)
+
+        def suggestions(query):
+            response = self.client.get(SUGGESTIONS_URL, {"q": query, "own": "1"})
+            self.assertEqual(response.status_code, 200)
+            return response.json()["suggestions"]
+
+        with self.subTest("by name, any part, only the trainer's own, with the user id"):
+            self.assertEqual(suggestions("aj"), [{
+                "id": str(maja.id), "first_name": "Maja", "last_name": "Holm",
+                "email": "maja@example.com"}])
+        with self.subTest("by email"):
+            self.assertEqual([row["email"] for row in suggestions("maja@")], ["maja@example.com"])
+        with self.subTest("someone else's speaker: nothing"):
+            self.assertEqual(suggestions("mads"), [])
+        with self.subTest("at most OWN_SUGGEST_LIMIT"):
+            self.assertEqual(len(suggestions("rasmus")), OWN_SUGGEST_LIMIT)
 

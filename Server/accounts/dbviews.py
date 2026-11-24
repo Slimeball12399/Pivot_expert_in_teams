@@ -35,7 +35,7 @@ class TrainerUser(models.Model):
         SPEAKER = "speaker", "Speaker"
         INVITE = "invite", "Invite"
 
-    # The speaker's SpeakerProfile id, or the invite's id (UUIDs don't collide).
+    # The speaker's user id, or the invite's id (UUIDs don't collide).
     id = models.UUIDField(primary_key=True)
     trainer = models.ForeignKey(
         "accounts.AdminProfile", on_delete=models.DO_NOTHING, related_name="+")

@@ -36,6 +36,8 @@ STATUS_OPTIONS = [
     {"value": "inactive", "label": "Inactive"},
 ]
 DEFAULT_STATUS = "speakers"
+# Most speakers invite_suggestions returns with own=1 (new session dialog).
+OWN_SUGGEST_LIMIT = 5
 
 
 def filter_groups(status):
@@ -81,10 +83,23 @@ def invite_suggestions(request):
     {"suggestions": [{"email": ..., "already_linked": true, "already_invited": false}, ...]}.
     suggest_invite_emails() decides what is shown (from 3 characters, start
     of the email, at most 5): already_linked marks the trainer's own speakers,
-    already_invited the emails with an open invite from them."""
+    already_invited the emails with an open invite from them.
+
+    With own=1 (the new session dialog): only the trainer's own speakers, from
+    get_users() (name or email, any part; only active accounts), at most
+    OWN_SUGGEST_LIMIT, as {"suggestions": [{"id": ..., "first_name": ...,
+    "last_name": ..., "email": ...}]}; id is the speaker's user id, what
+    create_session() takes. The dialog asks from 2 characters."""
     query = request.GET.get("q", "")
+    trainer = request.user.admin_profile
+    if request.GET.get("own") == "1":
+        rows = get_users(trainer, "speakers", query)[:OWN_SUGGEST_LIMIT]
+        return JsonResponse({"suggestions": [
+            {"id": row.id, "first_name": row.first_name, "last_name": row.last_name, "email": row.email}
+            for row in rows
+        ]})
     return JsonResponse({
-        "suggestions": suggest_invite_emails(request.user.admin_profile, query),
+        "suggestions": suggest_invite_emails(trainer, query),
     })
 
 

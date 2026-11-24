@@ -6,7 +6,7 @@ from rest_framework.decorators import api_view, authentication_classes, permissi
 from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
 
-from ..serializers import HealthSerializer
+from ..serializers.system import HealthSerializer
 
 
 # auth=[]: no lock icon in Swagger UI (public endpoint).
