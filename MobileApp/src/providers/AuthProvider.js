@@ -8,6 +8,9 @@ const AuthContext = createContext(null);
 export function AuthProvider({ children }) {
   const [user, setUser] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [pendingVerification, setPendingVerification] = useState(null);
+
+  const [passwordReset, setPasswordReset] = useState(null);
 
   // On launch: if a token is already stored, fetch the user 
   useEffect(() => {
@@ -30,11 +33,36 @@ export function AuthProvider({ children }) {
     setUser(await authApi.me());
   }
 
-  // The register endpoint only creates the account (no tokens back), so log
-  // in with the same credentials right after to land the user inside the app.
   async function register(fields) {
     await authApi.register(fields);
-    await login(fields.email, fields.password);
+  }
+
+
+  function needsVerification(email, password) {
+    setPendingVerification({ email, password });
+  }
+
+  function clearVerification() {
+    setPendingVerification(null);
+  }
+
+  function startPasswordReset(email) {
+    setPasswordReset({ email });
+  }
+
+  // Called once the reset code's confirmed, to carry the uid/token into the
+  // new-password screen.
+  function setPasswordResetToken(uid, resetToken) {
+    setPasswordReset((prev) => prev && { ...prev, uid, resetToken });
+  }
+
+  function clearPasswordReset() {
+    setPasswordReset(null);
+  }
+
+  // Called after PATCH /api/me/ succeeds, with the response's fresh user data.
+  function updateUser(nextUser) {
+    setUser(nextUser);
   }
 
   async function logout() {
@@ -46,7 +74,11 @@ export function AuthProvider({ children }) {
     setUser(null);
   }
 
-  const value = { user, isLoading, isAuthenticated: !!user, login, register, logout };
+  const value = {
+    user, isLoading, isAuthenticated: !!user, login, register, logout, updateUser,
+    pendingVerification, needsVerification, clearVerification,
+    passwordReset, startPasswordReset, setPasswordResetToken, clearPasswordReset,
+  };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }

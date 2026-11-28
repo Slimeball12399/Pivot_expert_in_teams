@@ -114,6 +114,7 @@ export function AuthScreen({ tab: initialTab }) {
             value={registerForm.fields.phoneNumber}
             onChangeText={(v) => registerForm.setField('phoneNumber', v)}
             error={registerForm.fieldErrors.phoneNumber}
+            prefix="+45"
             placeholder="e.g. 12345678"
             keyboardType="phone-pad"
           />
@@ -122,7 +123,7 @@ export function AuthScreen({ tab: initialTab }) {
             value={registerForm.fields.birthDate}
             onChangeText={(v) => registerForm.setField('birthDate', v)}
             error={registerForm.fieldErrors.birthDate}
-            placeholder="YYYY-MM-DD"
+            placeholder="DD/MM/YYYY"
           />
           <TextInput
             label="Height (cm)"
@@ -188,11 +189,36 @@ export function AuthScreen({ tab: initialTab }) {
 }
 
 const styles = StyleSheet.create({
-  forgot: { textAlign: 'right', marginBottom: 16, fontSize: 13, textDecorationLine: 'underline' },
-  submit: { marginTop: 4, marginBottom: 20 },
-  footerLine: { textAlign: 'center', fontSize: 14 },
-  footerLink: { fontWeight: '700', textDecorationLine: 'underline' },
-  consentError: { fontSize: 13, marginTop: -8, marginBottom: 12 },
-  gdpr: { textAlign: 'center', fontSize: 12, marginTop: 28, lineHeight: 18 },
-  gdprLink: { textDecorationLine: 'underline' },
+  forgot: {
+    textAlign: 'right',
+    marginBottom: 16,
+    fontSize: 13,
+    textDecorationLine: 'underline',
+  },
+  submit: {
+    marginTop: 4,
+    marginBottom: 20,
+  },
+  footerLine: {
+    textAlign: 'center',
+    fontSize: 14,
+  },
+  footerLink: {
+    fontWeight: '700',
+    textDecorationLine: 'underline',
+  },
+  consentError: {
+    fontSize: 13,
+    marginTop: -8,
+    marginBottom: 12,
+  },
+  gdpr: {
+    textAlign: 'center',
+    fontSize: 12,
+    marginTop: 28,
+    lineHeight: 18,
+  },
+  gdprLink: {
+    textDecorationLine: 'underline',
+  },
 });

@@ -4,6 +4,7 @@ import { useFonts } from 'expo-font';
 import { Stack } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { ActivityIndicator, StyleSheet, Text, View } from 'react-native';
+import Toast from 'react-native-toast-message';
 
 import { AppProviders } from '../providers/AppProviders';
 
@@ -30,16 +31,28 @@ export default function RootLayout() {
 
   return (
     <AppProviders>
-      <Stack>
-        <Stack.Screen name="index" options={{ title: 'Home' }} />
-        <Stack.Screen name="(auth)" options={{ headerShown: false }} />
+      <Stack screenOptions={{ headerShown: false }}>
+        <Stack.Screen name="(tabs)" />
+        <Stack.Screen name="(admin)" />
+        <Stack.Screen name="invitations" />
+        <Stack.Screen name="change-password" />
+        <Stack.Screen name="user/[id]" />
+        <Stack.Screen name="(auth)" />
       </Stack>
       <StatusBar style="auto" />
+      <Toast />
     </AppProviders>
   );
 }
 
 const styles = StyleSheet.create({
-  center: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: 24 },
-  errorText: { textAlign: 'center' },
+  center: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: 24,
+  },
+  errorText: {
+    textAlign: 'center',
+  },
 });
